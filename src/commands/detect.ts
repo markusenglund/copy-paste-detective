@@ -33,20 +33,25 @@ program
       "Number of numeric values: ",
       numOccurencesByNumericCellValue.size
     );
-    const sorted = [...numOccurencesByNumericCellValue.entries()]
+    const duplicateValuesSortedByEntropy = [
+      ...numOccurencesByNumericCellValue.entries()
+    ]
       .filter(([value, numOccurences]) => numOccurences > 1)
       .map(([value, numOccurences]) => {
         const entropy = calculateNumberEntropy(value);
         return { value, numOccurences, entropy };
       })
-      .toSorted((a, b) => a.entropy - b.entropy);
+      .toSorted((a, b) => b.entropy - a.entropy);
 
     console.log(
-      "Number of numeric values with more than 1 occurence: ",
-      sorted.length
+      "Number of duplicate numeric values: ",
+      duplicateValuesSortedByEntropy.length
     );
 
-    console.log("sorted", sorted.slice(0, 100));
+    console.log(
+      "Entries sorted by entropy",
+      duplicateValuesSortedByEntropy.slice(0, 10)
+    );
     // const mostCommon = sorted[0];
     // console.log("mostCommon", mostCommon);
   });
