@@ -12,21 +12,21 @@ program
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
     const sheet = workbook.Sheets[sheetNames[1]];
-    const data = xlsx.utils.sheet_to_json(sheet, { raw: true, header: 1 });
+    const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
+      raw: true,
+      header: 1
+    });
     console.log("Excel file loaded:", data.length, "rows");
 
+    const invertedData = invertMatrix(data);
+
     const numOccurencesByNumericCellValue = new Map<number, number>();
-    for (const row of data) {
-      if (Array.isArray(row)) {
-        for (const cell of row) {
-          if (typeof cell === "number") {
-            const numOccurences =
-              numOccurencesByNumericCellValue.get(cell) ?? 0;
-            numOccurencesByNumericCellValue.set(cell, numOccurences + 1);
-          }
+    for (const column of invertedData) {
+      for (const cell of column) {
+        if (typeof cell === "number") {
+          const numOccurences = numOccurencesByNumericCellValue.get(cell) ?? 0;
+          numOccurencesByNumericCellValue.set(cell, numOccurences + 1);
         }
-      } else {
-        throw new Error("Row is not an array");
       }
     }
     console.log(
@@ -54,6 +54,11 @@ program
     );
     // const mostCommon = sorted[0];
     // console.log("mostCommon", mostCommon);
+    const repeatedSequences = findRepeatedSequences(invertedData);
+    const sortedSequences = repeatedSequences
+      .toSorted((a, b) => b.sumLogEntropy - a.sumLogEntropy)
+      .slice(0, 10);
+    console.log(sortedSequences);
   });
 
 function calculateNumberEntropy(value: number) {
@@ -75,6 +80,75 @@ function calculateNumberEntropy(value: number) {
   );
   const entropy = parseInt(withoutRepeatingDigits);
   return entropy;
+}
+
+function calculateSequenceLogEntropySum(values: number[]) {
+  const sum = values.reduce((acc, value) => {
+    const logEntropy = Math.log10(calculateNumberEntropy(value));
+    return acc + logEntropy;
+  }, 0);
+  return sum;
+}
+
+type Position = {
+  column: number;
+  startRow: number;
+};
+type RepeatedSequence = {
+  positions: [Position, Position];
+  values: number[];
+  sumLogEntropy: number;
+};
+function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
+  const repeatedSequences: RepeatedSequence[] = [];
+  let currentSequence: RepeatedSequence | null = null;
+  const positionsByValue = new Map<number, Position[]>();
+  for (let columnIndex = 0; columnIndex < matrix.length; columnIndex++) {
+    for (let rowIndex = 0; rowIndex < matrix[columnIndex].length; rowIndex++) {
+      const cellValue = matrix[columnIndex][rowIndex];
+      if (typeof cellValue === "number") {
+        const positions = positionsByValue.get(cellValue) ?? [];
+        const newPosition: Position = {
+          column: columnIndex,
+          startRow: rowIndex
+        };
+        for (const position of positions) {
+          let length = 1;
+          const repeatedValues: number[] = [cellValue];
+          while (
+            typeof matrix[position.column][position.startRow + length] ===
+              "number" &&
+            matrix[position.column][position.startRow + length] ===
+              matrix[columnIndex][rowIndex + length]
+          ) {
+            length++;
+            repeatedValues.push(
+              matrix[position.column][position.startRow + length] as number
+            );
+          }
+          repeatedSequences.push({
+            positions: [position, newPosition],
+            values: repeatedValues,
+            sumLogEntropy: calculateSequenceLogEntropySum(repeatedValues)
+          });
+        }
+        positions.push(newPosition);
+        positionsByValue.set(cellValue, positions);
+      }
+    }
+  }
+  return repeatedSequences;
+}
+
+function invertMatrix(matrix: unknown[][]) {
+  const invertedMatrix: unknown[][] = [];
+  for (let i = 0; i < matrix[0].length; i++) {
+    invertedMatrix[i] = [];
+    for (let j = 0; j < matrix.length; j++) {
+      invertedMatrix[i][j] = matrix[j][i];
+    }
+  }
+  return invertedMatrix;
 }
 
 program.parse();
