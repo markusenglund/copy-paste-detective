@@ -11,7 +11,7 @@ program
     const workbook = xlsx.readFile("files/pnas.2300363120.sd01.xlsx");
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
-    const sheet = workbook.Sheets[sheetNames[1]];
+    const sheet = workbook.Sheets[sheetNames[7]];
     const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
       raw: true,
       header: 1
@@ -57,7 +57,7 @@ program
     const repeatedSequences = findRepeatedSequences(invertedData);
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => b.sumLogEntropy - a.sumLogEntropy)
-      .slice(0, 10);
+      .slice(0, 8);
     console.log(sortedSequences);
   });
 
@@ -103,6 +103,7 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
   const repeatedSequences: RepeatedSequence[] = [];
   let currentSequence: RepeatedSequence | null = null;
   const positionsByValue = new Map<number, Position[]>();
+  const checkedPositionPairs = new Set<string>();
   for (let columnIndex = 0; columnIndex < matrix.length; columnIndex++) {
     for (let rowIndex = 0; rowIndex < matrix[columnIndex].length; rowIndex++) {
       const cellValue = matrix[columnIndex][rowIndex];
@@ -113,6 +114,13 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
           startRow: rowIndex
         };
         for (const position of positions) {
+          if (
+            checkedPositionPairs.has(
+              `${position.column}-${position.startRow}-${columnIndex}-${rowIndex}`
+            )
+          ) {
+            continue;
+          }
           let length = 1;
           const repeatedValues: number[] = [cellValue];
           while (
@@ -121,10 +129,13 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
             matrix[position.column][position.startRow + length] ===
               matrix[columnIndex][rowIndex + length]
           ) {
-            length++;
             repeatedValues.push(
               matrix[position.column][position.startRow + length] as number
             );
+            checkedPositionPairs.add(
+              `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`
+            );
+            length++;
           }
           repeatedSequences.push({
             positions: [position, newPosition],
