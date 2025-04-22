@@ -11,7 +11,7 @@ program
     const workbook = xlsx.readFile("files/pnas.2300363120.sd01.xlsx");
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
-    const sheet = workbook.Sheets[sheetNames[7]];
+    const sheet = workbook.Sheets[sheetNames[1]];
     const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
       raw: true,
       header: 1
@@ -58,7 +58,13 @@ program
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => b.sumLogEntropy - a.sumLogEntropy)
       .slice(0, 8);
-    console.log(sortedSequences);
+
+    const humanReadableSequences = sortedSequences.map(sequence => {
+      const firstCellID = sequence.positions[0].cellId;
+      const secondCellId = sequence.positions[1].cellId;
+      return `Repeated sequence (${sequence.values.length}, entropy: ${sequence.sumLogEntropy.toFixed(1)}) [${firstCellID}, ${secondCellId}] - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}`;
+    });
+    console.log(humanReadableSequences.join("\n"));
   });
 
 function calculateNumberEntropy(value: number) {
@@ -93,6 +99,7 @@ function calculateSequenceLogEntropySum(values: number[]) {
 type Position = {
   column: number;
   startRow: number;
+  cellId: string;
 };
 type RepeatedSequence = {
   positions: [Position, Position];
@@ -111,7 +118,8 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
         const positions = positionsByValue.get(cellValue) ?? [];
         const newPosition: Position = {
           column: columnIndex,
-          startRow: rowIndex
+          startRow: rowIndex,
+          cellId: getCellId(columnIndex, rowIndex)
         };
         for (const position of positions) {
           if (
@@ -160,6 +168,18 @@ function invertMatrix(matrix: unknown[][]) {
     }
   }
   return invertedMatrix;
+}
+
+function getCellId(columnIndex: number, rowIndex: number): string {
+  let columnLetters = "";
+  let dividend = columnIndex;
+  do {
+    const remainder = dividend % 26;
+    columnLetters = String.fromCharCode(65 + remainder) + columnLetters;
+    dividend = Math.floor(dividend / 26) - 1;
+  } while (dividend >= 0);
+  const rowNumber = rowIndex + 1;
+  return `${columnLetters}${rowNumber}`;
 }
 
 program.parse();
