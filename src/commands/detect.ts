@@ -8,24 +8,25 @@ program
   .command("excel")
   .description("Investigate an excel file")
   .action(async () => {
-    const workbook = xlsx.readFile("files/pnas.2300363120.sd01.xlsx");
+    // const workbook = xlsx.readFile("files/pnas.2300363120.sd01.xlsx");
+    const workbook = xlsx.readFile("files/Dumicola+familiarity+wide.xlsx");
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
     for (const sheetName of sheetNames) {
       const sheet = workbook.Sheets[sheetName];
       const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
-        raw: true,
+        raw: false,
         header: 1
       });
-      console.log("data", data.slice(0, 10));
+      const parsedData = parseMatrix(data);
 
-      const duplicateValuesSortedByEntropy = findDuplicateValues(data);
+      const duplicateValuesSortedByEntropy = findDuplicateValues(parsedData);
       console.log(
         `[${sheetName}] Highest entropy duplicate numeric value: ${duplicateValuesSortedByEntropy[0].value} (${duplicateValuesSortedByEntropy[0].numOccurences} occurences, entropy: ${duplicateValuesSortedByEntropy[0].entropy})`
       );
 
-      const sortedSheetSequences = findRepeatedSequences(data);
+      const sortedSheetSequences = findRepeatedSequences(parsedData);
       sortedSheetSequences.forEach(sequence => {
         repeatedSequences.push({
           ...sequence,
@@ -69,13 +70,23 @@ function calculateNumberEntropy(value: number) {
   return entropy;
 }
 
+function calculateEntropyScore(rawEntropy: number) {
+  // Prevent extremely large numbers as well numbers below 100 from having an outsized effect on the entropy score
+
+  if (rawEntropy < 100) {
+    return Math.log10(rawEntropy);
+  }
+  if (rawEntropy < 100_000) {
+    return 10 * Math.log10(rawEntropy) - 20;
+  }
+  return Math.log10(rawEntropy) + 25;
+}
+
 function calculateSequenceEntropyScore(values: number[]) {
   const sum = values.reduce((acc, value) => {
     const rawNumberEntropy = calculateNumberEntropy(value);
-    // Prevent extremely large numbers from having an outsized effect on the entropy score
-    const entropyCeiling = 10e7;
-    const individualEntropyScore =
-      Math.pow(Math.min(rawNumberEntropy, entropyCeiling), 1 / 4) / 10;
+    const individualEntropyScore = calculateEntropyScore(rawNumberEntropy);
+    // Math.pow(Math.min(rawNumberEntropy, entropyCeiling), 1 / 4) / 10;
     return acc + individualEntropyScore;
   }, 0);
   return sum;
@@ -167,7 +178,7 @@ function findDuplicateValues(
   const numOccurencesByNumericCellValue = new Map<number, number>();
   for (const row of matrix) {
     for (const cell of row) {
-      if (typeof cell === "number") {
+      if (Number(cell)) {
         const numOccurences = numOccurencesByNumericCellValue.get(cell) ?? 0;
         numOccurencesByNumericCellValue.set(cell, numOccurences + 1);
       }
@@ -196,6 +207,21 @@ function invertMatrix(matrix: unknown[][]) {
     }
   }
   return invertedMatrix;
+}
+
+function parseMatrix(matrix: unknown[][]): unknown[][] {
+  const parsedMatrix = matrix.map(row =>
+    row.map(cell => {
+      if (typeof cell === "string" && cell !== "") {
+        const cellNumber = Number(cell);
+        if (!Number.isNaN(cellNumber)) {
+          return cellNumber;
+        }
+      }
+      return cell;
+    })
+  );
+  return parsedMatrix;
 }
 
 function getCellId(columnIndex: number, rowIndex: number): string {
