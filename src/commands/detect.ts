@@ -11,59 +11,40 @@ program
     const workbook = xlsx.readFile("files/pnas.2300363120.sd01.xlsx");
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
-    const sheet = workbook.Sheets[sheetNames[1]];
-    const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
-      raw: true,
-      header: 1
-    });
-    console.log("Excel file loaded:", data.length, "rows");
+    const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
+    for (const sheetName of sheetNames) {
+      const sheet = workbook.Sheets[sheetName];
+      const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
+        raw: true,
+        header: 1
+      });
+      console.log("data", data.slice(0, 10));
 
-    const invertedData = invertMatrix(data);
+      const duplicateValuesSortedByEntropy = findDuplicateValues(data);
+      console.log(
+        `[${sheetName}] Highest entropy duplicate numeric value: ${duplicateValuesSortedByEntropy[0].value} (${duplicateValuesSortedByEntropy[0].numOccurences} occurences, entropy: ${duplicateValuesSortedByEntropy[0].entropy})`
+      );
 
-    const numOccurencesByNumericCellValue = new Map<number, number>();
-    for (const column of invertedData) {
-      for (const cell of column) {
-        if (typeof cell === "number") {
-          const numOccurences = numOccurencesByNumericCellValue.get(cell) ?? 0;
-          numOccurencesByNumericCellValue.set(cell, numOccurences + 1);
-        }
-      }
+      const sortedSheetSequences = findRepeatedSequences(data);
+      sortedSheetSequences.forEach(sequence => {
+        repeatedSequences.push({
+          ...sequence,
+          sheetName
+        });
+      });
     }
-    console.log(
-      "Number of numeric values: ",
-      numOccurencesByNumericCellValue.size
-    );
-    const duplicateValuesSortedByEntropy = [
-      ...numOccurencesByNumericCellValue.entries()
-    ]
-      .filter(([value, numOccurences]) => numOccurences > 1)
-      .map(([value, numOccurences]) => {
-        const entropy = calculateNumberEntropy(value);
-        return { value, numOccurences, entropy };
-      })
-      .toSorted((a, b) => b.entropy - a.entropy);
-
-    console.log(
-      "Number of duplicate numeric values: ",
-      duplicateValuesSortedByEntropy.length
-    );
-
-    console.log(
-      "Entries sorted by entropy",
-      duplicateValuesSortedByEntropy.slice(0, 10)
-    );
     // const mostCommon = sorted[0];
     // console.log("mostCommon", mostCommon);
-    const repeatedSequences = findRepeatedSequences(invertedData);
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => b.sumLogEntropy - a.sumLogEntropy)
-      .slice(0, 8);
+      .slice(0, 20);
 
     const humanReadableSequences = sortedSequences.map(sequence => {
       const firstCellID = sequence.positions[0].cellId;
       const secondCellId = sequence.positions[1].cellId;
-      return `Repeated sequence (${sequence.values.length}, entropy: ${sequence.sumLogEntropy.toFixed(1)}) [${firstCellID}, ${secondCellId}] - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}`;
+      return `[${sequence.sheetName}] (${sequence.values.length}, entropy: ${sequence.sumLogEntropy.toFixed(1)}) [${firstCellID}, ${secondCellId}] - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}`;
     });
+    console.log(`Repeated sequences:`);
     console.log(humanReadableSequences.join("\n"));
   });
 
@@ -88,10 +69,14 @@ function calculateNumberEntropy(value: number) {
   return entropy;
 }
 
-function calculateSequenceLogEntropySum(values: number[]) {
+function calculateSequenceEntropyScore(values: number[]) {
   const sum = values.reduce((acc, value) => {
-    const logEntropy = Math.log10(calculateNumberEntropy(value));
-    return acc + logEntropy;
+    const rawNumberEntropy = calculateNumberEntropy(value);
+    // Prevent extremely large numbers from having an outsized effect on the entropy score
+    const entropyCeiling = 10e7;
+    const individualEntropyScore =
+      Math.pow(Math.min(rawNumberEntropy, entropyCeiling), 1 / 4) / 10;
+    return acc + individualEntropyScore;
   }, 0);
   return sum;
 }
@@ -107,13 +92,23 @@ type RepeatedSequence = {
   sumLogEntropy: number;
 };
 function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
+  const invertedMatrix = invertMatrix(matrix);
+
   const repeatedSequences: RepeatedSequence[] = [];
   let currentSequence: RepeatedSequence | null = null;
   const positionsByValue = new Map<number, Position[]>();
   const checkedPositionPairs = new Set<string>();
-  for (let columnIndex = 0; columnIndex < matrix.length; columnIndex++) {
-    for (let rowIndex = 0; rowIndex < matrix[columnIndex].length; rowIndex++) {
-      const cellValue = matrix[columnIndex][rowIndex];
+  for (
+    let columnIndex = 0;
+    columnIndex < invertedMatrix.length;
+    columnIndex++
+  ) {
+    for (
+      let rowIndex = 0;
+      rowIndex < invertedMatrix[columnIndex].length;
+      rowIndex++
+    ) {
+      const cellValue = invertedMatrix[columnIndex][rowIndex];
       if (typeof cellValue === "number") {
         const positions = positionsByValue.get(cellValue) ?? [];
         const newPosition: Position = {
@@ -132,13 +127,20 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
           let length = 1;
           const repeatedValues: number[] = [cellValue];
           while (
-            typeof matrix[position.column][position.startRow + length] ===
-              "number" &&
-            matrix[position.column][position.startRow + length] ===
-              matrix[columnIndex][rowIndex + length]
+            typeof invertedMatrix[position.column][
+              position.startRow + length
+            ] === "number" &&
+            !(
+              position.column === columnIndex &&
+              rowIndex === position.startRow + length
+            ) &&
+            invertedMatrix[position.column][position.startRow + length] ===
+              invertedMatrix[columnIndex][rowIndex + length]
           ) {
             repeatedValues.push(
-              matrix[position.column][position.startRow + length] as number
+              invertedMatrix[position.column][
+                position.startRow + length
+              ] as number
             );
             checkedPositionPairs.add(
               `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`
@@ -148,7 +150,7 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
           repeatedSequences.push({
             positions: [position, newPosition],
             values: repeatedValues,
-            sumLogEntropy: calculateSequenceLogEntropySum(repeatedValues)
+            sumLogEntropy: calculateSequenceEntropyScore(repeatedValues)
           });
         }
         positions.push(newPosition);
@@ -157,6 +159,32 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
     }
   }
   return repeatedSequences;
+}
+
+function findDuplicateValues(
+  matrix: unknown[][]
+): { value: number; numOccurences: number; entropy: number }[] {
+  const numOccurencesByNumericCellValue = new Map<number, number>();
+  for (const row of matrix) {
+    for (const cell of row) {
+      if (typeof cell === "number") {
+        const numOccurences = numOccurencesByNumericCellValue.get(cell) ?? 0;
+        numOccurencesByNumericCellValue.set(cell, numOccurences + 1);
+      }
+    }
+  }
+
+  const duplicateValuesSortedByEntropy = [
+    ...numOccurencesByNumericCellValue.entries()
+  ]
+    .filter(([value, numOccurences]) => numOccurences > 1)
+    .map(([value, numOccurences]) => {
+      const entropy = calculateNumberEntropy(value);
+      return { value, numOccurences, entropy };
+    })
+    .toSorted((a, b) => b.entropy - a.entropy);
+
+  return duplicateValuesSortedByEntropy;
 }
 
 function invertMatrix(matrix: unknown[][]) {
