@@ -11,13 +11,13 @@ program
     console.time("Time elapsed");
     console.time("xlsx.readFile");
     // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
-    // const workbook = xlsx.readFile(
-    //   "files/fraud/Dumicola+familiarity+wide.xlsx"
-    // );
     const workbook = xlsx.readFile(
-      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
-      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+      "files/fraud/Dumicola+familiarity+wide.xlsx"
     );
+    // const workbook = xlsx.readFile(
+    //   "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+    //   { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    // );
     console.timeEnd("xlsx.readFile");
 
     const sheetNames = workbook.SheetNames;
@@ -134,7 +134,6 @@ function findRepeatedSequences(
   { isInverted, sheetName }: { isInverted: boolean; sheetName: string }
 ): RepeatedSequence[] {
   const repeatedSequences: RepeatedSequence[] = [];
-  let currentSequence: RepeatedSequence | null = null;
   const positionsByValue = new Map<number, Position[]>();
   const checkedPositionPairs = new Set<string>();
   for (let columnIndex = 0; columnIndex < matrix.length; columnIndex++) {
@@ -156,6 +155,10 @@ function findRepeatedSequences(
                 `${position.column}-${position.startRow}-${columnIndex}-${rowIndex}`
               )
             ) {
+              continue;
+            }
+            // If the values are on the same row, skip since this is often expected to be the case in legitimate data
+            if (position.startRow === rowIndex) {
               continue;
             }
             let length = 1;
