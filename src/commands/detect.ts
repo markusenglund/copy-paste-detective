@@ -11,13 +11,13 @@ program
     console.time("Time elapsed");
     console.time("xlsx.readFile");
     // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
-    const workbook = xlsx.readFile(
-      "files/fraud/Dumicola+familiarity+wide.xlsx"
-    );
     // const workbook = xlsx.readFile(
-    //   "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
-    //   { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    //   "files/fraud/Dumicola+familiarity+wide.xlsx"
     // );
+    const workbook = xlsx.readFile(
+      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    );
     // console.timeEnd("xlsx.readFile");
 
     const sheetNames = workbook.SheetNames;
@@ -68,11 +68,13 @@ program
       console.time(`findRepeatedSequences ${sheetName}`);
       const verticalSequences = findRepeatedSequences(invertedMatrix, {
         sheetName,
-        isInverted: true
+        isInverted: true,
+        numberCount: numberCounter.count
       });
       const horizontalSequences = findRepeatedSequences(matrix, {
         sheetName,
-        isInverted: false
+        isInverted: false,
+        numberCount: numberCounter.count
       });
       console.timeEnd(`findRepeatedSequences ${sheetName}`);
       repeatedSequences.push(...verticalSequences);
@@ -82,11 +84,11 @@ program
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => {
         return (
-          (b.adjustedSequenceEntropyScore || 0) -
-          (a.adjustedSequenceEntropyScore || 0)
+          (b.matrixSizeAdjustedEntropyScore || 0) -
+          (a.matrixSizeAdjustedEntropyScore || 0)
         ); // Use || 0 to handle NaN values. TODO: Fix this in the findRepeatedSequences function
       })
-      .filter(sequence => sequence.adjustedSequenceEntropyScore > 10);
+      .filter(sequence => sequence.matrixSizeAdjustedEntropyScore > 1);
 
     const deduplicatedSortedSequences =
       deduplicateSortedSequences(sortedSequences);
@@ -97,10 +99,25 @@ program
       .map(sequence => {
         const firstCellID = sequence.positions[0].cellId;
         const secondCellId = sequence.positions[1].cellId;
-        return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, Cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Num positions: ${sequence.positions.length} Axis: ${sequence.axis}`;
+        // return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, Cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Num positions: ${sequence.positions.length} Axis: ${sequence.axis}`;
+        const table = {
+          sheetName: sequence.sheetName,
+          length: sequence.values.length,
+          matrix: sequence.numberCount,
+          adjustedEntropy: sequence.adjustedSequenceEntropyScore.toFixed(1),
+          matrixSizeAdjEntropy:
+            sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
+          entropy: sequence.sequenceEntropyScore.toFixed(1),
+          cell1: firstCellID,
+          cell2: secondCellId,
+          values: `${sequence.values[0]} -> ${sequence.values.at(-1)}`,
+          numPositions: sequence.positions.length,
+          axis: sequence.axis
+        };
+        return table;
       });
     console.log(`Repeated sequences:`);
-    console.log(humanReadableSequences.join("\n"));
+    console.table(humanReadableSequences);
     console.timeEnd("Time elapsed");
   });
 
@@ -189,13 +206,21 @@ type RepeatedSequence = {
   values: number[];
   sequenceEntropyScore: number;
   adjustedSequenceEntropyScore: number;
+  matrixSizeAdjustedEntropyScore: number;
+  numberCount: number;
   sheetName: string;
   axis: "horizontal" | "vertical";
 };
 function findRepeatedSequences(
   matrix: unknown[][],
-  { isInverted, sheetName }: { isInverted: boolean; sheetName: string }
+  {
+    isInverted,
+    sheetName,
+    numberCount
+  }: { isInverted: boolean; sheetName: string; numberCount: number }
 ): RepeatedSequence[] {
+  const numberCountEntropyScore = calculateEntropyScore(numberCount);
+
   const repeatedSequences: RepeatedSequence[] = [];
   const positionsByValue = new Map<number, Position[]>();
   const checkedPositionPairs = new Set<string>();
@@ -259,13 +284,18 @@ function findRepeatedSequences(
             }
             const { mostCommonIntervalSize, mostCommonIntervalSizePercentage } =
               calculateSequenceRegularity(repeatedValues);
-            const adjustedSequenceEntropyScore =
+            const intervalAdjustedSequenceEntropyScore =
               sequenceEntropyScore * (1 - mostCommonIntervalSizePercentage);
+            const matrixSizeAdjustedEntropyScore =
+              intervalAdjustedSequenceEntropyScore / numberCountEntropyScore;
             const repeatedSequence: RepeatedSequence = {
               positions: [position, newPosition],
               values: repeatedValues,
               sequenceEntropyScore,
-              adjustedSequenceEntropyScore,
+              adjustedSequenceEntropyScore:
+                intervalAdjustedSequenceEntropyScore,
+              matrixSizeAdjustedEntropyScore,
+              numberCount,
               sheetName,
               axis: isInverted ? "vertical" : "horizontal"
             };
