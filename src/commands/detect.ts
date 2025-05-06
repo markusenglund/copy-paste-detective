@@ -10,6 +10,8 @@ program
   .action(async () => {
     // const workbook = xlsx.readFile("files/pnas.2300363120.sd01.xlsx");
     const workbook = xlsx.readFile("files/Dumicola+familiarity+wide.xlsx");
+    // const workbook = xlsx.readFile("files/non-fraud/4_Plot_scale_data.xlsx");
+
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
@@ -127,42 +129,44 @@ function findRepeatedSequences(matrix: unknown[][]): RepeatedSequence[] {
           startRow: rowIndex,
           cellId: getCellId(columnIndex, rowIndex)
         };
-        for (const position of positions) {
-          if (
-            checkedPositionPairs.has(
-              `${position.column}-${position.startRow}-${columnIndex}-${rowIndex}`
-            )
-          ) {
-            continue;
-          }
-          let length = 1;
-          const repeatedValues: number[] = [cellValue];
-          while (
-            typeof invertedMatrix[position.column][
-              position.startRow + length
-            ] === "number" &&
-            !(
-              position.column === columnIndex &&
-              rowIndex === position.startRow + length
-            ) &&
-            invertedMatrix[position.column][position.startRow + length] ===
-              invertedMatrix[columnIndex][rowIndex + length]
-          ) {
-            repeatedValues.push(
-              invertedMatrix[position.column][
+        if (positions.length < 100) {
+          for (const position of positions) {
+            if (
+              checkedPositionPairs.has(
+                `${position.column}-${position.startRow}-${columnIndex}-${rowIndex}`
+              )
+            ) {
+              continue;
+            }
+            let length = 1;
+            const repeatedValues: number[] = [cellValue];
+            while (
+              typeof invertedMatrix[position.column][
                 position.startRow + length
-              ] as number
-            );
-            checkedPositionPairs.add(
-              `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`
-            );
-            length++;
+              ] === "number" &&
+              !(
+                position.column === columnIndex &&
+                rowIndex === position.startRow + length
+              ) &&
+              invertedMatrix[position.column][position.startRow + length] ===
+                invertedMatrix[columnIndex][rowIndex + length]
+            ) {
+              repeatedValues.push(
+                invertedMatrix[position.column][
+                  position.startRow + length
+                ] as number
+              );
+              checkedPositionPairs.add(
+                `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`
+              );
+              length++;
+            }
+            repeatedSequences.push({
+              positions: [position, newPosition],
+              values: repeatedValues,
+              sumLogEntropy: calculateSequenceEntropyScore(repeatedValues)
+            });
           }
-          repeatedSequences.push({
-            positions: [position, newPosition],
-            values: repeatedValues,
-            sumLogEntropy: calculateSequenceEntropyScore(repeatedValues)
-          });
         }
         positions.push(newPosition);
         positionsByValue.set(cellValue, positions);
