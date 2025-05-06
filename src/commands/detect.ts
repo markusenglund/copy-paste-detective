@@ -11,13 +11,13 @@ program
     console.time("Time elapsed");
     console.time("xlsx.readFile");
     // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
-    const workbook = xlsx.readFile(
-      "files/fraud/Dumicola+familiarity+wide.xlsx"
-    );
     // const workbook = xlsx.readFile(
-    //   "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
-    //   { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    //   "files/fraud/Dumicola+familiarity+wide.xlsx"
     // );
+    const workbook = xlsx.readFile(
+      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    );
     console.timeEnd("xlsx.readFile");
 
     const sheetNames = workbook.SheetNames;
@@ -36,11 +36,29 @@ program
       console.timeEnd(`parseMatrix ${sheetName}`);
 
       console.time(`findDuplicateValues ${sheetName}`);
-      const duplicateValuesSortedByEntropy = findDuplicateValues(matrix);
+      const {
+        duplicateValuesSortedByEntropy,
+        duplicatedValuesAboveThresholdSortedByOccurences
+      } = findDuplicateValues(matrix);
       console.timeEnd(`findDuplicateValues ${sheetName}`);
-      console.log(
-        `[${sheetName}] Highest entropy duplicate numeric value: ${duplicateValuesSortedByEntropy[0].value} (${duplicateValuesSortedByEntropy[0].numOccurences} occurences, entropy: ${duplicateValuesSortedByEntropy[0].entropy})`
-      );
+      for (const {
+        value,
+        numOccurences,
+        entropy
+      } of duplicateValuesSortedByEntropy.slice(0, 3)) {
+        console.log(
+          `[${sheetName}] Top 3 entropy duplicate numeric value: ${value} (${numOccurences} occurences, entropy: ${entropy})`
+        );
+      }
+      for (const {
+        value,
+        numOccurences,
+        entropy
+      } of duplicatedValuesAboveThresholdSortedByOccurences.slice(0, 3)) {
+        console.log(
+          `[${sheetName}] Tope 3 highest occurence duplicate numeric value above 5000 entropy: ${value} (${numOccurences} occurences, entropy: ${entropy})`
+        );
+      }
       console.time(`invertMatrix ${sheetName}`);
       const invertedMatrix = invertMatrix(matrix);
       console.timeEnd(`invertMatrix ${sheetName}`);
@@ -60,7 +78,9 @@ program
     }
     console.time("sort repeatedSequences");
     const sortedSequences = repeatedSequences
-      .toSorted((a, b) => b.sumLogEntropy - a.sumLogEntropy)
+      .toSorted((a, b) => {
+        return (b.sumLogEntropy || 0) - (a.sumLogEntropy || 0); // Use || 0 to handle NaN values. TODO: Fix this in the findRepeatedSequences function
+      })
       .slice(0, 20);
     console.timeEnd("sort repeatedSequences");
 
@@ -184,15 +204,23 @@ function findRepeatedSequences(
             const minSequenceEntropyScore = 10;
             const sequenceEntropyScore =
               calculateSequenceEntropyScore(repeatedValues);
-            if (sequenceEntropyScore > minSequenceEntropyScore) {
-              repeatedSequences.push({
-                positions: [position, newPosition],
-                values: repeatedValues,
-                sumLogEntropy: sequenceEntropyScore,
-                sheetName,
-                axis: isInverted ? "vertical" : "horizontal"
-              });
+            if (sequenceEntropyScore <= minSequenceEntropyScore) {
+              continue;
             }
+            if (
+              position.column === newPosition.column &&
+              position.startRow + length === newPosition.startRow
+            ) {
+              // Skip if the repeated sequences are back-to-back
+              continue;
+            }
+            repeatedSequences.push({
+              positions: [position, newPosition],
+              values: repeatedValues,
+              sumLogEntropy: sequenceEntropyScore,
+              sheetName,
+              axis: isInverted ? "vertical" : "horizontal"
+            });
           }
         }
         positions.push(newPosition);
@@ -203,9 +231,18 @@ function findRepeatedSequences(
   return repeatedSequences;
 }
 
-function findDuplicateValues(
-  matrix: unknown[][]
-): { value: number; numOccurences: number; entropy: number }[] {
+function findDuplicateValues(matrix: unknown[][]): {
+  duplicateValuesSortedByEntropy: {
+    value: number;
+    numOccurences: number;
+    entropy: number;
+  }[];
+  duplicatedValuesAboveThresholdSortedByOccurences: {
+    value: number;
+    numOccurences: number;
+    entropy: number;
+  }[];
+} {
   const numOccurencesByNumericCellValue = new Map<number, number>();
   for (const row of matrix) {
     for (const cell of row) {
@@ -226,7 +263,16 @@ function findDuplicateValues(
     })
     .toSorted((a, b) => b.entropy - a.entropy);
 
-  return duplicateValuesSortedByEntropy;
+  const entropyThreshold = 5000;
+  const duplicatedValuesAboveThresholdSortedByOccurences =
+    duplicateValuesSortedByEntropy
+      .filter(({ entropy }) => entropy > entropyThreshold)
+      .toSorted((a, b) => b.numOccurences - a.numOccurences);
+
+  return {
+    duplicateValuesSortedByEntropy,
+    duplicatedValuesAboveThresholdSortedByOccurences
+  };
 }
 
 function invertMatrix(matrix: unknown[][]) {
