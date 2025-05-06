@@ -11,13 +11,13 @@ program
     console.time("Time elapsed");
     console.time("xlsx.readFile");
     // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
-    // const workbook = xlsx.readFile(
-    //   "files/fraud/Dumicola+familiarity+wide.xlsx"
-    // );
     const workbook = xlsx.readFile(
-      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
-      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+      "files/fraud/Dumicola+familiarity+wide.xlsx"
     );
+    // const workbook = xlsx.readFile(
+    //   "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+    //   { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    // );
     // console.timeEnd("xlsx.readFile");
 
     const sheetNames = workbook.SheetNames;
@@ -32,7 +32,9 @@ program
       });
       console.timeEnd(`xlsx.utils.sheet_to_json ${sheetName}`);
       console.time(`parseMatrix ${sheetName}`);
-      const matrix = parseMatrix(data);
+      const numberCounter = { count: 0 };
+      const matrix = parseMatrix(data, numberCounter);
+      console.log(`[${sheetName}] Found ${numberCounter.count} numeric values`);
       console.timeEnd(`parseMatrix ${sheetName}`);
 
       console.time(`findDuplicateValues ${sheetName}`);
@@ -95,7 +97,7 @@ program
       .map(sequence => {
         const firstCellID = sequence.positions[0].cellId;
         const secondCellId = sequence.positions[1].cellId;
-        return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, First cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Num positions: ${sequence.positions.length} Axis: ${sequence.axis}`;
+        return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, Cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Num positions: ${sequence.positions.length} Axis: ${sequence.axis}`;
       });
     console.log(`Repeated sequences:`);
     console.log(humanReadableSequences.join("\n"));
@@ -357,12 +359,16 @@ function invertMatrix(matrix: unknown[][]) {
   return invertedMatrix;
 }
 
-function parseMatrix(matrix: unknown[][]): unknown[][] {
+function parseMatrix(
+  matrix: unknown[][],
+  numberCounter: { count: number }
+): unknown[][] {
   const parsedMatrix = matrix.map(row =>
     row.map(cell => {
       if (typeof cell === "string" && cell !== "") {
         const cellNumber = Number(cell);
         if (!Number.isNaN(cellNumber)) {
+          numberCounter.count++;
           return cellNumber;
         }
       }
