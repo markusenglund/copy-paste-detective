@@ -8,14 +8,16 @@ program
   .command("excel")
   .description("Investigate an excel file")
   .action(async () => {
-    const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
+    // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
     // const workbook = xlsx.readFile("files/fraud/Dumicola+familiarity+wide.xlsx");
-    // const workbook = xlsx.readFile("files/non-fraud/4_Plot_scale_data.xlsx");
+    const workbook = xlsx.readFile(
+      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx"
+    );
 
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
-    for (const sheetName of sheetNames) {
+    for (const sheetName of sheetNames.slice(0, 1)) {
       const sheet = workbook.Sheets[sheetName];
       const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
@@ -29,19 +31,17 @@ program
       );
       const invertedMatrix = invertMatrix(matrix);
 
-      const sortedVerticalSequences = findRepeatedSequences(invertedMatrix, {
+      const verticalSequences = findRepeatedSequences(invertedMatrix, {
         sheetName,
         isInverted: true
       });
-      const sortedHorizontalSequences = findRepeatedSequences(matrix, {
+      const horizontalSequences = findRepeatedSequences(matrix, {
         sheetName,
         isInverted: false
       });
-      repeatedSequences.push(...sortedVerticalSequences);
-      repeatedSequences.push(...sortedHorizontalSequences);
+      repeatedSequences.push(...verticalSequences);
+      repeatedSequences.push(...horizontalSequences);
     }
-    // const mostCommon = sorted[0];
-    // console.log("mostCommon", mostCommon);
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => b.sumLogEntropy - a.sumLogEntropy)
       .slice(0, 20);
@@ -159,13 +159,18 @@ function findRepeatedSequences(
               );
               length++;
             }
-            repeatedSequences.push({
-              positions: [position, newPosition],
-              values: repeatedValues,
-              sumLogEntropy: calculateSequenceEntropyScore(repeatedValues),
-              sheetName,
-              axis: isInverted ? "vertical" : "horizontal"
-            });
+            const minSequenceEntropyScore = 10;
+            const sequenceEntropyScore =
+              calculateSequenceEntropyScore(repeatedValues);
+            if (sequenceEntropyScore > minSequenceEntropyScore) {
+              repeatedSequences.push({
+                positions: [position, newPosition],
+                values: repeatedValues,
+                sumLogEntropy: sequenceEntropyScore,
+                sheetName,
+                axis: isInverted ? "vertical" : "horizontal"
+              });
+            }
           }
         }
         positions.push(newPosition);
