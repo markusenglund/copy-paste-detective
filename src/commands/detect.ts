@@ -18,12 +18,12 @@ program
       "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
       { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
     );
-    console.timeEnd("xlsx.readFile");
+    // console.timeEnd("xlsx.readFile");
 
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
-    for (const sheetName of sheetNames.slice(0, 1)) {
+    for (const sheetName of sheetNames.slice(0, 2)) {
       const sheet = workbook.Sheets[sheetName];
       console.time(`xlsx.utils.sheet_to_json ${sheetName}`);
       const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
@@ -56,7 +56,7 @@ program
         entropy
       } of duplicatedValuesAboveThresholdSortedByOccurences.slice(0, 3)) {
         console.log(
-          `[${sheetName}] Tope 3 highest occurence duplicate numeric value above 5000 entropy: ${value} (${numOccurences} occurences, entropy: ${entropy})`
+          `[${sheetName}] Top 3 highest occurence duplicate numeric value above 5000 entropy: ${value} (${numOccurences} occurences, entropy: ${entropy})`
         );
       }
       console.time(`invertMatrix ${sheetName}`);
@@ -79,7 +79,10 @@ program
     console.time("sort repeatedSequences");
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => {
-        return (b.sumLogEntropy || 0) - (a.sumLogEntropy || 0); // Use || 0 to handle NaN values. TODO: Fix this in the findRepeatedSequences function
+        return (
+          (b.adjustedSequenceEntropyScore || 0) -
+          (a.adjustedSequenceEntropyScore || 0)
+        ); // Use || 0 to handle NaN values. TODO: Fix this in the findRepeatedSequences function
       })
       .slice(0, 20);
     console.timeEnd("sort repeatedSequences");
@@ -87,7 +90,7 @@ program
     const humanReadableSequences = sortedSequences.map(sequence => {
       const firstCellID = sequence.positions[0].cellId;
       const secondCellId = sequence.positions[1].cellId;
-      return `[${sequence.sheetName}] Length = ${sequence.values.length}, Entropy = ${sequence.sumLogEntropy.toFixed(1)}, First cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Axis: ${sequence.axis}`;
+      return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, First cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Axis: ${sequence.axis}`;
     });
     console.log(`Repeated sequences:`);
     console.log(humanReadableSequences.join("\n"));
@@ -145,7 +148,8 @@ type Position = {
 type RepeatedSequence = {
   positions: [Position, Position];
   values: number[];
-  sumLogEntropy: number;
+  sequenceEntropyScore: number;
+  adjustedSequenceEntropyScore: number;
   sheetName: string;
   axis: "horizontal" | "vertical";
 };
@@ -214,13 +218,19 @@ function findRepeatedSequences(
               // Skip if the repeated sequences are back-to-back
               continue;
             }
-            repeatedSequences.push({
+            const { mostCommonIntervalSize, mostCommonIntervalSizePercentage } =
+              calculateSequenceRegularity(repeatedValues);
+            const adjustedSequenceEntropyScore =
+              sequenceEntropyScore * (1 - mostCommonIntervalSizePercentage);
+            const repeatedSequence: RepeatedSequence = {
               positions: [position, newPosition],
               values: repeatedValues,
-              sumLogEntropy: sequenceEntropyScore,
+              sequenceEntropyScore,
+              adjustedSequenceEntropyScore,
               sheetName,
               axis: isInverted ? "vertical" : "horizontal"
-            });
+            };
+            repeatedSequences.push(repeatedSequence);
           }
         }
         positions.push(newPosition);
@@ -229,6 +239,29 @@ function findRepeatedSequences(
     }
   }
   return repeatedSequences;
+}
+
+function calculateSequenceRegularity(sequence: number[]) {
+  if (sequence.length < 2) {
+    return { mostCommonIntervalSize: 0, mostCommonIntervalSizePercentage: 0 };
+  }
+  const intervalSizeByNumOccurences = new Map<number, number>();
+  for (let i = 0; i < sequence.length - 1; i++) {
+    const intervalSize = sequence[i + 1] - sequence[i];
+    const numOccurences = intervalSizeByNumOccurences.get(intervalSize) ?? 0;
+    intervalSizeByNumOccurences.set(intervalSize, numOccurences + 1);
+  }
+  const sortedIntervalSizes = [...intervalSizeByNumOccurences.entries()]
+    .map(([intervalSize, numOccurences]) => ({
+      intervalSize,
+      numOccurences
+    }))
+    .sort((a, b) => b.numOccurences - a.numOccurences);
+
+  const mostCommonIntervalSize = sortedIntervalSizes[0].intervalSize;
+  const mostCommonIntervalSizePercentage =
+    (sortedIntervalSizes[0].numOccurences - 1) / (sequence.length - 1); // Subtract by one so the percentage is 0% if all intervals are unique, also so the percentage is never 100%
+  return { mostCommonIntervalSizePercentage, mostCommonIntervalSize };
 }
 
 function findDuplicateValues(matrix: unknown[][]): {
