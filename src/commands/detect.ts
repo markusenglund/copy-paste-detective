@@ -15,7 +15,7 @@ program
     //   "files/fraud/Dumicola+familiarity+wide.xlsx"
     // );
     const workbook = xlsx.readFile(
-      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+      "files/non-fraud/doi_10_5061_dryad_3r2280gth__v20250416/Data_availability_Crossing_Thermal_Boundaries_Quantifying_the_Impact_of_Sublethal_Heat_Stress_on_Growth_in_Black_Soldier_Fly_(Hermetia_illucens).xlsx",
       { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
     );
     // console.timeEnd("xlsx.readFile");
@@ -110,7 +110,10 @@ program
           entropy: sequence.sequenceEntropyScore.toFixed(1),
           cell1: firstCellID,
           cell2: secondCellId,
-          values: `${sequence.values[0]} -> ${sequence.values.at(-1)}`,
+          values:
+            sequence.values.length > 1
+              ? `${sequence.values[0]} -> ${sequence.values.at(-1)}`
+              : `${sequence.values[0]}`,
           numPositions: sequence.positions.length,
           axis: sequence.axis
         };
@@ -164,13 +167,14 @@ function calculateNumberEntropy(value: number) {
   const withoutPoint = str.replace(".", "");
   // Remove trailing zeroes
   const withoutTrailingZeroes = withoutPoint.replace(/0+$/, "");
+  const withoutOneTrailingFive = withoutTrailingZeroes.replace(/5$/, "");
 
   // If a number has lots of repeating digits, only the first two in the repeating sequence is kept
-  const withoutRepeatingDigits = withoutTrailingZeroes.replace(
+  const withoutRepeatingDigits = withoutOneTrailingFive.replace(
     /(\d)\1+/g,
     (_, digit) => digit + digit
   );
-  const entropy = parseInt(withoutRepeatingDigits);
+  const entropy = parseInt(withoutRepeatingDigits || "0");
   return entropy;
 }
 
@@ -219,7 +223,9 @@ function findRepeatedSequences(
     numberCount
   }: { isInverted: boolean; sheetName: string; numberCount: number }
 ): RepeatedSequence[] {
-  const numberCountEntropyScore = calculateEntropyScore(numberCount);
+  const numberCountEntropyScore = calculateEntropyScore(
+    Math.max(numberCount, 500) // Prevent very small excel files from getting too high of an entropy score
+  );
 
   const repeatedSequences: RepeatedSequence[] = [];
   const positionsByValue = new Map<number, Position[]>();
