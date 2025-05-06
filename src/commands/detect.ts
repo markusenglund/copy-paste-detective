@@ -8,29 +8,44 @@ program
   .command("excel")
   .description("Investigate an excel file")
   .action(async () => {
+    console.time("Time elapsed");
+    console.time("xlsx.readFile");
     // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
-    // const workbook = xlsx.readFile("files/fraud/Dumicola+familiarity+wide.xlsx");
+    // const workbook = xlsx.readFile(
+    //   "files/fraud/Dumicola+familiarity+wide.xlsx"
+    // );
     const workbook = xlsx.readFile(
-      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx"
+      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
     );
+    console.timeEnd("xlsx.readFile");
 
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
     for (const sheetName of sheetNames.slice(0, 1)) {
       const sheet = workbook.Sheets[sheetName];
+      console.time(`xlsx.utils.sheet_to_json ${sheetName}`);
       const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
         header: 1
       });
+      console.timeEnd(`xlsx.utils.sheet_to_json ${sheetName}`);
+      console.time(`parseMatrix ${sheetName}`);
       const matrix = parseMatrix(data);
+      console.timeEnd(`parseMatrix ${sheetName}`);
 
+      console.time(`findDuplicateValues ${sheetName}`);
       const duplicateValuesSortedByEntropy = findDuplicateValues(matrix);
+      console.timeEnd(`findDuplicateValues ${sheetName}`);
       console.log(
         `[${sheetName}] Highest entropy duplicate numeric value: ${duplicateValuesSortedByEntropy[0].value} (${duplicateValuesSortedByEntropy[0].numOccurences} occurences, entropy: ${duplicateValuesSortedByEntropy[0].entropy})`
       );
+      console.time(`invertMatrix ${sheetName}`);
       const invertedMatrix = invertMatrix(matrix);
+      console.timeEnd(`invertMatrix ${sheetName}`);
 
+      console.time(`findRepeatedSequences ${sheetName}`);
       const verticalSequences = findRepeatedSequences(invertedMatrix, {
         sheetName,
         isInverted: true
@@ -39,20 +54,24 @@ program
         sheetName,
         isInverted: false
       });
+      console.timeEnd(`findRepeatedSequences ${sheetName}`);
       repeatedSequences.push(...verticalSequences);
       repeatedSequences.push(...horizontalSequences);
     }
+    console.time("sort repeatedSequences");
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => b.sumLogEntropy - a.sumLogEntropy)
       .slice(0, 20);
+    console.timeEnd("sort repeatedSequences");
 
     const humanReadableSequences = sortedSequences.map(sequence => {
       const firstCellID = sequence.positions[0].cellId;
       const secondCellId = sequence.positions[1].cellId;
-      return `[${sequence.sheetName}] Length = ${sequence.values.length}, Entropy = ${sequence.sumLogEntropy.toFixed(1)}, First cells: ${firstCellID}&${secondCellId} - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Axis: ${sequence.axis}`;
+      return `[${sequence.sheetName}] Length = ${sequence.values.length}, Entropy = ${sequence.sumLogEntropy.toFixed(1)}, First cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Axis: ${sequence.axis}`;
     });
     console.log(`Repeated sequences:`);
     console.log(humanReadableSequences.join("\n"));
+    console.timeEnd("Time elapsed");
   });
 
 function calculateNumberEntropy(value: number) {
