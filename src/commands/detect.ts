@@ -23,7 +23,7 @@ program
     const sheetNames = workbook.SheetNames;
     console.log("sheetNames", sheetNames);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
-    for (const sheetName of sheetNames.slice(0, 2)) {
+    for (const sheetName of sheetNames) {
       const sheet = workbook.Sheets[sheetName];
       console.time(`xlsx.utils.sheet_to_json ${sheetName}`);
       const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
@@ -84,18 +84,55 @@ program
           (a.adjustedSequenceEntropyScore || 0)
         ); // Use || 0 to handle NaN values. TODO: Fix this in the findRepeatedSequences function
       })
-      .slice(0, 20);
+      .filter(sequence => sequence.adjustedSequenceEntropyScore > 10);
+
+    const deduplicatedSortedSequences =
+      deduplicateSortedSequences(sortedSequences);
     console.timeEnd("sort repeatedSequences");
 
-    const humanReadableSequences = sortedSequences.map(sequence => {
-      const firstCellID = sequence.positions[0].cellId;
-      const secondCellId = sequence.positions[1].cellId;
-      return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, First cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Axis: ${sequence.axis}`;
-    });
+    const humanReadableSequences = deduplicatedSortedSequences
+      .slice(0, 20)
+      .map(sequence => {
+        const firstCellID = sequence.positions[0].cellId;
+        const secondCellId = sequence.positions[1].cellId;
+        return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, First cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Num positions: ${sequence.positions.length} Axis: ${sequence.axis}`;
+      });
     console.log(`Repeated sequences:`);
     console.log(humanReadableSequences.join("\n"));
     console.timeEnd("Time elapsed");
   });
+
+function deduplicateSortedSequences(
+  repeatedSequences: RepeatedSequence[]
+): RepeatedSequence[] {
+  let previousSequence: RepeatedSequence | null = null;
+  const deduplicatedSortedSequences: RepeatedSequence[] = [];
+  for (const sequence of repeatedSequences) {
+    if (previousSequence) {
+      const isSameSequence =
+        previousSequence.adjustedSequenceEntropyScore ===
+          sequence.adjustedSequenceEntropyScore &&
+        previousSequence.values.every((value, index) => {
+          return value === sequence.values[index];
+        });
+      if (isSameSequence) {
+        sequence.positions.forEach(position => {
+          // Check if position already exists in previousSequence and if not, add it
+          const exists = previousSequence?.positions.find(
+            p => p.cellId === position.cellId
+          );
+          if (!exists) {
+            previousSequence?.positions.push(position);
+          }
+        });
+        continue;
+      }
+    }
+    deduplicatedSortedSequences.push(sequence);
+    previousSequence = sequence;
+  }
+  return deduplicatedSortedSequences;
+}
 
 function calculateNumberEntropy(value: number) {
   // Values that are common years should receive an entropy score of 100
@@ -238,6 +275,7 @@ function findRepeatedSequences(
       }
     }
   }
+
   return repeatedSequences;
 }
 
