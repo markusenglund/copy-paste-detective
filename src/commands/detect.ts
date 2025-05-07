@@ -11,13 +11,13 @@ program
     console.time("Time elapsed");
     console.time("xlsx.readFile");
     // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
-    // const workbook = xlsx.readFile(
-    //   "files/fraud/Dumicola+familiarity+wide.xlsx"
-    // );
     const workbook = xlsx.readFile(
-      "files/non-fraud/doi_10_5061_dryad_3r2280gth__v20250416/Data_availability_Crossing_Thermal_Boundaries_Quantifying_the_Impact_of_Sublethal_Heat_Stress_on_Growth_in_Black_Soldier_Fly_(Hermetia_illucens).xlsx",
-      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+      "files/fraud/Dumicola+familiarity+wide.xlsx"
     );
+    // const workbook = xlsx.readFile(
+    //   "files/non-fraud/doi_10_5061_dryad_5tb2rbpfh__v20250418/Data_Dryad_Drought_Decreases_Carbon_Flux_but_Not_Transport_Speed_of_Newly_Fixed_Carbon_from_Leaves_to_Sinks_in_a_Giant_Bamboo_Forest-new.xlsx",
+    //   { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    // );
     // console.timeEnd("xlsx.readFile");
 
     const sheetNames = workbook.SheetNames;
@@ -26,16 +26,16 @@ program
     for (const sheetName of sheetNames) {
       const sheet = workbook.Sheets[sheetName];
       console.time(`xlsx.utils.sheet_to_json ${sheetName}`);
-      const data: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
-        raw: false,
+      const matrix: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
+        raw: true,
         header: 1
       });
+
       console.timeEnd(`xlsx.utils.sheet_to_json ${sheetName}`);
-      console.time(`parseMatrix ${sheetName}`);
-      const numberCounter = { count: 0 };
-      const matrix = parseMatrix(data, numberCounter);
-      console.log(`[${sheetName}] Found ${numberCounter.count} numeric values`);
-      console.timeEnd(`parseMatrix ${sheetName}`);
+      console.time(`getNumberCount ${sheetName}`);
+      const numberCount = getNumberCount(matrix);
+      console.log(`[${sheetName}] Found ${numberCount} numeric values`);
+      console.timeEnd(`getNumberCount ${sheetName}`);
 
       console.time(`findDuplicateValues ${sheetName}`);
       const {
@@ -69,12 +69,12 @@ program
       const verticalSequences = findRepeatedSequences(invertedMatrix, {
         sheetName,
         isInverted: true,
-        numberCount: numberCounter.count
+        numberCount
       });
       const horizontalSequences = findRepeatedSequences(matrix, {
         sheetName,
         isInverted: false,
-        numberCount: numberCounter.count
+        numberCount
       });
       console.timeEnd(`findRepeatedSequences ${sheetName}`);
       repeatedSequences.push(...verticalSequences);
@@ -114,7 +114,7 @@ program
             sequence.values.length > 1
               ? `${sequence.values[0]} -> ${sequence.values.at(-1)}`
               : `${sequence.values[0]}`,
-          numPositions: sequence.positions.length,
+          instances: sequence.positions.length,
           axis: sequence.axis
         };
         return table;
@@ -158,7 +158,7 @@ function deduplicateSortedSequences(
 
 function calculateNumberEntropy(value: number) {
   // Values that are common years should receive an entropy score of 100
-  if (value >= 1900 && value <= 2100 && value % 1 === 0) {
+  if (value >= 1900 && value <= 2030 && value % 1 === 0) {
     return 100;
   }
 
@@ -395,23 +395,16 @@ function invertMatrix(matrix: unknown[][]) {
   return invertedMatrix;
 }
 
-function parseMatrix(
-  matrix: unknown[][],
-  numberCounter: { count: number }
-): unknown[][] {
-  const parsedMatrix = matrix.map(row =>
-    row.map(cell => {
-      if (typeof cell === "string" && cell !== "") {
-        const cellNumber = Number(cell);
-        if (!Number.isNaN(cellNumber)) {
-          numberCounter.count++;
-          return cellNumber;
-        }
+function getNumberCount(matrix: unknown[][]): number {
+  let numberCount = 0;
+  matrix.forEach(row =>
+    row.forEach(cell => {
+      if (typeof cell === "number") {
+        numberCount++;
       }
-      return cell;
     })
   );
-  return parsedMatrix;
+  return numberCount;
 }
 
 function getCellId(columnIndex: number, rowIndex: number): string {
