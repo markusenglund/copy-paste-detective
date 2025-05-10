@@ -10,41 +10,35 @@ program
   .description("Investigate an excel file")
   .action(async () => {
     console.time("Time elapsed");
-    console.time("xlsx.readFile");
-    // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
-    const workbook = xlsx.readFile(
-      "files/fraud/Dumicola+familiarity+wide.xlsx"
-    );
+    console.time("Read Excel file in");
+    const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
+    // const workbook = xlsx.readFile(
+    //   "files/fraud/Dumicola+familiarity+wide.xlsx"
+    // );
     // const workbook = xlsx.readFile(
     //   "files/non-fraud/doi_10_5061_dryad_5tb2rbpfh__v20250418/Data_Dryad_Drought_Decreases_Carbon_Flux_but_Not_Transport_Speed_of_Newly_Fixed_Carbon_from_Leaves_to_Sinks_in_a_Giant_Bamboo_Forest-new.xlsx",
     //   { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
     // );
-    // console.timeEnd("xlsx.readFile");
+    console.timeEnd("Read Excel file in");
 
     const sheetNames = workbook.SheetNames;
-    console.log("sheetNames", sheetNames);
+    console.log(`Found ${sheetNames.length} sheets: ${sheetNames.join(", ")}`);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
     for (const sheetName of sheetNames) {
       const sheet = workbook.Sheets[sheetName];
-      console.time(`xlsx.utils.sheet_to_json ${sheetName}`);
       const matrix: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
         raw: true,
         header: 1
       });
 
-      console.timeEnd(`xlsx.utils.sheet_to_json ${sheetName}`);
-      console.time(`getNumberCount ${sheetName}`);
       const numberCount = getNumberCount(matrix);
       const parsedMatrix = parseMatrix(matrix);
       console.log(`[${sheetName}] Found ${numberCount} numeric values`);
-      console.timeEnd(`getNumberCount ${sheetName}`);
 
-      console.time(`findDuplicateValues ${sheetName}`);
       const {
         duplicateValuesSortedByEntropy,
         duplicatedValuesAboveThresholdSortedByOccurences
       } = findDuplicateValues(parsedMatrix);
-      console.timeEnd(`findDuplicateValues ${sheetName}`);
       for (const {
         value,
         numOccurences,
@@ -63,11 +57,8 @@ program
           `[${sheetName}] Top 3 highest occurence duplicate numeric value above 5000 entropy: ${value} (${numOccurences} occurences, entropy: ${entropy})`
         );
       }
-      console.time(`invertMatrix ${sheetName}`);
       const invertedMatrix = invertMatrix(parsedMatrix);
-      console.timeEnd(`invertMatrix ${sheetName}`);
 
-      console.time(`findRepeatedSequences ${sheetName}`);
       const verticalSequences = findRepeatedSequences(invertedMatrix, {
         sheetName,
         isInverted: true,
@@ -78,11 +69,9 @@ program
         isInverted: false,
         numberCount
       });
-      console.timeEnd(`findRepeatedSequences ${sheetName}`);
       repeatedSequences.push(...verticalSequences);
       repeatedSequences.push(...horizontalSequences);
     }
-    console.time("sort repeatedSequences");
     const sortedSequences = repeatedSequences
       .toSorted((a, b) => {
         return (
@@ -94,7 +83,6 @@ program
 
     const deduplicatedSortedSequences =
       deduplicateSortedSequences(sortedSequences);
-    console.timeEnd("sort repeatedSequences");
 
     const humanReadableSequences = deduplicatedSortedSequences
       .slice(0, 20)
@@ -104,18 +92,17 @@ program
         // return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, Cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Num positions: ${sequence.positions.length} Axis: ${sequence.axis}`;
         const table = {
           sheetName: sequence.sheetName,
-          length: sequence.values.length,
-          matrix: sequence.numberCount,
-          adjustedEntropy: sequence.adjustedSequenceEntropyScore.toFixed(1),
-          matrixSizeAdjEntropy:
-            sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
-          entropy: sequence.sequenceEntropyScore.toFixed(1),
-          cell1: firstCellID,
-          cell2: secondCellId,
           values:
             sequence.values.length > 1
               ? `${sequence.values[0]} -> ${sequence.values.at(-1)}`
               : `${sequence.values[0]}`,
+          length: sequence.values.length,
+          sizeAdjEntropy: sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
+          adjEntropy: sequence.adjustedSequenceEntropyScore.toFixed(1),
+          entropy: sequence.sequenceEntropyScore.toFixed(1),
+          cell1: firstCellID,
+          cell2: secondCellId,
+          matrix: sequence.numberCount,
           instances: sequence.positions.length,
           axis: sequence.axis
         };
