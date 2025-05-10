@@ -3,6 +3,19 @@ import { roundFloatingPointInaccuracies } from "src/roundFloatingPointInaccuraci
 import xlsx from "xlsx";
 const program = new Command();
 
+export enum SuspicionLevel {
+  None,
+  Low,
+  Medium,
+  High
+}
+const levelToSymbol: Record<SuspicionLevel, string> = {
+  [SuspicionLevel.None]: "",
+  [SuspicionLevel.Low]: "❔",
+  [SuspicionLevel.Medium]: "✅",
+  [SuspicionLevel.High]: "🔴"
+};
+
 program.name("detect").description("First command").version("0.1.0");
 
 program
@@ -11,19 +24,33 @@ program
   .action(async () => {
     console.time("Time elapsed");
     console.time("Read Excel file in");
-    const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
+    // const workbook = xlsx.readFile("files/fraud/pnas.2300363120.sd01.xlsx");
     // const workbook = xlsx.readFile(
     //   "files/fraud/Dumicola+familiarity+wide.xlsx"
     // );
-    // const workbook = xlsx.readFile(
-    //   "files/non-fraud/doi_10_5061_dryad_5tb2rbpfh__v20250418/Data_Dryad_Drought_Decreases_Carbon_Flux_but_Not_Transport_Speed_of_Newly_Fixed_Carbon_from_Leaves_to_Sinks_in_a_Giant_Bamboo_Forest-new.xlsx",
-    //   { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
-    // );
+    const workbook = xlsx.readFile(
+      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+    );
     console.timeEnd("Read Excel file in");
 
     const sheetNames = workbook.SheetNames;
     console.log(`Found ${sheetNames.length} sheets: ${sheetNames.join(", ")}`);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
+    const topEntropyDuplicateNumbers: {
+      value: number;
+      numOccurences: number;
+      entropy: number;
+      sheetName: string;
+      matrixSize: number;
+    }[] = [];
+    const topOccurenceHighEntropyDuplicateNumbers: {
+      value: number;
+      numOccurences: number;
+      entropy: number;
+      sheetName: string;
+      matrixSize: number;
+    }[] = [];
     for (const sheetName of sheetNames) {
       const sheet = workbook.Sheets[sheetName];
       const matrix: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
@@ -39,24 +66,18 @@ program
         duplicateValuesSortedByEntropy,
         duplicatedValuesAboveThresholdSortedByOccurences
       } = findDuplicateValues(parsedMatrix);
-      for (const {
-        value,
-        numOccurences,
-        entropy
-      } of duplicateValuesSortedByEntropy.slice(0, 3)) {
-        console.log(
-          `[${sheetName}] Top 3 entropy duplicate numeric value: ${value} (${numOccurences} occurences, entropy: ${entropy})`
-        );
-      }
-      for (const {
-        value,
-        numOccurences,
-        entropy
-      } of duplicatedValuesAboveThresholdSortedByOccurences.slice(0, 3)) {
-        console.log(
-          `[${sheetName}] Top 3 highest occurence duplicate numeric value above 5000 entropy: ${value} (${numOccurences} occurences, entropy: ${entropy})`
-        );
-      }
+
+      topEntropyDuplicateNumbers.push({
+        ...duplicateValuesSortedByEntropy[0],
+        sheetName,
+        matrixSize: numberCount
+      });
+
+      topOccurenceHighEntropyDuplicateNumbers.push({
+        ...duplicatedValuesAboveThresholdSortedByOccurences[0],
+        sheetName,
+        matrixSize: numberCount
+      });
       const invertedMatrix = invertMatrix(parsedMatrix);
 
       const verticalSequences = findRepeatedSequences(invertedMatrix, {
@@ -89,8 +110,16 @@ program
       .map(sequence => {
         const firstCellID = sequence.positions[0].cellId;
         const secondCellId = sequence.positions[1].cellId;
-        // return `[${sequence.sheetName}] Length = ${sequence.values.length}, Adj entropy = ${sequence.adjustedSequenceEntropyScore.toFixed(1)}, Entropy = ${sequence.sequenceEntropyScore.toFixed(1)}, Cells: '${firstCellID}' & '${secondCellId}' - values: ${sequence.values[0]} -> ${sequence.values.at(-1)}, Num positions: ${sequence.positions.length} Axis: ${sequence.axis}`;
+        let level = SuspicionLevel.None;
+        if (sequence.matrixSizeAdjustedEntropyScore > 10) {
+          level = SuspicionLevel.High;
+        } else if (sequence.matrixSizeAdjustedEntropyScore > 5) {
+          level = SuspicionLevel.Medium;
+        } else if (sequence.matrixSizeAdjustedEntropyScore > 4) {
+          level = SuspicionLevel.Low;
+        }
         const table = {
+          level: levelToSymbol[level],
           sheetName: sequence.sheetName,
           values:
             sequence.values.length > 1
@@ -108,6 +137,53 @@ program
         };
         return table;
       });
+
+    const humanReadableTopEntropyDuplicateNumbers = topEntropyDuplicateNumbers
+      .toSorted((a, b) => (b.entropy ?? 0) - (a.entropy ?? 0))
+      .map(obj => {
+        let level = SuspicionLevel.None;
+        if (obj.entropy > 10_000_000) {
+          level = SuspicionLevel.High;
+        } else if (obj.entropy > 100_000) {
+          level = SuspicionLevel.Medium;
+        } else if (obj.entropy > 10_000) {
+          level = SuspicionLevel.Low;
+        }
+        return {
+          level: levelToSymbol[level],
+          sheetName: obj.sheetName,
+          value: obj.value,
+          n: obj.numOccurences,
+          entropy: obj.entropy,
+          matrix: obj.matrixSize
+        };
+      });
+
+    const humanReadableTopOccurenceNumbers =
+      topOccurenceHighEntropyDuplicateNumbers
+        .toSorted((a, b) => (b.numOccurences ?? 0) - (a.numOccurences ?? 0))
+        .map(obj => {
+          let level = SuspicionLevel.None;
+          if (obj.numOccurences > 100) {
+            level = SuspicionLevel.High;
+          } else if (obj.numOccurences > 20) {
+            level = SuspicionLevel.Medium;
+          } else if (obj.numOccurences > 5) {
+            level = SuspicionLevel.Low;
+          }
+          return {
+            level: levelToSymbol[level],
+            sheetName: obj.sheetName,
+            value: obj.value,
+            n: obj.numOccurences,
+            entropy: obj.entropy,
+            matrix: obj.matrixSize
+          };
+        });
+    console.log(`Top entropy duplicate numbers:`);
+    console.table(humanReadableTopEntropyDuplicateNumbers);
+    console.log(`Top occurance high entropy duplicate numbers:`);
+    console.table(humanReadableTopOccurenceNumbers);
     console.log(`Repeated sequences:`);
     console.table(humanReadableSequences);
     console.timeEnd("Time elapsed");
@@ -159,7 +235,7 @@ function deduplicateSortedSequences(
 
 function calculateNumberEntropy(value: number) {
   // Values that are common years should receive an entropy score of 100
-  if (value >= 1900 && value <= 2030 && value % 1 === 0) {
+  if (value >= 1900 && value <= 2030 && Number.isInteger(value)) {
     return 100;
   }
 
@@ -170,10 +246,10 @@ function calculateNumberEntropy(value: number) {
   const withoutTrailingZeroes = withoutPoint.replace(/0+$/, "");
   const withoutOneTrailingFive = withoutTrailingZeroes.replace(/5$/, "");
 
-  // If a number has lots of repeating digits, only the first two in the repeating sequence is kept
+  // If a number has 4 or more repeating digits, only the first in the repeating sequence is kept
   const withoutRepeatingDigits = withoutOneTrailingFive.replace(
-    /(\d)\1+/g,
-    (_, digit) => digit + digit
+    /(\d)\1{3,}/g,
+    (_, digit) => digit
   );
   const entropy = parseInt(withoutRepeatingDigits || "0");
   return entropy;
