@@ -1,4 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
+import { roundFloatingPointInaccuracies } from "src/roundFloatingPointInaccuracies";
 import xlsx from "xlsx";
 const program = new Command();
 
@@ -34,6 +35,7 @@ program
       console.timeEnd(`xlsx.utils.sheet_to_json ${sheetName}`);
       console.time(`getNumberCount ${sheetName}`);
       const numberCount = getNumberCount(matrix);
+      const parsedMatrix = parseMatrix(matrix);
       console.log(`[${sheetName}] Found ${numberCount} numeric values`);
       console.timeEnd(`getNumberCount ${sheetName}`);
 
@@ -41,7 +43,7 @@ program
       const {
         duplicateValuesSortedByEntropy,
         duplicatedValuesAboveThresholdSortedByOccurences
-      } = findDuplicateValues(matrix);
+      } = findDuplicateValues(parsedMatrix);
       console.timeEnd(`findDuplicateValues ${sheetName}`);
       for (const {
         value,
@@ -62,7 +64,7 @@ program
         );
       }
       console.time(`invertMatrix ${sheetName}`);
-      const invertedMatrix = invertMatrix(matrix);
+      const invertedMatrix = invertMatrix(parsedMatrix);
       console.timeEnd(`invertMatrix ${sheetName}`);
 
       console.time(`findRepeatedSequences ${sheetName}`);
@@ -71,7 +73,7 @@ program
         isInverted: true,
         numberCount
       });
-      const horizontalSequences = findRepeatedSequences(matrix, {
+      const horizontalSequences = findRepeatedSequences(parsedMatrix, {
         sheetName,
         isInverted: false,
         numberCount
@@ -123,6 +125,18 @@ program
     console.table(humanReadableSequences);
     console.timeEnd("Time elapsed");
   });
+
+function parseMatrix(matrix: unknown[][]): unknown[][] {
+  const parsedMatrix = matrix.map(row =>
+    row.map(cell => {
+      if (typeof cell === "number") {
+        return roundFloatingPointInaccuracies(cell);
+      }
+      return cell;
+    })
+  );
+  return parsedMatrix;
+}
 
 function deduplicateSortedSequences(
   repeatedSequences: RepeatedSequence[]
