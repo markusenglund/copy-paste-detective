@@ -29,7 +29,7 @@ program
     //   "files/fraud/Dumicola+familiarity+wide.xlsx"
     // );
     const workbook = xlsx.readFile(
-      "files/non-fraud/doi_10_5061_dryad_2z34tmpxj__v20250416/JGI_maxquant.xlsx",
+      "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-common_garden.xlsx",
       { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
     );
     console.timeEnd("Read Excel file in");
@@ -328,8 +328,8 @@ function findRepeatedSequences(
             ) {
               continue;
             }
-            // If the values are on the same row, skip since this is often expected to be the case in legitimate data
-            if (position.startRow === rowIndex) {
+            // If the values are on the same row, skip since this is often expected to be the case in legitimate data (only in inverted mode, since the same is not true for columns)
+            if (position.startRow === rowIndex && isInverted) {
               continue;
             }
             let length = 1;
@@ -398,6 +398,13 @@ function calculateSequenceRegularity(sequence: number[]) {
   if (sequence.length < 2) {
     return { mostCommonIntervalSize: 0, mostCommonIntervalSizePercentage: 0 };
   }
+  if (sequence.every(value => value === sequence[0])) {
+    return {
+      mostCommonIntervalSize: sequence.length - 1,
+      mostCommonIntervalSizePercentage: (sequence.length - 1) / sequence.length
+    };
+  }
+
   const intervalSizeByNumOccurences = new Map<number, number>();
   for (let i = 0; i < sequence.length - 1; i++) {
     const intervalSize = sequence[i + 1] - sequence[i];

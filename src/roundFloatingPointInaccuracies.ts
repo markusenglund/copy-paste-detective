@@ -1,7 +1,7 @@
 export function roundFloatingPointInaccuracies(
   originalNumber: number,
   maxDecimalPlacesToTry = 10,
-  tolerance = 1e-13
+  tolerance = 1e-12
 ) {
   if (Number.isInteger(originalNumber)) {
     return originalNumber;
