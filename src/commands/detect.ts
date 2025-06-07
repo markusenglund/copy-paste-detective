@@ -1,15 +1,10 @@
 import { Command } from "@commander-js/extra-typings";
-import { SuspicionLevel, type Position, type RepeatedSequence, type DuplicateValue, type DuplicateValuesResult } from "src/types";
+import { type RepeatedSequence } from "src/types";
 import { deduplicateSortedSequences, findRepeatedSequences, findDuplicateValues } from "src/detection";
 import { parseMatrix, invertMatrix, getNumberCount } from "src/utils/excel";
+import { formatSequencesForDisplay, formatDuplicatesByEntropyForDisplay, formatDuplicatesByOccurrenceForDisplay } from "src/utils/output";
 import xlsx from "xlsx";
 const program = new Command();
-const levelToSymbol: Record<SuspicionLevel, string> = {
-  [SuspicionLevel.None]: "",
-  [SuspicionLevel.Low]: "❔",
-  [SuspicionLevel.Medium]: "✅",
-  [SuspicionLevel.High]: "🔴"
-};
 
 program.name("detect").description("First command").version("0.1.0");
 
@@ -104,81 +99,13 @@ program
     const deduplicatedSortedSequences =
       deduplicateSortedSequences(sortedSequences);
 
-    const humanReadableSequences = deduplicatedSortedSequences
-      .slice(0, 20)
-      .map(sequence => {
-        const firstCellID = sequence.positions[0].cellId;
-        const secondCellId = sequence.positions[1].cellId;
-        let level = SuspicionLevel.None;
-        if (sequence.matrixSizeAdjustedEntropyScore > 10) {
-          level = SuspicionLevel.High;
-        } else if (sequence.matrixSizeAdjustedEntropyScore > 5) {
-          level = SuspicionLevel.Medium;
-        } else if (sequence.matrixSizeAdjustedEntropyScore > 4) {
-          level = SuspicionLevel.Low;
-        }
-        const table = {
-          level: levelToSymbol[level],
-          sheetName: sequence.sheetName,
-          values:
-            sequence.values.length > 1
-              ? `${sequence.values[0]} -> ${sequence.values.at(-1)}`
-              : `${sequence.values[0]}`,
-          length: sequence.values.length,
-          sizeAdjEntropy: sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
-          adjEntropy: sequence.adjustedSequenceEntropyScore.toFixed(1),
-          entropy: sequence.sequenceEntropyScore.toFixed(1),
-          cell1: firstCellID,
-          cell2: secondCellId,
-          matrix: sequence.numberCount,
-          instances: sequence.positions.length,
-          axis: sequence.axis
-        };
-        return table;
-      });
+    const humanReadableSequences = formatSequencesForDisplay(
+      deduplicatedSortedSequences.slice(0, 20)
+    );
 
-    const humanReadableTopEntropyDuplicateNumbers = topEntropyDuplicateNumbers
-      .toSorted((a, b) => (b.entropy ?? 0) - (a.entropy ?? 0))
-      .map(obj => {
-        let level = SuspicionLevel.None;
-        if (obj.entropy > 10_000_000) {
-          level = SuspicionLevel.High;
-        } else if (obj.entropy > 100_000) {
-          level = SuspicionLevel.Medium;
-        } else if (obj.entropy > 10_000) {
-          level = SuspicionLevel.Low;
-        }
-        return {
-          level: levelToSymbol[level],
-          sheetName: obj.sheetName,
-          value: obj.value,
-          n: obj.numOccurences,
-          entropy: obj.entropy,
-          matrix: obj.matrixSize
-        };
-      });
+    const humanReadableTopEntropyDuplicateNumbers = formatDuplicatesByEntropyForDisplay(topEntropyDuplicateNumbers);
 
-    const humanReadableTopOccurenceNumbers =
-      topOccurenceHighEntropyDuplicateNumbers
-        .toSorted((a, b) => (b.numOccurences ?? 0) - (a.numOccurences ?? 0))
-        .map(obj => {
-          let level = SuspicionLevel.None;
-          if (obj.numOccurences > 100) {
-            level = SuspicionLevel.High;
-          } else if (obj.numOccurences > 20) {
-            level = SuspicionLevel.Medium;
-          } else if (obj.numOccurences > 5) {
-            level = SuspicionLevel.Low;
-          }
-          return {
-            level: levelToSymbol[level],
-            sheetName: obj.sheetName,
-            value: obj.value,
-            n: obj.numOccurences,
-            entropy: obj.entropy,
-            matrix: obj.matrixSize
-          };
-        });
+    const humanReadableTopOccurenceNumbers = formatDuplicatesByOccurrenceForDisplay(topOccurenceHighEntropyDuplicateNumbers);
     console.log(`Top entropy duplicate numbers:`);
     console.table(humanReadableTopEntropyDuplicateNumbers);
     console.log(`Top occurance high entropy duplicate numbers:`);
