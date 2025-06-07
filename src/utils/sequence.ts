@@ -27,6 +27,6 @@ export function calculateSequenceRegularity(sequence: number[]): {
 
   const mostCommonIntervalSize = sortedIntervalSizes[0].intervalSize;
   const mostCommonIntervalSizePercentage =
-    (sortedIntervalSizes[0].numOccurences - 1) / (sequence.length - 1);
+    (sortedIntervalSizes[0].numOccurences - 1) / (sequence.length - 1); // Subtract by one so the percentage is 0% if all intervals are unique, also so the percentage is never 100%
   return { mostCommonIntervalSizePercentage, mostCommonIntervalSize };
 }

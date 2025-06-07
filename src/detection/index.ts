@@ -17,6 +17,7 @@ export function deduplicateSortedSequences(
         });
       if (isSameSequence) {
         sequence.positions.forEach(position => {
+          // Check if position already exists in previousSequence and if not, add it
           const exists = previousSequence?.positions.find(
             p => p.cellId === position.cellId
           );
@@ -42,7 +43,7 @@ export function findRepeatedSequences(
   }: { isInverted: boolean; sheetName: string; numberCount: number }
 ): RepeatedSequence[] {
   const numberCountEntropyScore = calculateEntropyScore(
-    Math.max(numberCount, 500)
+    Math.max(numberCount, 500) // Prevent very small excel files from getting too high of an entropy score
   );
 
   const repeatedSequences: RepeatedSequence[] = [];
@@ -69,6 +70,7 @@ export function findRepeatedSequences(
             ) {
               continue;
             }
+            // If the values are on the same row, skip since this is often expected to be the case in legitimate data (only in inverted mode, since the same is not true for columns)
             if (position.startRow === rowIndex && isInverted) {
               continue;
             }
@@ -102,6 +104,7 @@ export function findRepeatedSequences(
               position.column === newPosition.column &&
               position.startRow + length === newPosition.startRow
             ) {
+              // Skip if the repeated sequences are back-to-back
               continue;
             }
             const { mostCommonIntervalSize, mostCommonIntervalSizePercentage } =
