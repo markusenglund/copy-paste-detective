@@ -1,14 +1,8 @@
 import { Command } from "@commander-js/extra-typings";
 import { roundFloatingPointInaccuracies } from "src/roundFloatingPointInaccuracies";
+import { SuspicionLevel, type Position, type RepeatedSequence, type DuplicateValue, type DuplicateValuesResult } from "src/types";
 import xlsx from "xlsx";
 const program = new Command();
-
-export enum SuspicionLevel {
-  None,
-  Low,
-  Medium,
-  High
-}
 const levelToSymbol: Record<SuspicionLevel, string> = {
   [SuspicionLevel.None]: "",
   [SuspicionLevel.Low]: "❔",
@@ -281,21 +275,6 @@ function calculateSequenceEntropyScore(values: number[]) {
   return sum;
 }
 
-type Position = {
-  column: number;
-  startRow: number;
-  cellId: string;
-};
-type RepeatedSequence = {
-  positions: [Position, Position];
-  values: number[];
-  sequenceEntropyScore: number;
-  adjustedSequenceEntropyScore: number;
-  matrixSizeAdjustedEntropyScore: number;
-  numberCount: number;
-  sheetName: string;
-  axis: "horizontal" | "vertical";
-};
 function findRepeatedSequences(
   matrix: unknown[][],
   {
@@ -430,18 +409,7 @@ function calculateSequenceRegularity(sequence: number[]) {
   return { mostCommonIntervalSizePercentage, mostCommonIntervalSize };
 }
 
-function findDuplicateValues(matrix: unknown[][]): {
-  duplicateValuesSortedByEntropy: {
-    value: number;
-    numOccurences: number;
-    entropy: number;
-  }[];
-  duplicatedValuesAboveThresholdSortedByOccurences: {
-    value: number;
-    numOccurences: number;
-    entropy: number;
-  }[];
-} {
+function findDuplicateValues(matrix: unknown[][]): DuplicateValuesResult {
   const numOccurencesByNumericCellValue = new Map<number, number>();
   for (const row of matrix) {
     for (const cell of row) {

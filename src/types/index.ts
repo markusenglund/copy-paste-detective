@@ -1,0 +1,34 @@
+export enum SuspicionLevel {
+  None,
+  Low,
+  Medium,
+  High
+}
+
+export type Position = {
+  column: number;
+  startRow: number;
+  cellId: string;
+};
+
+export type RepeatedSequence = {
+  positions: [Position, Position];
+  values: number[];
+  sequenceEntropyScore: number;
+  adjustedSequenceEntropyScore: number;
+  matrixSizeAdjustedEntropyScore: number;
+  numberCount: number;
+  sheetName: string;
+  axis: "horizontal" | "vertical";
+};
+
+export type DuplicateValue = {
+  value: number;
+  numOccurences: number;
+  entropy: number;
+};
+
+export type DuplicateValuesResult = {
+  duplicateValuesSortedByEntropy: DuplicateValue[];
+  duplicatedValuesAboveThresholdSortedByOccurences: DuplicateValue[];
+};
