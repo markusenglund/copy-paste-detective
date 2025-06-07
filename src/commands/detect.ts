@@ -1,7 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
-import { roundFloatingPointInaccuracies } from "src/roundFloatingPointInaccuracies";
 import { SuspicionLevel, type Position, type RepeatedSequence, type DuplicateValue, type DuplicateValuesResult } from "src/types";
 import { deduplicateSortedSequences, findRepeatedSequences, findDuplicateValues } from "src/detection";
+import { parseMatrix, invertMatrix, getNumberCount } from "src/utils/excel";
 import xlsx from "xlsx";
 const program = new Command();
 const levelToSymbol: Record<SuspicionLevel, string> = {
@@ -188,45 +188,12 @@ program
     console.timeEnd("Time elapsed");
   });
 
-function parseMatrix(matrix: unknown[][]): unknown[][] {
-  const parsedMatrix = matrix.map(row =>
-    row.map(cell => {
-      if (typeof cell === "number") {
-        return roundFloatingPointInaccuracies(cell);
-      }
-      return cell;
-    })
-  );
-  return parsedMatrix;
-}
 
 
 
 
 
 
-function invertMatrix(matrix: unknown[][]) {
-  const invertedMatrix: unknown[][] = [];
-  for (let i = 0; i < matrix[0].length; i++) {
-    invertedMatrix[i] = [];
-    for (let j = 0; j < matrix.length; j++) {
-      invertedMatrix[i][j] = matrix[j][i];
-    }
-  }
-  return invertedMatrix;
-}
-
-function getNumberCount(matrix: unknown[][]): number {
-  let numberCount = 0;
-  matrix.forEach(row =>
-    row.forEach(cell => {
-      if (typeof cell === "number") {
-        numberCount++;
-      }
-    })
-  );
-  return numberCount;
-}
 
 
 program.parse();
