@@ -1,6 +1,8 @@
 import { Command } from "@commander-js/extra-typings";
 import { roundFloatingPointInaccuracies } from "src/roundFloatingPointInaccuracies";
 import { SuspicionLevel, type Position, type RepeatedSequence, type DuplicateValue, type DuplicateValuesResult } from "src/types";
+import { calculateNumberEntropy, calculateEntropyScore, calculateSequenceEntropyScore } from "src/utils/entropy";
+import { calculateSequenceRegularity } from "src/utils/sequence";
 import xlsx from "xlsx";
 const program = new Command();
 const levelToSymbol: Record<SuspicionLevel, string> = {
@@ -231,49 +233,6 @@ function deduplicateSortedSequences(
   return deduplicatedSortedSequences;
 }
 
-function calculateNumberEntropy(value: number) {
-  // Values that are common years should receive an entropy score of 100
-  if (value >= 1900 && value <= 2030 && Number.isInteger(value)) {
-    return 100;
-  }
-
-  // Convert numbers with decimal points to integers by simply removing the decimal point but keeping the digits
-  const str = value.toString();
-  const withoutPoint = str.replace(".", "");
-  // Remove trailing zeroes
-  const withoutTrailingZeroes = withoutPoint.replace(/0+$/, "");
-  const withoutOneTrailingFive = withoutTrailingZeroes.replace(/5$/, "");
-
-  // If a number has 4 or more repeating digits, only the first in the repeating sequence is kept
-  const withoutRepeatingDigits = withoutOneTrailingFive.replace(
-    /(\d)\1{3,}/g,
-    (_, digit) => digit
-  );
-  const entropy = parseInt(withoutRepeatingDigits || "0");
-  return entropy;
-}
-
-function calculateEntropyScore(rawEntropy: number) {
-  // Prevent extremely large numbers as well numbers below 100 from having an outsized effect on the entropy score
-
-  if (rawEntropy < 100) {
-    return Math.log10(rawEntropy);
-  }
-  if (rawEntropy < 100_000) {
-    return 10 * Math.log10(rawEntropy) - 20;
-  }
-  return Math.log10(rawEntropy) + 25;
-}
-
-function calculateSequenceEntropyScore(values: number[]) {
-  const sum = values.reduce((acc, value) => {
-    const rawNumberEntropy = calculateNumberEntropy(value);
-    const individualEntropyScore = calculateEntropyScore(rawNumberEntropy);
-    // Math.pow(Math.min(rawNumberEntropy, entropyCeiling), 1 / 4) / 10;
-    return acc + individualEntropyScore;
-  }, 0);
-  return sum;
-}
 
 function findRepeatedSequences(
   matrix: unknown[][],
@@ -379,35 +338,6 @@ function findRepeatedSequences(
   return repeatedSequences;
 }
 
-function calculateSequenceRegularity(sequence: number[]) {
-  if (sequence.length < 2) {
-    return { mostCommonIntervalSize: 0, mostCommonIntervalSizePercentage: 0 };
-  }
-  if (sequence.every(value => value === sequence[0])) {
-    return {
-      mostCommonIntervalSize: sequence.length - 1,
-      mostCommonIntervalSizePercentage: (sequence.length - 1) / sequence.length
-    };
-  }
-
-  const intervalSizeByNumOccurences = new Map<number, number>();
-  for (let i = 0; i < sequence.length - 1; i++) {
-    const intervalSize = sequence[i + 1] - sequence[i];
-    const numOccurences = intervalSizeByNumOccurences.get(intervalSize) ?? 0;
-    intervalSizeByNumOccurences.set(intervalSize, numOccurences + 1);
-  }
-  const sortedIntervalSizes = [...intervalSizeByNumOccurences.entries()]
-    .map(([intervalSize, numOccurences]) => ({
-      intervalSize,
-      numOccurences
-    }))
-    .sort((a, b) => b.numOccurences - a.numOccurences);
-
-  const mostCommonIntervalSize = sortedIntervalSizes[0].intervalSize;
-  const mostCommonIntervalSizePercentage =
-    (sortedIntervalSizes[0].numOccurences - 1) / (sequence.length - 1); // Subtract by one so the percentage is 0% if all intervals are unique, also so the percentage is never 100%
-  return { mostCommonIntervalSizePercentage, mostCommonIntervalSize };
-}
 
 function findDuplicateValues(matrix: unknown[][]): DuplicateValuesResult {
   const numOccurencesByNumericCellValue = new Map<number, number>();
