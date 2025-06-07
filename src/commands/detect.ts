@@ -30,6 +30,7 @@ program
     // );
     const workbook = xlsx.readFile(
       "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-common_garden.xlsx",
+      // "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-Field_survey.xlsx",
       { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
     );
     console.timeEnd("Read Excel file in");
@@ -67,11 +68,13 @@ program
         duplicatedValuesAboveThresholdSortedByOccurences
       } = findDuplicateValues(parsedMatrix);
 
-      topEntropyDuplicateNumbers.push({
-        ...duplicateValuesSortedByEntropy[0],
-        sheetName,
-        matrixSize: numberCount
-      });
+      topEntropyDuplicateNumbers.push(
+        ...duplicateValuesSortedByEntropy.slice(0, 5).map(obj => ({
+          ...obj,
+          sheetName,
+          matrixSize: numberCount
+        }))
+      );
 
       topOccurenceHighEntropyDuplicateNumbers.push({
         ...duplicatedValuesAboveThresholdSortedByOccurences[0],
@@ -90,6 +93,7 @@ program
         isInverted: false,
         numberCount
       });
+
       repeatedSequences.push(...verticalSequences);
       repeatedSequences.push(...horizontalSequences);
     }
@@ -382,7 +386,9 @@ function findRepeatedSequences(
               sheetName,
               axis: isInverted ? "vertical" : "horizontal"
             };
-            repeatedSequences.push(repeatedSequence);
+            if (repeatedSequence.matrixSizeAdjustedEntropyScore > 1) {
+              repeatedSequences.push(repeatedSequence);
+            }
           }
         }
         positions.push(newPosition);
