@@ -1,4 +1,4 @@
-import { roundFloatingPointInaccuracies } from "src/roundFloatingPointInaccuracies";
+import { roundFloatingPointInaccuracies } from "src/utils/roundFloatingPointInaccuracies";
 
 export function parseMatrix(matrix: unknown[][]): unknown[][] {
   const parsedMatrix = matrix.map(row =>
