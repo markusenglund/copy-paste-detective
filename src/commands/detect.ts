@@ -27,9 +27,9 @@ program
     //   "files/fraud/Dumicola+familiarity+wide.xlsx"
     // );
     const workbook = xlsx.readFile(
-      "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-common_garden.xlsx",
-      // "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-Field_survey.xlsx",
-      { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
+      // "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-common_garden.xlsx",
+      "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-Field_survey.xlsx",
+      { sheetRows: 500 } // Only read the first 5000 rows from each sheet
     );
     console.timeEnd("Read Excel file in");
 
