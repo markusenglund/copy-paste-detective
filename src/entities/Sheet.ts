@@ -3,8 +3,6 @@ import { roundFloatingPointInaccuracies } from "../utils/roundFloatingPointInacc
 
 export class Sheet {
   public readonly name: string;
-  public readonly numRows: number;
-  public readonly numColumns: number;
   public readonly parsedMatrix: unknown[][];
   public readonly invertedMatrix: unknown[][];
 
@@ -17,10 +15,20 @@ export class Sheet {
 
     // Calculate properties
     this.name = sheetName;
-    this.numRows = matrix.length;
-    this.numColumns = matrix[0]?.length || 0;
     this.parsedMatrix = Sheet.parseMatrix(matrix);
     this.invertedMatrix = Sheet.invertMatrix(this.parsedMatrix);
+  }
+
+  get numRows(): number {
+    return this.parsedMatrix.length;
+  }
+
+  get numColumns(): number {
+    return this.parsedMatrix[0]?.length || 0;
+  }
+
+  get columnNames(): string[] {
+    return (this.parsedMatrix[0] || []).map(cell => String(cell || ""));
   }
 
   get numNumericCells(): number {
@@ -33,6 +41,10 @@ export class Sheet {
       })
     );
     return numberCount;
+  }
+
+  getFirstNRows(n: number): unknown[][] {
+    return this.parsedMatrix.slice(1, n + 1); // Skip header row, take n data rows
   }
 
   static parseMatrix(matrix: unknown[][]): unknown[][] {
