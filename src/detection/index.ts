@@ -61,6 +61,10 @@ export function findRepeatedSequences(
   const checkedPositionPairs = new Set<string>();
   for (let columnIndex = 0; columnIndex < matrix.length; columnIndex++) {
     for (let rowIndex = 0; rowIndex < matrix[columnIndex].length; rowIndex++) {
+      if (repeatedSequences.length > 1000) {
+        // Limit the number of sequences to avoid memory issues
+        break;
+      }
       const cellValue = matrix[columnIndex][rowIndex];
       if (typeof cellValue === "number") {
         const positions = positionsByValue.get(cellValue) ?? [];
@@ -134,7 +138,7 @@ export function findRepeatedSequences(
               sheetName,
               axis: isInverted ? "vertical" : "horizontal"
             };
-            if (repeatedSequence.matrixSizeAdjustedEntropyScore > 1) {
+            if (repeatedSequence.matrixSizeAdjustedEntropyScore > 2) {
               repeatedSequences.push(repeatedSequence);
             }
           }

@@ -29,7 +29,7 @@ program
     const workbook = xlsx.readFile(
       // "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-common_garden.xlsx",
       "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-Field_survey.xlsx",
-      { sheetRows: 500 } // Only read the first 5000 rows from each sheet
+      { sheetRows: 1500 } // Only read the first 5000 rows from each sheet
     );
     console.timeEnd("Read Excel file in");
 
@@ -71,17 +71,24 @@ program
       topOccurenceHighEntropyDuplicateNumbers.push(
         ...duplicatedValuesAboveThresholdSortedByOccurences.slice(0, 5)
       );
-
+      console.time("Vertical sequences");
       const verticalSequences = findRepeatedSequences(invertedMatrix, {
         sheetName,
         isInverted: true,
         numberCount
       });
+      console.timeEnd("Vertical sequences");
+      console.time("Horizontal sequences");
       const horizontalSequences = findRepeatedSequences(parsedMatrix, {
         sheetName,
         isInverted: false,
         numberCount
       });
+      console.timeEnd("Horizontal sequences");
+
+      console.log(
+        `[${sheetName}] ${verticalSequences.length} vertical sequences found, ${horizontalSequences.length} horizontal sequences found`
+      );
 
       repeatedSequences.push(...verticalSequences);
       repeatedSequences.push(...horizontalSequences);
