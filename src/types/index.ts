@@ -1,11 +1,5 @@
-export type Sheet = {
-  name: string;
-  numNumericCells: number;
-  numRows: number;
-  numColumns: number;
-  parsedMatrix: unknown[][];
-  invertedMatrix: unknown[][];
-};
+
+import type { Sheet } from "../entities/Sheet.js";
 
 export enum SuspicionLevel {
   None,

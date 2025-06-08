@@ -1,11 +1,11 @@
 import { Command } from "@commander-js/extra-typings";
-import { DuplicateValue, Sheet, type RepeatedSequence } from "src/types";
+import { DuplicateValue, type RepeatedSequence } from "src/types";
+import { Sheet } from "src/entities/Sheet";
 import {
   deduplicateSortedSequences,
   findRepeatedSequences,
   findDuplicateValues
 } from "src/detection";
-import { parseMatrix, invertMatrix, getNumberCount } from "src/utils/excel";
 import {
   formatSequencesForDisplay,
   formatDuplicatesByEntropyForDisplay,
@@ -102,24 +102,9 @@ program
     const topOccurenceHighEntropyDuplicateNumbers: DuplicateValue[] = [];
     for (const sheetName of sheetNames) {
       const workbookSheet = workbook.Sheets[sheetName];
-      const matrix: unknown[][] = xlsx.utils.sheet_to_json(workbookSheet, {
-        raw: true,
-        header: 1
-      });
-
-      const numberCount = getNumberCount(matrix);
-      const parsedMatrix = parseMatrix(matrix);
-      console.log(`[${sheetName}] Found ${numberCount} numeric values`);
-      const invertedMatrix = invertMatrix(parsedMatrix);
-
-      const sheet: Sheet = {
-        name: sheetName,
-        numNumericCells: numberCount,
-        numRows: matrix.length,
-        numColumns: matrix[0].length,
-        parsedMatrix,
-        invertedMatrix
-      };
+      const sheet = new Sheet(workbookSheet, sheetName);
+      
+      console.log(`[${sheetName}] Found ${sheet.numNumericCells} numeric values`);
 
       const {
         duplicateValuesSortedByEntropy,
@@ -134,17 +119,17 @@ program
         ...duplicatedValuesAboveThresholdSortedByOccurences.slice(0, 5)
       );
       console.time("Vertical sequences");
-      const verticalSequences = findRepeatedSequences(invertedMatrix, {
+      const verticalSequences = findRepeatedSequences(sheet.invertedMatrix, {
         sheetName,
         isInverted: true,
-        numberCount
+        numberCount: sheet.numNumericCells
       });
       console.timeEnd("Vertical sequences");
       console.time("Horizontal sequences");
-      const horizontalSequences = findRepeatedSequences(parsedMatrix, {
+      const horizontalSequences = findRepeatedSequences(sheet.parsedMatrix, {
         sheetName,
         isInverted: false,
-        numberCount
+        numberCount: sheet.numNumericCells
       });
       console.timeEnd("Horizontal sequences");
 

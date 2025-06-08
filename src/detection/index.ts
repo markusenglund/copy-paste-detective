@@ -2,9 +2,9 @@ import {
   type Position,
   type RepeatedSequence,
   type DuplicateValuesResult,
-  Sheet,
   DuplicateValue
 } from "src/types";
+import { Sheet } from "src/entities/Sheet";
 import {
   calculateNumberEntropy,
   calculateEntropyScore,
