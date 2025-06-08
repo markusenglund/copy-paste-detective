@@ -1,5 +1,15 @@
-import { type Position, type RepeatedSequence, type DuplicateValuesResult } from "src/types";
-import { calculateNumberEntropy, calculateEntropyScore, calculateSequenceEntropyScore } from "src/utils/entropy";
+import {
+  type Position,
+  type RepeatedSequence,
+  type DuplicateValuesResult,
+  Sheet,
+  DuplicateValue
+} from "src/types";
+import {
+  calculateNumberEntropy,
+  calculateEntropyScore,
+  calculateSequenceEntropyScore
+} from "src/utils/entropy";
 import { calculateSequenceRegularity } from "src/utils/sequence";
 
 export function deduplicateSortedSequences(
@@ -138,9 +148,9 @@ export function findRepeatedSequences(
   return repeatedSequences;
 }
 
-export function findDuplicateValues(matrix: unknown[][]): DuplicateValuesResult {
+export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
   const numOccurencesByNumericCellValue = new Map<number, number>();
-  for (const row of matrix) {
+  for (const row of sheet.parsedMatrix) {
     for (const cell of row) {
       if (typeof cell === "number") {
         const numOccurences = numOccurencesByNumericCellValue.get(cell) ?? 0;
@@ -149,13 +159,13 @@ export function findDuplicateValues(matrix: unknown[][]): DuplicateValuesResult 
     }
   }
 
-  const duplicateValuesSortedByEntropy = [
+  const duplicateValuesSortedByEntropy: DuplicateValue[] = [
     ...numOccurencesByNumericCellValue.entries()
   ]
     .filter(([value, numOccurences]) => numOccurences > 1)
     .map(([value, numOccurences]) => {
       const entropy = calculateNumberEntropy(value);
-      return { value, numOccurences, entropy };
+      return { value, numOccurences, entropy, sheet };
     })
     .toSorted((a, b) => b.entropy - a.entropy);
 

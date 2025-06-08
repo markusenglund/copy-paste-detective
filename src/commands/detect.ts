@@ -1,8 +1,16 @@
 import { Command } from "@commander-js/extra-typings";
-import { type RepeatedSequence } from "src/types";
-import { deduplicateSortedSequences, findRepeatedSequences, findDuplicateValues } from "src/detection";
+import { DuplicateValue, Sheet, type RepeatedSequence } from "src/types";
+import {
+  deduplicateSortedSequences,
+  findRepeatedSequences,
+  findDuplicateValues
+} from "src/detection";
 import { parseMatrix, invertMatrix, getNumberCount } from "src/utils/excel";
-import { formatSequencesForDisplay, formatDuplicatesByEntropyForDisplay, formatDuplicatesByOccurrenceForDisplay } from "src/utils/output";
+import {
+  formatSequencesForDisplay,
+  formatDuplicatesByEntropyForDisplay,
+  formatDuplicatesByOccurrenceForDisplay
+} from "src/utils/output";
 import xlsx from "xlsx";
 const program = new Command();
 
@@ -28,23 +36,11 @@ program
     const sheetNames = workbook.SheetNames;
     console.log(`Found ${sheetNames.length} sheets: ${sheetNames.join(", ")}`);
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
-    const topEntropyDuplicateNumbers: {
-      value: number;
-      numOccurences: number;
-      entropy: number;
-      sheetName: string;
-      matrixSize: number;
-    }[] = [];
-    const topOccurenceHighEntropyDuplicateNumbers: {
-      value: number;
-      numOccurences: number;
-      entropy: number;
-      sheetName: string;
-      matrixSize: number;
-    }[] = [];
+    const topEntropyDuplicateNumbers: DuplicateValue[] = [];
+    const topOccurenceHighEntropyDuplicateNumbers: DuplicateValue[] = [];
     for (const sheetName of sheetNames) {
-      const sheet = workbook.Sheets[sheetName];
-      const matrix: unknown[][] = xlsx.utils.sheet_to_json(sheet, {
+      const workbookSheet = workbook.Sheets[sheetName];
+      const matrix: unknown[][] = xlsx.utils.sheet_to_json(workbookSheet, {
         raw: true,
         header: 1
       });
@@ -52,26 +48,29 @@ program
       const numberCount = getNumberCount(matrix);
       const parsedMatrix = parseMatrix(matrix);
       console.log(`[${sheetName}] Found ${numberCount} numeric values`);
+      const invertedMatrix = invertMatrix(parsedMatrix);
+
+      const sheet: Sheet = {
+        name: sheetName,
+        numNumericCells: numberCount,
+        numRows: matrix.length,
+        numColumns: matrix[0].length,
+        parsedMatrix,
+        invertedMatrix
+      };
 
       const {
         duplicateValuesSortedByEntropy,
         duplicatedValuesAboveThresholdSortedByOccurences
-      } = findDuplicateValues(parsedMatrix);
+      } = findDuplicateValues(sheet);
 
       topEntropyDuplicateNumbers.push(
-        ...duplicateValuesSortedByEntropy.slice(0, 5).map(obj => ({
-          ...obj,
-          sheetName,
-          matrixSize: numberCount
-        }))
+        ...duplicateValuesSortedByEntropy.slice(0, 5)
       );
 
-      topOccurenceHighEntropyDuplicateNumbers.push({
-        ...duplicatedValuesAboveThresholdSortedByOccurences[0],
-        sheetName,
-        matrixSize: numberCount
-      });
-      const invertedMatrix = invertMatrix(parsedMatrix);
+      topOccurenceHighEntropyDuplicateNumbers.push(
+        ...duplicatedValuesAboveThresholdSortedByOccurences.slice(0, 5)
+      );
 
       const verticalSequences = findRepeatedSequences(invertedMatrix, {
         sheetName,
@@ -103,24 +102,20 @@ program
       deduplicatedSortedSequences.slice(0, 20)
     );
 
-    const humanReadableTopEntropyDuplicateNumbers = formatDuplicatesByEntropyForDisplay(topEntropyDuplicateNumbers);
+    const humanReadableTopEntropyDuplicateNumbers =
+      formatDuplicatesByEntropyForDisplay(topEntropyDuplicateNumbers);
 
-    const humanReadableTopOccurenceNumbers = formatDuplicatesByOccurrenceForDisplay(topOccurenceHighEntropyDuplicateNumbers);
+    const humanReadableTopOccurenceNumbers =
+      formatDuplicatesByOccurrenceForDisplay(
+        topOccurenceHighEntropyDuplicateNumbers
+      );
     console.log(`Top entropy duplicate numbers:`);
     console.table(humanReadableTopEntropyDuplicateNumbers);
-    console.log(`Top occurance high entropy duplicate numbers:`);
+    console.log(`Top occurance numbers with entropy>5000:`);
     console.table(humanReadableTopOccurenceNumbers);
     console.log(`Repeated sequences:`);
     console.table(humanReadableSequences);
     console.timeEnd("Time elapsed");
   });
-
-
-
-
-
-
-
-
 
 program.parse();

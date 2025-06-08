@@ -1,3 +1,12 @@
+export type Sheet = {
+  name: string;
+  numNumericCells: number;
+  numRows: number;
+  numColumns: number;
+  parsedMatrix: unknown[][];
+  invertedMatrix: unknown[][];
+};
+
 export enum SuspicionLevel {
   None,
   Low,
@@ -26,6 +35,7 @@ export type DuplicateValue = {
   value: number;
   numOccurences: number;
   entropy: number;
+  sheet: Sheet;
 };
 
 export type DuplicateValuesResult = {

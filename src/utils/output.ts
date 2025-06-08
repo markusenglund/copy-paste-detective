@@ -1,4 +1,8 @@
-import { SuspicionLevel, type RepeatedSequence, type DuplicateValue } from "src/types";
+import {
+  SuspicionLevel,
+  type RepeatedSequence,
+  type DuplicateValue
+} from "src/types";
 
 const levelToSymbol: Record<SuspicionLevel, string> = {
   [SuspicionLevel.None]: "",
@@ -40,30 +44,34 @@ export function formatSequencesForDisplay(sequences: RepeatedSequence[]) {
   });
 }
 
-export function formatDuplicatesByEntropyForDisplay(duplicates: (DuplicateValue & { sheetName: string; matrixSize: number })[]) {
+export function formatDuplicatesByEntropyForDisplay(
+  duplicates: DuplicateValue[]
+) {
   return duplicates
     .toSorted((a, b) => (b.entropy ?? 0) - (a.entropy ?? 0))
-    .map(obj => {
+    .map(duplicateValue => {
       let level = SuspicionLevel.None;
-      if (obj.entropy > 10_000_000) {
+      if (duplicateValue.entropy > 10_000_000) {
         level = SuspicionLevel.High;
-      } else if (obj.entropy > 100_000) {
+      } else if (duplicateValue.entropy > 100_000) {
         level = SuspicionLevel.Medium;
-      } else if (obj.entropy > 10_000) {
+      } else if (duplicateValue.entropy > 10_000) {
         level = SuspicionLevel.Low;
       }
       return {
         level: levelToSymbol[level],
-        sheetName: obj.sheetName,
-        value: obj.value,
-        n: obj.numOccurences,
-        entropy: obj.entropy,
-        matrix: obj.matrixSize
+        sheetName: duplicateValue.sheet.name,
+        value: duplicateValue.value,
+        n: duplicateValue.numOccurences,
+        entropy: duplicateValue.entropy,
+        matrix: duplicateValue.sheet.numNumericCells
       };
     });
 }
 
-export function formatDuplicatesByOccurrenceForDisplay(duplicates: (DuplicateValue & { sheetName: string; matrixSize: number })[]) {
+export function formatDuplicatesByOccurrenceForDisplay(
+  duplicates: DuplicateValue[]
+) {
   return duplicates
     .toSorted((a, b) => (b.numOccurences ?? 0) - (a.numOccurences ?? 0))
     .map(obj => {
@@ -77,11 +85,11 @@ export function formatDuplicatesByOccurrenceForDisplay(duplicates: (DuplicateVal
       }
       return {
         level: levelToSymbol[level],
-        sheetName: obj.sheetName,
+        sheetName: obj.sheet.name,
         value: obj.value,
         n: obj.numOccurences,
         entropy: obj.entropy,
-        matrix: obj.matrixSize
+        matrix: obj.sheet.numNumericCells
       };
     });
 }
