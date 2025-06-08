@@ -11,6 +11,8 @@ import {
   formatDuplicatesByEntropyForDisplay,
   formatDuplicatesByOccurrenceForDisplay
 } from "src/utils/output";
+import { GeminiService } from "src/ai/geminiService";
+import { readFileSync } from "fs";
 import xlsx from "xlsx";
 const program = new Command();
 
@@ -26,15 +28,75 @@ program
     // const workbook = xlsx.readFile(
     //   "files/fraud/Dumicola+familiarity+wide.xlsx"
     // );
+    const excelDataFolder =
+      "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418";
+    const excelFileName = "2025-3-24-Field_survey.xlsx";
+    const paperName =
+      "Dual drivers of plant invasions: Enemy release and enhanced mutualisms";
     const workbook = xlsx.readFile(
       // "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-common_garden.xlsx",
-      "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-Field_survey.xlsx",
+      `${excelDataFolder}/${excelFileName}`,
       { sheetRows: 1500 } // Only read the first 5000 rows from each sheet
     );
     console.timeEnd("Read Excel file in");
 
     const sheetNames = workbook.SheetNames;
     console.log(`Found ${sheetNames.length} sheets: ${sheetNames.join(", ")}`);
+
+    // Use Gemini to analyze column structure for the first sheet
+    const firstSheetName = sheetNames[0];
+    const firstWorkbookSheet = workbook.Sheets[firstSheetName];
+    const firstMatrix: unknown[][] = xlsx.utils.sheet_to_json(
+      firstWorkbookSheet,
+      {
+        raw: true,
+        header: 1
+      }
+    );
+
+    console.time("Gemini API call");
+    const gemini = new GeminiService();
+
+    // Extract column names and sample data for Gemini
+    const columnNames = (firstMatrix[0] || []).map(cell => String(cell || ""));
+    const sampleData = firstMatrix
+      .slice(1, 3)
+      .map(row => row.map(cell => String(cell || "")));
+
+    try {
+      // Read README.md from the excel data folder
+      const readmePath = `${excelDataFolder}/README.md`;
+      const dataDescription = readFileSync(readmePath, "utf-8");
+
+      const columnCategorization = await gemini.categorizeColumns({
+        paperName,
+        excelFileName,
+        dataDescription,
+        columnNames,
+        columnData: sampleData
+      });
+
+      console.timeEnd("Gemini API call");
+      console.log("\n🤖 Gemini Analysis Results:");
+      console.log(
+        "✅ Columns expected to have UNIQUE values:",
+        columnCategorization.unique
+      );
+      console.log(
+        "🔄 Columns expected to have SHARED values:",
+        columnCategorization.shared
+      );
+      console.log(
+        "\nNote: Fraud detection will focus on duplicate analysis in 'unique' columns\n"
+      );
+    } catch (error) {
+      console.timeEnd("Gemini API call");
+      console.warn(
+        "⚠️ Gemini API failed, proceeding with standard analysis:",
+        error
+      );
+    }
+
     const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
     const topEntropyDuplicateNumbers: DuplicateValue[] = [];
     const topOccurenceHighEntropyDuplicateNumbers: DuplicateValue[] = [];
