@@ -1,0 +1,85 @@
+Your job is to categorize all columns from an excel sheet by whether or not its data is expected to be shared by multiple rows. You will create two lists - 'shared' and 'unique'. The columns in the 'shared' list should represent data that applies to a group of rows while the 'unique' list should have data that only belongs to this particular row.
+
+Example:
+You are given a spreadsheet where every row is a house sale. The spreadsheet has the following columns: price, region, address, livingArea, yardArea, annualPrecipitation, meanTemperatureJanuary.
+
+In this case a good response would be
+
+`{`
+
+`unique: ["price", "address", "livingArea", "yardArea"],`
+
+`shared: ["region", "annualPrecipitation", "meanTemperatureJanuary"]`  
+
+`}`
+
+Explanation: A house’s price, address, living area and yard area are data that belongs only to this one house. But the weather data (annual precipitation and mean temperature in January) is expected to be shared by many rows since two houses in the same city will have weather data from the exact same weather station. Although two houses could potentially sell for the exact same price or have the exact same yard area, this is a coincidence.
+
+Actual:
+
+The data is a supplement of a scientific paper called “Dual drivers of plant invasions: Enemy release and enhanced mutualisms”
+
+The excel file is called “2025-3-24-Field_survey.xlsx”
+
+Here’s the README that describes the data: 
+
+```
+# Dual drivers of plant invasions: Enemy release and enhanced mutualisms
+
+This dataset contains all primary data that support the findings of this study, which are listed below:
+
+1\. Field survey: Conducted field surveys at 17 sites along a latitudinal gradient in China (22.77 °N to 42.48 °N) for five pairs of  invasive and congeneric native Asteraceae plant species.
+
+2\. Common garden experiment: Took an experimentally manipulated aboveground insect feeding for two invasive and congeneric native Asteraceae plant species in a middle latitude (34.79 °N).
+
+**Data description**
+
+1.Field survey:Measured aboveground invertebrate abundance（include Neuroptera, Hemiptera, Orthoptera, Lepidoptera, Araneida, Coleoptera, Diptera, Hymenoptera and others（includes Stylommatophora [gastropods], Odonata and Acarina））, leaf damage, AMF colonization, root morphological traits associated with nutrient uptake（Root length、Root surface area, Root average diameter, Root volume, Root tissue density, Fine root length、Coarse root length, Fine root surface area、Coarse root  surface area（Fine root means that the root diameter ≤1mm，Coarse root means that  the root diameter ＞1mm ））, root soluble sugar concentrations（include fine root soluble sugar concentrations and coarse root soluble sugar concentrations），aboveground mass and belowground mass. Some abiotic factors like Soil pH，Soil water content，Annual Mean Temperature，Mean Diurnal Range，Isothermality，Temperature Seasonality ，Max Temperature of Warmest Month，Min Temperature of Coldest Month，Temperature Annual Range，Mean Temperature of Wettest Quarter，Mean Temperature of Driest Quarter，Mean Temperature of Warmest Quarter，Mean Temperature of Coldest Quarter，Annual Precipitation，Precipitation of Wettest Month，Precipitation of Driest Month，Precipitation Seasonality，Precipitation of Wettest Quarter，Precipitation of Driest Quarter，Precipitation of Warmest Quarter and Precipitation of Coldest Quarter.
+
+2\. Common garden experiment:Measured aboveground invertebrate abundance（include Neuroptera、Hemiptera, Orthoptera, Lepidoptera, Araneida, Coleoptera, Diptera, Hymenoptera and others（includes Stylommatophora [gastropods], Odonata and Acarina））, leaf damage, AMF colonization, root morphological traits associated with nutrient uptake（Root length、Root surface area、Root average diameter、Root volume、Root tissue density、Fine root length、Coarse root length、Fine root surface area、Coarse root  surface area（Fine root means that the root diameter ≤1mm，Coarse root means that  the root diameter ＞1mm ））, root soluble sugar concentrations（include fine root soluble sugar concentrations and coarse root soluble sugar concentrations），aboveground mass and belowground mass.
+
+See Excel table for detailed data of the field survey and common garden experiments.
+
+Abbreviation
+
+Field survey:
+
+Region:High latitude(North):TL:Tieling;FS:Fushun;CY:Chaoyang;BX:Benxi;LY:Liaoyang.Middle latitude(Middle):PY:Puyang;XX:Xinxiang;JZ:Jiaozuo;KF:Kaifeng;SMX:Sanmenxia;LY:Luoyang;HZ:Heze.Low latitude(South):SM:Sanming;GZ:Ganzhou;LYan:Longyan;SG:Shaoguan.
+
+Species:XDJ(invasive):Sonchus oleraceus;JMC(native):Sonchus arvensis;TC(invasive):Ambrosia artemisiifolia;AC(native):Artemisia argyi;GZC(invasive):Bidens pilosa;JZYP(native):Bidens biternata;JCC(invasive):Eupatorium catarium;DXG(native):Eupatorium chinense;DL(invasive):Bidens frondosa;LBC(native):Bidens tripartida.
+
+Common garden:
+
+Species:GZC(invasive):Bidens pilosa;JZYP(native):Bidens biternata;DL(invasive):Bidens frondosa;LBC(native):Bidens tripartida;
+
+Treatment:closed(with net and no herbivory);Open(the net covers "Windows" and have herbivory );
+
+Time:July means harvest time in july; August means harvest time in august.
+
+Figure processing software.
+
+Sigmaplot12.5 and Origin2024 draw all the bar charts.
+
+Data processing software.
+
+Microsoft Excel records the field survey and common garden data and make statistical tables.
+
+The explain of any empty cells in the excel tables (field survey and common garden experiments)：
+
+We do not add "null," "n/a," or another appropriate value to empty cells in excel tables because they may interfere with a software meant to analyze the files.
+
+There were empty cells in the excel tables of soluble sugar of fine and coarse root soluble sugar concentration.
+
+We did not measure all the samples, but random sampling(by species pair) was measured for samples from each region in field survey or treatments in common garden experiment，the empty cells were no been measured.
+```
+
+Here are the column names and two example rows:
+
+Name	Origin	Soil ph	Soil water content（%）	Coarse root soluble sugar concentrations(mg/g)	Fine root soluble sugar concentrations(mg/g)	AMF colonization rate(%)	Damage(%)	Aboveground mass(g)	Belowground mass(g)	Root length(cm)	Root surface area(cm2)	Root average diameter(mm)	Root volume(cm3)	Root tissue density(g/cm3)	Fine root length(cm)	Coarse root length(cm)	Fine root surface area(cm2)	Coarse root  surface area(cm2)	Annual Mean Temperature（℃）	Mean Diurnal Range（℃）	Isothermality	Temperature Seasonality 	Max Temperature of Warmest Month（℃）	Min Temperature of Coldest Month（℃）	Temperature Annual Range（℃）	 Mean Temperature of Wettest Quarter（℃）	Mean Temperature of Driest Quarter（℃）	Mean Temperature of Warmest Quarter（℃）	Mean Temperature of Coldest Quarter（℃）	Annual Precipitation（mm）	 Precipitation of Wettest Month（mm）	Precipitation of Driest Month（mm）	Precipitation Seasonality（mm）	Precipitation of Wettest Quarter（mm）	Precipitation of Driest Quarter（mm）	Precipitation of Warmest Quarter（mm）	 Precipitation of Coldest Quarter（mm）
+Sonchus oleraceus	Invasive	6.13	15.25			12.50 	3.87 	3.1120 	0.3014 	408.7822 	77.9295 	0.7229 	1.322	0.2280 	362.1088	46.6158	40.8465	36.3086	14.572636	11.0858125686646	30.4643154144287	982.179993	31.416	-4.9735	36.3895	24.8033332824707	1.864708424	26.1662082672119	1.8647084236145	628	161	8	89.5383529663086	356	28	352	28
+Bidens biternata	Native	6.56 	18.28 	162.2373 	117.6963 	9.67 	33.78 	7.2254 	0.5273 	902.0852 	159.7902 	0.4221 	2.266	0.2327 	849.9038	52.0458	119.1521	39.7535	22.113676	6.13197946548462	29.4838600158691	542.930481	31.462749	10.665	20.797749	28.0365829467773	16.57370758	28.0365829467773	14.9347496032715	1968	320	34	73.0689849853516	924	109	924	123
+
+
+Categorize every column name into either unique or shared. Respond with two lists - unique and shared.
+
+{unique:[], shared:[]}
