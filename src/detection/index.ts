@@ -4,7 +4,7 @@ import {
   type DuplicateValuesResult,
   DuplicateValue
 } from "src/types";
-import { Sheet } from "src/entities/Sheet";
+import { Sheet, type EnhancedCell } from "src/entities/Sheet";
 import {
   calculateNumberEntropy,
   calculateEntropyScore,
@@ -45,7 +45,7 @@ export function deduplicateSortedSequences(
 }
 
 export function findRepeatedSequences(
-  matrix: unknown[][],
+  matrix: EnhancedCell[][],
   {
     isInverted,
     sheetName,
@@ -65,8 +65,9 @@ export function findRepeatedSequences(
         // Limit the number of sequences to avoid memory issues
         break;
       }
-      const cellValue = matrix[columnIndex][rowIndex];
-      if (typeof cellValue === "number") {
+      const cellData = matrix[columnIndex]?.[rowIndex];
+      if (cellData?.isNumeric && !cellData.isDate) {
+        const cellValue = cellData.value as number;
         const positions = positionsByValue.get(cellValue) ?? [];
         const newPosition: Position = {
           column: columnIndex,
@@ -91,17 +92,17 @@ export function findRepeatedSequences(
             let length = 1;
             const repeatedValues: number[] = [cellValue];
             while (
-              typeof matrix[position.column][position.startRow + length] ===
-                "number" &&
+              matrix[position.column][position.startRow + length]?.isNumeric &&
+              !matrix[position.column][position.startRow + length]?.isDate &&
               !(
                 position.column === columnIndex &&
                 rowIndex === position.startRow + length
               ) &&
-              matrix[position.column][position.startRow + length] ===
-                matrix[columnIndex][rowIndex + length]
+              matrix[position.column][position.startRow + length].value ===
+                matrix[columnIndex][rowIndex + length]?.value
             ) {
               repeatedValues.push(
-                matrix[position.column][position.startRow + length] as number
+                matrix[position.column][position.startRow + length].value as number
               );
               checkedPositionPairs.add(
                 `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`
@@ -154,14 +155,15 @@ export function findRepeatedSequences(
 
 export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
   const numOccurencesByNumericCellValue = new Map<number, number>();
-  for (const row of sheet.parsedMatrix) {
-    for (const cell of row) {
-      if (typeof cell === "number") {
-        const numOccurences = numOccurencesByNumericCellValue.get(cell) ?? 0;
-        numOccurencesByNumericCellValue.set(cell, numOccurences + 1);
+  sheet.enhancedMatrix.forEach(row => {
+    row.forEach(cell => {
+      if (cell.isNumeric && !cell.isDate) {
+        const value = cell.value as number;
+        const numOccurences = numOccurencesByNumericCellValue.get(value) ?? 0;
+        numOccurencesByNumericCellValue.set(value, numOccurences + 1);
       }
-    }
-  }
+    });
+  });
 
   const duplicateValuesSortedByEntropy: DuplicateValue[] = [
     ...numOccurencesByNumericCellValue.entries()
