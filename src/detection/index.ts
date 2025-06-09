@@ -4,7 +4,8 @@ import {
   type DuplicateValuesResult,
   DuplicateValue
 } from "src/types";
-import { Sheet, type EnhancedCell } from "src/entities/Sheet";
+import { Sheet } from "src/entities/Sheet";
+import { type EnhancedCell } from "src/entities/EnhancedCell";
 import {
   calculateNumberEntropy,
   calculateEntropyScore,

@@ -1,13 +1,6 @@
 import xlsx from "xlsx";
 import { roundFloatingPointInaccuracies } from "../utils/roundFloatingPointInaccuracies.js";
-
-export interface EnhancedCell {
-  value: unknown;
-  formattedValue: string;
-  isDate: boolean;
-  isNumeric: boolean;
-  originalCell: xlsx.CellObject | null;
-}
+import { EnhancedCell } from "./EnhancedCell.js";
 
 export class Sheet {
   public readonly name: string;
@@ -64,70 +57,36 @@ export class Sheet {
   }
 
   private buildEnhancedMatrix(): EnhancedCell[][] {
-    // First get the basic matrix structure
-    const basicMatrix: unknown[][] = xlsx.utils.sheet_to_json(
-      this.workbookSheet,
-      {
-        raw: true,
-        header: 1
-      }
-    );
+    // Build enhanced matrix directly from worksheet without sheet_to_json
+    if (!this.workbookSheet["!ref"]) {
+      return []; // Empty worksheet
+    }
 
-    // Get worksheet range for accessing individual cells
-    const range = this.workbookSheet["!ref"]
-      ? xlsx.utils.decode_range(this.workbookSheet["!ref"])
-      : {
-          s: { r: 0, c: 0 },
-          e: { r: basicMatrix.length - 1, c: (basicMatrix[0]?.length || 0) - 1 }
-        };
-
-    // Build enhanced matrix
+    const range = xlsx.utils.decode_range(this.workbookSheet["!ref"]);
     const enhancedMatrix: EnhancedCell[][] = [];
 
-    for (let row = 0; row < basicMatrix.length; row++) {
-      enhancedMatrix[row] = [];
-      for (let col = 0; col < (basicMatrix[row]?.length || 0); col++) {
+    // Initialize matrix with proper dimensions
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      const matrixRowIndex = row - range.s.r;
+      enhancedMatrix[matrixRowIndex] = [];
+      
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const matrixColIndex = col - range.s.c;
         const cellAddress = xlsx.utils.encode_cell({ r: row, c: col });
         const originalCell: xlsx.CellObject | null =
           this.workbookSheet[cellAddress] || null;
-        const value = basicMatrix[row][col];
 
-        const isDate = this.isDateCell(originalCell);
-        const isNumeric = typeof value === "number" && !isDate;
-        const formattedValue = originalCell?.w || String(value || "");
-
-        enhancedMatrix[row][col] = {
-          value: isNumeric
-            ? roundFloatingPointInaccuracies(value as number)
-            : value,
-          formattedValue,
-          isDate,
-          isNumeric,
-          originalCell
-        };
+        enhancedMatrix[matrixRowIndex][matrixColIndex] = new EnhancedCell(
+          originalCell, 
+          row, 
+          col
+        );
       }
     }
 
     return enhancedMatrix;
   }
 
-  private isDateCell(cell: xlsx.CellObject | null): boolean {
-    if (!cell) return false;
-
-    // Check if cell type is explicitly date
-    if (cell.t === "d") {
-      return true;
-    }
-
-    // For numeric cells, check if the formatted value looks like a date
-    if (cell.t === "n" && cell.w) {
-      // Common date patterns: MM/DD/YY, MM/DD/YYYY, M/D/YY, etc.
-      const datePattern = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/;
-      return datePattern.test(cell.w);
-    }
-
-    return false;
-  }
 
   static invertEnhancedMatrix(matrix: EnhancedCell[][]): EnhancedCell[][] {
     const invertedMatrix: EnhancedCell[][] = [];
