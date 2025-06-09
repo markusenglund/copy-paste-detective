@@ -34,6 +34,24 @@ export class Sheet {
     return (this.enhancedMatrix[0] || []).map(cell => String(cell.value || ""));
   }
 
+  get numericColumnIndices(): number[] {
+    const numericColumns: number[] = [];
+    const sampleRows = Math.min(10, this.numRows);
+    
+    for (let colIndex = 0; colIndex < this.numColumns; colIndex++) {
+      const hasNumericData = this.enhancedMatrix.slice(0, sampleRows).some(row => {
+        const cell = row[colIndex];
+        return cell?.isNumeric && !cell.isDate;
+      });
+      
+      if (hasNumericData) {
+        numericColumns.push(colIndex);
+      }
+    }
+    
+    return numericColumns;
+  }
+
   get numNumericCells(): number {
     let numberCount = 0;
     this.enhancedMatrix.forEach(row =>
@@ -50,6 +68,10 @@ export class Sheet {
     return this.enhancedMatrix
       .slice(1, n + 1)
       .map(row => row.map(cell => cell.value)); // Skip header row, take n data rows
+  }
+
+  getColumnIndex(columnName: string): number {
+    return this.columnNames.indexOf(columnName);
   }
 
   isCellDate(row: number, col: number): boolean {
