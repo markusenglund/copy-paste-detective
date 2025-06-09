@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { findDuplicateRows } from "../index";
+import { findDuplicateRows } from "../findDuplicateRows";
 import { Sheet } from "../../entities/Sheet";
 import { EnhancedCell } from "../../entities/EnhancedCell";
 import type { ColumnCategorization } from "../../ai/geminiService";
