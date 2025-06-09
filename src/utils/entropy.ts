@@ -28,7 +28,7 @@ function calculateRawNumberEntropy(value: number): number {
   // Remove trailing zeroes
   const withoutTrailingZeroes = withoutPoint.replace(/0+$/, "");
 
-  const entropy = parseInt(withoutTrailingZeroes || "0");
+  const entropy = Math.abs(parseInt(withoutTrailingZeroes || "0"));
   return entropy;
 }
 

@@ -1,7 +1,8 @@
 import {
   SuspicionLevel,
   type RepeatedSequence,
-  type DuplicateValue
+  type DuplicateValue,
+  type DuplicateRow
 } from "src/types";
 
 const levelToSymbol: Record<SuspicionLevel, string> = {
@@ -119,4 +120,63 @@ export function formatDuplicatesByOccurrenceForDisplay(
         matrix: obj.sheet.numNumericCells
       };
     });
+}
+
+export function formatDuplicateRowsForDisplay(
+  duplicateRows: DuplicateRow[]
+): Array<{
+  level: string;
+  sheetName: string;
+  row1: number;
+  row2: number;
+  sharedCount: number;
+  sharedValues: string;
+  sharedColumns: string;
+  entropyScore: string;
+}> {
+  return duplicateRows.map(duplicateRow => {
+    let level = SuspicionLevel.None;
+    if (duplicateRow.rowEntropyScore > 50) {
+      level = SuspicionLevel.High;
+    } else if (duplicateRow.rowEntropyScore > 20) {
+      level = SuspicionLevel.Medium;
+    } else if (duplicateRow.rowEntropyScore > 5) {
+      level = SuspicionLevel.Low;
+    }
+
+    // Format shared values for display (show first few if many)
+    const sharedValuesDisplay = duplicateRow.sharedValues.length > 3
+      ? `${duplicateRow.sharedValues.slice(0, 3).join(", ")}... (+${duplicateRow.sharedValues.length - 3} more)`
+      : duplicateRow.sharedValues.join(", ");
+
+    // Format shared columns with both names and letters
+    const columnNames = duplicateRow.sheet.columnNames;
+    const sharedColumnsDisplay = duplicateRow.sharedColumns.map(colIndex => {
+      const columnName = columnNames[colIndex] || `Col${colIndex}`;
+      const columnLetter = getColumnLetter(colIndex);
+      return `${columnName}(${columnLetter})`;
+    }).join(", ");
+
+    return {
+      level: levelToSymbol[level],
+      sheetName: duplicateRow.sheet.name,
+      row1: duplicateRow.rowIndices[0] + 1, // Convert to 1-based indexing for display
+      row2: duplicateRow.rowIndices[1] + 1,
+      sharedCount: duplicateRow.totalSharedCount,
+      sharedValues: sharedValuesDisplay,
+      sharedColumns: sharedColumnsDisplay,
+      entropyScore: duplicateRow.rowEntropyScore.toFixed(1)
+    };
+  });
+}
+
+function getColumnLetter(columnIndex: number): string {
+  let columnLetters = "";
+  let dividend = columnIndex;
+  do {
+    const remainder = dividend % 26;
+    columnLetters = String.fromCharCode(65 + remainder) + columnLetters;
+    dividend = Math.floor(dividend / 26) - 1;
+  } while (dividend >= 0);
+  return columnLetters;
 }

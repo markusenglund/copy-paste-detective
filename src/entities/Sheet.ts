@@ -36,18 +36,20 @@ export class Sheet {
   get numericColumnIndices(): number[] {
     const numericColumns: number[] = [];
     const sampleRows = Math.min(10, this.numRows);
-    
+
     for (let colIndex = 0; colIndex < this.numColumns; colIndex++) {
-      const hasNumericData = this.enhancedMatrix.slice(0, sampleRows).some(row => {
-        const cell = row[colIndex];
-        return cell?.isNumeric && !cell.isDate;
-      });
-      
+      const hasNumericData = this.enhancedMatrix
+        .slice(0, sampleRows)
+        .some(row => {
+          const cell = row[colIndex];
+          return cell?.isNumeric && !cell.isDate;
+        });
+
       if (hasNumericData) {
         numericColumns.push(colIndex);
       }
     }
-    
+
     return numericColumns;
   }
 
@@ -90,7 +92,7 @@ export class Sheet {
     for (let row = range.s.r; row <= range.e.r; row++) {
       const matrixRowIndex = row - range.s.r;
       enhancedMatrix[matrixRowIndex] = [];
-      
+
       for (let col = range.s.c; col <= range.e.c; col++) {
         const matrixColIndex = col - range.s.c;
         const cellAddress = xlsx.utils.encode_cell({ r: row, c: col });
@@ -98,8 +100,8 @@ export class Sheet {
           this.workbookSheet[cellAddress] || null;
 
         enhancedMatrix[matrixRowIndex][matrixColIndex] = new EnhancedCell(
-          originalCell, 
-          row, 
+          originalCell,
+          row,
           col
         );
       }
@@ -107,7 +109,6 @@ export class Sheet {
 
     return enhancedMatrix;
   }
-
 
   static invertEnhancedMatrix(matrix: EnhancedCell[][]): EnhancedCell[][] {
     const invertedMatrix: EnhancedCell[][] = [];
