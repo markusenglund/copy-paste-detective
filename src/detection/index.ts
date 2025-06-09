@@ -77,9 +77,7 @@ export function findRepeatedSequences(
         const newPosition: Position = {
           column: columnIndex,
           startRow: rowIndex,
-          cellId: isInverted
-            ? getCellId(columnIndex, rowIndex)
-            : getCellId(rowIndex, columnIndex)
+          cellId: cellData.cellId
         };
         if (positions.length < 100) {
           for (const position of positions) {
@@ -331,14 +329,3 @@ export function findDuplicateRows(
   return { duplicateRows };
 }
 
-function getCellId(columnIndex: number, rowIndex: number): string {
-  let columnLetters = "";
-  let dividend = columnIndex;
-  do {
-    const remainder = dividend % 26;
-    columnLetters = String.fromCharCode(65 + remainder) + columnLetters;
-    dividend = Math.floor(dividend / 26) - 1;
-  } while (dividend >= 0);
-  const rowNumber = rowIndex + 1;
-  return `${columnLetters}${rowNumber}`;
-}
