@@ -101,8 +101,8 @@ export function findDuplicateRows(
 
   // Compare rows with shared values and add them to duplicateRows
   const alreadyComparedRowPairs = new Set<string>();
-  for (const [colIndex, valueMap] of rowsByHighEntropyValueByColumn) {
-    for (const [value, rowSet] of valueMap) {
+  for (const [_colIndex, valueMap] of rowsByHighEntropyValueByColumn) {
+    for (const [_value, rowSet] of valueMap) {
       if (rowSet.size > 1) {
         const rowArray = Array.from(rowSet);
         for (let i = 0; i < rowArray.length; i++) {

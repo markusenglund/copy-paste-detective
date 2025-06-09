@@ -122,7 +122,7 @@ export function findRepeatedSequences(
               // Skip if the repeated sequences are back-to-back
               continue;
             }
-            const { mostCommonIntervalSize, mostCommonIntervalSizePercentage } =
+            const { mostCommonIntervalSizePercentage } =
               calculateSequenceRegularity(repeatedValues);
             const intervalAdjustedSequenceEntropyScore =
               sequenceEntropyScore * (1 - mostCommonIntervalSizePercentage);
@@ -168,7 +168,7 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
   const duplicateValuesSortedByEntropy: DuplicateValue[] = [
     ...numOccurencesByNumericCellValue.entries()
   ]
-    .filter(([value, numOccurences]) => numOccurences > 1)
+    .filter(([_value, numOccurences]) => numOccurences > 1)
     .map(([value, numOccurences]) => {
       const entropy = calculateNumberEntropy(value);
       return { value, numOccurences, entropy, sheet };

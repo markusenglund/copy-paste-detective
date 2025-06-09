@@ -11,8 +11,8 @@ import {
   formatDuplicatesByEntropyForDisplay,
   formatDuplicatesByOccurrenceForDisplay
 } from "src/utils/output";
-import { GeminiService } from "src/ai/geminiService";
-import { readFileSync } from "fs";
+// import { GeminiService } from "src/ai/geminiService";
+// import { readFileSync } from "fs";
 import xlsx from "xlsx";
 const program = new Command();
 
@@ -31,8 +31,8 @@ program
     const excelDataFolder =
       "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418";
     const excelFileName = "2025-3-24-Field_survey.xlsx";
-    const paperName =
-      "Dual drivers of plant invasions: Enemy release and enhanced mutualisms";
+    // const paperName =
+    //   "Dual drivers of plant invasions: Enemy release and enhanced mutualisms";
     const workbook = xlsx.readFile(
       // "files/non-fraud/doi_10_5061_dryad_stqjq2cdp__v20250418/2025-3-24-common_garden.xlsx",
       `${excelDataFolder}/${excelFileName}`,
@@ -44,15 +44,15 @@ program
     console.log(`Found ${sheetNames.length} sheets: ${sheetNames.join(", ")}`);
 
     // Use Gemini to analyze column structure for the first sheet
-    const firstSheetName = sheetNames[0];
-    const firstWorkbookSheet = workbook.Sheets[firstSheetName];
-    const firstMatrix: unknown[][] = xlsx.utils.sheet_to_json(
-      firstWorkbookSheet,
-      {
-        raw: true,
-        header: 1
-      }
-    );
+    // const firstSheetName = sheetNames[0];
+    // const firstWorkbookSheet = workbook.Sheets[firstSheetName];
+    // const firstMatrix: unknown[][] = xlsx.utils.sheet_to_json(
+    //   firstWorkbookSheet,
+    //   {
+    //     raw: true,
+    //     header: 1
+    //   }
+    // );
 
     // console.time("Gemini API call");
     // const gemini = new GeminiService();

@@ -8,7 +8,9 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY must be a non-empty string'),
 });
 
-function validateEnv() {
+type EnvSchema = z.infer<typeof envSchema>;
+
+function validateEnv(): EnvSchema {
   try {
     return envSchema.parse(process.env);
   } catch (error) {

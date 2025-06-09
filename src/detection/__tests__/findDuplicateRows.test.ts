@@ -1,7 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import { findDuplicateRows } from "../findDuplicateRows";
 import { Sheet } from "../../entities/Sheet";
-import { EnhancedCell } from "../../entities/EnhancedCell";
 import type { ColumnCategorization } from "../../ai/geminiService";
 import xlsx from "xlsx";
 
@@ -10,7 +9,6 @@ function createMockSheet(
   sheetName: string,
   data: (string | number | null)[][]
 ): Sheet {
-  const workbook = xlsx.utils.book_new();
   const worksheet = xlsx.utils.aoa_to_sheet(data);
   const sheet = new Sheet(worksheet, sheetName);
   return sheet;

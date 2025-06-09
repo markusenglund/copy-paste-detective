@@ -1,5 +1,4 @@
 import xlsx from "xlsx";
-import { roundFloatingPointInaccuracies } from "../utils/roundFloatingPointInaccuracies.js";
 import { EnhancedCell } from "./EnhancedCell.js";
 
 export class Sheet {

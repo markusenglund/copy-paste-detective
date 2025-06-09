@@ -11,7 +11,20 @@ const levelToSymbol: Record<SuspicionLevel, string> = {
   [SuspicionLevel.High]: "🔴"
 };
 
-export function formatSequencesForDisplay(sequences: RepeatedSequence[]) {
+export function formatSequencesForDisplay(sequences: RepeatedSequence[]): Array<{
+  level: string;
+  sheetName: string;
+  values: string;
+  length: number;
+  sizeAdjEntropy: string;
+  adjEntropy: string;
+  entropy: string;
+  cell1: string;
+  cell2: string;
+  matrix: number;
+  instances: number;
+  axis: string;
+}> {
   return sequences.map(sequence => {
     const firstCellID = sequence.positions[0].cellId;
     const secondCellId = sequence.positions[1].cellId;
@@ -46,7 +59,14 @@ export function formatSequencesForDisplay(sequences: RepeatedSequence[]) {
 
 export function formatDuplicatesByEntropyForDisplay(
   duplicates: DuplicateValue[]
-) {
+): Array<{
+  level: string;
+  sheetName: string;
+  value: number;
+  n: number;
+  entropy: number;
+  matrix: number;
+}> {
   return duplicates
     .toSorted((a, b) => (b.entropy ?? 0) - (a.entropy ?? 0))
     .map(duplicateValue => {
@@ -71,7 +91,14 @@ export function formatDuplicatesByEntropyForDisplay(
 
 export function formatDuplicatesByOccurrenceForDisplay(
   duplicates: DuplicateValue[]
-) {
+): Array<{
+  level: string;
+  sheetName: string;
+  value: number;
+  n: number;
+  entropy: number;
+  matrix: number;
+}> {
   return duplicates
     .toSorted((a, b) => (b.numOccurences ?? 0) - (a.numOccurences ?? 0))
     .map(obj => {
