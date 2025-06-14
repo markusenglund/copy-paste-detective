@@ -36,7 +36,7 @@ export interface Strategy<T extends StrategyResult> {
 export interface StrategyContext {
   excelDataFolder: string;
   excelFileName: string;
-  paperName: string;
+  articleName: string;
 }
 
 export enum StrategyName {

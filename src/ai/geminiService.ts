@@ -6,66 +6,58 @@ import { generateColumnCategorizationPrompt } from "./promptTemplate.js";
 
 const columnCategorizationSchema = z.object({
   unique: z.array(z.string()),
-  shared: z.array(z.string()),
+  shared: z.array(z.string())
 });
 
 export type ColumnCategorization = z.infer<typeof columnCategorizationSchema>;
+const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
-export class GeminiService {
-  private client: GoogleGenAI;
+export async function categorizeColumns(
+  params: PromptTemplateParams
+): Promise<ColumnCategorization> {
+  const prompt = generateColumnCategorizationPrompt(params);
 
-  constructor() {
-    this.client = new GoogleGenAI({ apiKey: config.geminiApiKey });
-  }
-
-  async categorizeColumns(
-    params: PromptTemplateParams
-  ): Promise<ColumnCategorization> {
-    const prompt = generateColumnCategorizationPrompt(params);
-
-    try {
-      const response = await this.client.models.generateContent({
-        model: "gemini-2.0-flash-001",
-        contents: prompt,
-        config: {
-          temperature: 0,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              unique: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.STRING,
-                },
-              },
-              shared: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.STRING,
-                },
-              },
+  try {
+    const response = await geminiClient.models.generateContent({
+      model: "gemini-2.0-flash-001",
+      contents: prompt,
+      config: {
+        temperature: 0,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            unique: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.STRING
+              }
             },
-            propertyOrdering: ["unique", "shared"],
-            required: ["unique", "shared"],
+            shared: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.STRING
+              }
+            }
           },
-        },
-      });
-
-      if (!response.text) {
-        throw new Error("No text received from Gemini API");
+          propertyOrdering: ["unique", "shared"],
+          required: ["unique", "shared"]
+        }
       }
+    });
 
-      // Parse and validate the structured JSON response
-      const parsed = JSON.parse(response.text);
-      const result = columnCategorizationSchema.parse(parsed);
-      return result;
-    } catch (error) {
-      console.error("Error calling Gemini API:", error);
-      throw new Error(
-        `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+    if (!response.text) {
+      throw new Error("No text received from Gemini API");
     }
-  }
 
+    // Parse and validate the structured JSON response
+    const parsed = JSON.parse(response.text);
+    const result = columnCategorizationSchema.parse(parsed);
+    return result;
+  } catch (error) {
+    console.error("Error calling Gemini API:", error);
+    throw new Error(
+      `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
 }

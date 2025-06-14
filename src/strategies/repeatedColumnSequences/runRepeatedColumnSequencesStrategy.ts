@@ -1,5 +1,8 @@
 import { Sheet } from "src/entities/Sheet";
-import { findRepeatedSequences, deduplicateSortedSequences } from "src/detection";
+import {
+  findRepeatedSequences,
+  deduplicateSortedSequences
+} from "src/detection";
 import {
   StrategyContext,
   RepeatedColumnSequencesResult,
@@ -12,12 +15,12 @@ export async function runRepeatedColumnSequencesStrategy(
   _context: StrategyContext
 ): Promise<RepeatedColumnSequencesResult> {
   const startTime = performance.now();
-  
-  const repeatedSequences: (RepeatedSequence & { sheetName: string })[] = [];
+
+  const repeatedColumnSequences: (RepeatedSequence & { sheetName: string })[] =
+    [];
 
   for (const sheet of sheets) {
-    console.time("Vertical sequences");
-    const verticalSequences = findRepeatedSequences(
+    const sheetRepeatedColumnSequences = findRepeatedSequences(
       sheet.invertedEnhancedMatrix,
       {
         sheetName: sheet.name,
@@ -25,25 +28,15 @@ export async function runRepeatedColumnSequencesStrategy(
         numberCount: sheet.numNumericCells
       }
     );
-    console.timeEnd("Vertical sequences");
-    
-    console.time("Horizontal sequences");
-    const horizontalSequences = findRepeatedSequences(sheet.enhancedMatrix, {
-      sheetName: sheet.name,
-      isInverted: false,
-      numberCount: sheet.numNumericCells
-    });
-    console.timeEnd("Horizontal sequences");
 
     console.log(
-      `[${sheet.name}] ${verticalSequences.length} vertical sequences found, ${horizontalSequences.length} horizontal sequences found`
+      `[${sheet.name}] ${sheetRepeatedColumnSequences.length} column sequences found.`
     );
 
-    repeatedSequences.push(...verticalSequences);
-    repeatedSequences.push(...horizontalSequences);
+    repeatedColumnSequences.push(...sheetRepeatedColumnSequences);
   }
 
-  const sortedSequences = repeatedSequences
+  const sortedSequences = repeatedColumnSequences
     .toSorted((a, b) => {
       return (
         (b.matrixSizeAdjustedEntropyScore || 0) -
@@ -52,7 +45,8 @@ export async function runRepeatedColumnSequencesStrategy(
     })
     .filter(sequence => sequence.matrixSizeAdjustedEntropyScore > 1);
 
-  const deduplicatedSortedSequences = deduplicateSortedSequences(sortedSequences);
+  const deduplicatedSortedSequences =
+    deduplicateSortedSequences(sortedSequences);
 
   const executionTime = performance.now() - startTime;
 

@@ -26,19 +26,22 @@ export function printDuplicateRowsResults({
 
     // Format shared values for display (show first few if many)
     const sharedValuesDisplay =
-      duplicateRow.sharedValues.length > 3
-        ? `${duplicateRow.sharedValues.slice(0, 3).join(", ")}... (+${duplicateRow.sharedValues.length - 3} more)`
+      duplicateRow.sharedValues.length > 2
+        ? `${duplicateRow.sharedValues.slice(0, 2).join(", ")}... (+${duplicateRow.sharedValues.length - 3} more)`
         : duplicateRow.sharedValues.join(", ");
 
     // Format shared columns with both names and letters
     const columnNames = duplicateRow.sheet.columnNames;
-    const sharedColumnsDisplay = duplicateRow.sharedColumns
+    let sharedColumnsDisplay = duplicateRow.sharedColumns
       .map(colIndex => {
         const columnName = columnNames[colIndex] || `Col${colIndex}`;
         const columnLetter = getColumnLetter(colIndex);
         return `${columnName}(${columnLetter})`;
       })
       .join(", ");
+    if (sharedColumnsDisplay.length > 40) {
+      sharedColumnsDisplay = `${sharedColumnsDisplay.slice(0, 40)}...`;
+    }
 
     return {
       level: levelToSymbol[level],

@@ -2,9 +2,7 @@ import { RepeatedColumnSequencesResult } from "src/types/strategies";
 import { SuspicionLevel, type RepeatedSequence } from "src/types";
 import { levelToSymbol } from "src/utils/output";
 
-function formatSequencesForDisplay(
-  sequences: RepeatedSequence[]
-): Array<{
+function formatSequencesForDisplay(sequences: RepeatedSequence[]): Array<{
   level: string;
   sheetName: string;
   values: string;
@@ -38,13 +36,11 @@ function formatSequencesForDisplay(
           : `${sequence.values[0]}`,
       length: sequence.values.length,
       sizeAdjEntropy: sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
-      adjEntropy: sequence.adjustedSequenceEntropyScore.toFixed(1),
       entropy: sequence.sequenceEntropyScore.toFixed(1),
       cell1: firstCellID,
       cell2: secondCellId,
       matrix: sequence.numberCount,
-      instances: sequence.positions.length,
-      axis: sequence.axis
+      instances: sequence.positions.length
     };
     return table;
   });

@@ -21,7 +21,6 @@ export type RepeatedSequence = {
   matrixSizeAdjustedEntropyScore: number;
   numberCount: number;
   sheetName: string;
-  axis: "horizontal" | "vertical";
 };
 
 export type DuplicateValue = {

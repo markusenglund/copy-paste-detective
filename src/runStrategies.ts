@@ -20,21 +20,17 @@ export async function runStrategies(
   strategies: StrategyName[],
   context: StrategyContext
 ): Promise<void> {
-  console.time("Time elapsed");
+  console.log("🔍 Running strategies:", strategies.join(", "));
+
   console.time("Read Excel file in");
-
-  const excelDataFolder = context.excelDataFolder;
-  const excelFileName = context.excelFileName;
-
   const workbook = xlsx.readFile(
-    `${excelDataFolder}/${excelFileName}`,
+    `${context.excelDataFolder}/${context.excelFileName}`,
     { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
   );
   console.timeEnd("Read Excel file in");
 
   const sheetNames = workbook.SheetNames;
-  console.log(`Found ${sheetNames.length} sheets: ${sheetNames.join(", ")}`);
-
+  console.log(`Found ${sheetNames.length} sheet(s): ${sheetNames.join(", ")}`);
   const sheets: Sheet[] = sheetNames.map(sheetName => {
     const workbookSheet = workbook.Sheets[sheetName];
     return new Sheet(workbookSheet, sheetName);
@@ -42,10 +38,6 @@ export async function runStrategies(
 
   for (const strategyName of strategies) {
     const strategy = availableStrategies[strategyName];
-    if (!strategy) {
-      console.warn(`⚠️ Unknown strategy: ${strategyName}`);
-      continue;
-    }
 
     console.log(`\n🔍 Running ${strategyName} strategy...`);
     const result = await strategy.execute(sheets, context);
@@ -54,6 +46,4 @@ export async function runStrategies(
     );
     strategy.printResults(result);
   }
-
-  console.timeEnd("Time elapsed");
 }
