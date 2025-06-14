@@ -3,13 +3,15 @@ import { findDuplicateValues } from "../../detection";
 import {
   StrategyContext,
   IndividualNumbersResult,
-  StrategyName
+  StrategyName,
+  StrategyDependencies
 } from "../../types/strategies";
 import { DuplicateValue } from "../../types";
 
 export async function runIndividualNumbersStrategy(
   sheets: Sheet[],
-  _context: StrategyContext
+  _context: StrategyContext,
+  _dependencies?: StrategyDependencies
 ): Promise<IndividualNumbersResult> {
   const startTime = performance.now();
   

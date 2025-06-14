@@ -3,30 +3,34 @@ import { findDuplicateRows } from "../../detection";
 import {
   StrategyContext,
   DuplicateRowsResult,
-  StrategyName
+  StrategyName,
+  StrategyDependencies
 } from "../../types/strategies";
-import { categorizeColumns, ColumnCategorization } from "../../ai/geminiService";
+import { categorizeColumnsWithGemini } from "../../ai/GeminiColumnCategorizer";
 import { readFileSync } from "fs";
 
 async function runDuplicateRowsStrategy(
   sheets: Sheet[],
-  context: StrategyContext
+  context: StrategyContext,
+  dependencies?: StrategyDependencies
 ): Promise<DuplicateRowsResult> {
   const startTime = performance.now();
 
   const allDuplicateRows = [];
 
+  // Use injected categorizeColumns function or default to Gemini
+  const categorizeColumns = dependencies?.categorizeColumns || categorizeColumnsWithGemini;
+
   // Read README.md from the excel data folder
   const readmePath = `${context.excelDataFolder}/README.md`;
   const dataDescription = readFileSync(readmePath, "utf-8");
 
-  // Find duplicate rows if Gemini categorization is available
   for (const sheet of sheets) {
-    const columnCategorization = await getColumnCategorization(
+    const columnCategorization = await categorizeColumns({
       sheet,
       context,
       dataDescription
-    );
+    });
     const { duplicateRows } = findDuplicateRows(sheet, columnCategorization);
 
     allDuplicateRows.push(...duplicateRows);
@@ -41,37 +45,5 @@ async function runDuplicateRowsStrategy(
   };
 }
 
-async function getColumnCategorization(
-  sheet: Sheet,
-  context: StrategyContext,
-  dataDescription: string
-): Promise<ColumnCategorization> {
-  // Extract column names and sample data for Gemini
-  const columnNames = (sheet.enhancedMatrix[0] || []).map(cell =>
-    String(cell.value || "")
-  );
-  const sampleData = sheet.enhancedMatrix
-    .slice(1, 3)
-    .map(row => row.map(cell => String(cell.value || "")));
-
-  const columnCategorization = await categorizeColumns({
-    paperName: context.articleName,
-    excelFileName: context.excelFileName,
-    dataDescription,
-    columnNames,
-    columnData: sampleData
-  });
-
-  console.log(
-    `[${sheet.name}] Unique columns:`,
-    columnCategorization.unique.join(", ")
-  );
-  console.log(
-    `[${sheet.name}] Shared columns:`,
-    columnCategorization.shared.join(", ")
-  );
-
-  return columnCategorization;
-}
 
 export { runDuplicateRowsStrategy };

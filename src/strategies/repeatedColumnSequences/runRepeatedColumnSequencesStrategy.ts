@@ -6,13 +6,15 @@ import {
 import {
   StrategyContext,
   RepeatedColumnSequencesResult,
-  StrategyName
+  StrategyName,
+  StrategyDependencies
 } from "../../types/strategies";
 import { RepeatedSequence } from "../../types";
 
 export async function runRepeatedColumnSequencesStrategy(
   sheets: Sheet[],
-  _context: StrategyContext
+  _context: StrategyContext,
+  _dependencies?: StrategyDependencies
 ): Promise<RepeatedColumnSequencesResult> {
   const startTime = performance.now();
 

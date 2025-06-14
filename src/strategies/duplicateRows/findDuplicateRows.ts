@@ -5,7 +5,7 @@ import {
   calculateNumberEntropy,
   calculateRowEntropyScore
 } from "../../utils/entropy";
-import { type ColumnCategorization } from "../../ai/geminiService";
+import { type ColumnCategorization } from "../../ai/ColumnCategorizer";
 
 function compareRows(
   row1: EnhancedCell[],
@@ -54,6 +54,8 @@ export function findDuplicateRows(
   const minNumberEntropyScore = 200;
   // Rows require a rowEntropyScore of at least this much to be considered duplicates.
   const minRowEntropyScore = 0.1;
+  // Rows must have at least this many shared column values to be considered duplicates.
+  const minSharedColumns = 2;
   const duplicateRows: DuplicateRow[] = [];
 
   // Get numeric columns that should be unique
@@ -125,7 +127,10 @@ export function findDuplicateRows(
               sheet
             );
             alreadyComparedRowPairs.add(pairKey);
-            if (duplicateRow.rowEntropyScore > minRowEntropyScore) {
+            if (
+              duplicateRow.rowEntropyScore > minRowEntropyScore &&
+              duplicateRow.totalSharedCount >= minSharedColumns
+            ) {
               duplicateRows.push(duplicateRow);
             }
           }

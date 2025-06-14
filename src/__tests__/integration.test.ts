@@ -3,6 +3,7 @@ import { runDuplicateRowsStrategy } from "../strategies/duplicateRows/runDuplica
 import { Sheet } from "../entities/Sheet";
 import { MetadataSchema } from "../types/metadata";
 import { StrategyContext, StrategyName } from "../types/strategies";
+import { createMockCategorizeColumns } from "../ai/MockColumnCategorizer";
 import { readFileSync } from "fs";
 import path from "path";
 import xlsx from "xlsx";
@@ -42,7 +43,41 @@ describe("Dryad Dataset Integration Test", () => {
 
   describe("Duplicate Rows Strategy", () => {
     it("should detect the expected duplicate row patterns in Dryad dataset", async () => {
-      const result = await runDuplicateRowsStrategy(sheets, context);
+      // Create mock categorizeColumns function with expected categorization
+      const mockCategorizeColumns = createMockCategorizeColumns({
+        unique: [
+          "Day of Study",
+          "ẟ13Ccollagen (‰)",
+          "Weight %C",
+          "Amp 44",
+          "ẟ15N (‰)",
+          "Weight %N",
+          "Amp 28",
+          "Weight % C:N",
+          "Atomic C:N",
+          "ẟ13Cbioapatite (‰, VPDB)",
+          "ẟ18O (‰, VPDB)",
+          "87Sr/86Sr",
+          "max error from blank",
+          "Sr concentration (measured)",
+          "Sr concentration (accounting for sample mass)",
+          "max blank Sr/sample Sr",
+          "Pellet notes",
+          "Fecal appearance notes",
+          "Other notes"
+        ],
+        shared: [
+          "Individual",
+          "Date collected",
+          "Tissue",
+          "Pre or post digestion",
+          "Date Run"
+        ]
+      });
+
+      const result = await runDuplicateRowsStrategy(sheets, context, {
+        categorizeColumns: mockCategorizeColumns
+      });
 
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.DuplicateRows);
@@ -56,8 +91,7 @@ describe("Dryad Dataset Integration Test", () => {
       const firstResult = result.duplicateRows[0];
       expect(firstResult.rowIndices).toEqual([35, 37]); // 0-based indexing (rows 36, 38 in 1-based)
       expect(firstResult.sharedColumns).toHaveLength(9);
-      expect(firstResult.totalSharedCount).toBeGreaterThan(0);
-      expect(firstResult.sharedValues.length).toBeGreaterThan(0);
+      expect(firstResult.sharedValues.length).toHaveLength(9);
 
       // Verify the second result (rows 54, 55 in 1-based indexing)
       const secondResult = result.duplicateRows[1];

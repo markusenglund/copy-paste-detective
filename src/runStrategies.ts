@@ -3,7 +3,8 @@ import {
   StrategyName,
   Strategy,
   StrategyContext,
-  StrategyResult
+  StrategyResult,
+  StrategyDependencies
 } from "./types/strategies";
 import individualNumbersStrategy from "./strategies/individualNumbers/individualNumbers";
 import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequences/repeatedColumnSequences";
@@ -18,7 +19,8 @@ const availableStrategies: Record<StrategyName, Strategy<StrategyResult>> = {
 
 export async function runStrategies(
   strategies: StrategyName[],
-  context: StrategyContext
+  context: StrategyContext,
+  dependencies?: StrategyDependencies
 ): Promise<void> {
   console.log("🔍 Running strategies:", strategies.join(", "));
 
@@ -40,7 +42,7 @@ export async function runStrategies(
     const strategy = availableStrategies[strategyName];
 
     console.log(`\n🔍 Running ${strategyName} strategy...`);
-    const result = await strategy.execute(sheets, context);
+    const result = await strategy.execute(sheets, context, dependencies);
     console.log(
       `✅ ${strategyName} completed in ${result.executionTime.toFixed(2)}ms`
     );

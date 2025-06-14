@@ -1,5 +1,6 @@
 import { Sheet } from "../entities/Sheet";
 import { DuplicateValue, RepeatedSequence, DuplicateRow } from "./index";
+import { CategorizeColumnsFunction } from "../ai/ColumnCategorizer";
 
 export interface StrategyResult {
   name: string;
@@ -27,9 +28,17 @@ export type AllStrategyResults =
   | RepeatedColumnSequencesResult
   | DuplicateRowsResult;
 
+export interface StrategyDependencies {
+  categorizeColumns?: CategorizeColumnsFunction;
+}
+
 export interface Strategy<T extends StrategyResult> {
   name: string;
-  execute(sheets: Sheet[], context: StrategyContext): Promise<T>;
+  execute(
+    sheets: Sheet[], 
+    context: StrategyContext, 
+    dependencies?: StrategyDependencies
+  ): Promise<T>;
   printResults(result: T): void;
 }
 
