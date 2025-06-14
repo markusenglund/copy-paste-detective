@@ -1,13 +1,13 @@
-import { Sheet } from "src/entities/Sheet";
+import { Sheet } from "./entities/Sheet";
 import {
   StrategyName,
   Strategy,
   StrategyContext,
   StrategyResult
-} from "src/types/strategies";
-import individualNumbersStrategy from "src/strategies/individualNumbers/individualNumbers";
-import repeatedColumnSequencesStrategy from "src/strategies/repeatedColumnSequences/repeatedColumnSequences";
-import duplicateRowsStrategy from "src/strategies/duplicateRows/duplicateRows";
+} from "./types/strategies";
+import individualNumbersStrategy from "./strategies/individualNumbers/individualNumbers";
+import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequences/repeatedColumnSequences";
+import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
 import xlsx from "xlsx";
 
 const availableStrategies: Record<StrategyName, Strategy<StrategyResult>> = {

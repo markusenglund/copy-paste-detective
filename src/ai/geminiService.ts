@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
-import { config } from "../config/env.js";
-import type { PromptTemplateParams } from "./promptTemplate.js";
-import { generateColumnCategorizationPrompt } from "./promptTemplate.js";
+import { config } from "../config/env";
+import type { PromptTemplateParams } from "./promptTemplate";
+import { generateColumnCategorizationPrompt } from "./promptTemplate";
 
 const columnCategorizationSchema = z.object({
   unique: z.array(z.string()),

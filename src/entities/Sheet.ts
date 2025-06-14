@@ -1,5 +1,5 @@
 import xlsx from "xlsx";
-import { EnhancedCell } from "./EnhancedCell.js";
+import { EnhancedCell } from "./EnhancedCell";
 
 export class Sheet {
   public readonly name: string;

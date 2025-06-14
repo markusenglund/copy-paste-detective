@@ -1,7 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
-import { runStrategies } from "src/runStrategies";
-import { StrategyName } from "src/types/strategies";
-import { MetadataSchema } from "src/types/metadata";
+import { runStrategies } from "../runStrategies";
+import { StrategyName } from "../types/strategies";
+import { MetadataSchema } from "../types/metadata";
 import { readFileSync } from "fs";
 import path from "path";
 

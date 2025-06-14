@@ -2,7 +2,7 @@ import {
   IndividualNumbersResult,
   Strategy,
   StrategyName
-} from "src/types/strategies";
+} from "../../types/strategies";
 import { runIndividualNumbersStrategy } from "./runIndividualNumbersStrategy";
 import { printIndividualNumbersResults } from "./printIndividualNumbersResults";
 

@@ -1,11 +1,11 @@
-import { Sheet } from "src/entities/Sheet";
-import { findDuplicateValues } from "src/detection";
+import { Sheet } from "../../entities/Sheet";
+import { findDuplicateValues } from "../../detection";
 import {
   StrategyContext,
   IndividualNumbersResult,
   StrategyName
-} from "src/types/strategies";
-import { DuplicateValue } from "src/types";
+} from "../../types/strategies";
+import { DuplicateValue } from "../../types";
 
 export async function runIndividualNumbersStrategy(
   sheets: Sheet[],

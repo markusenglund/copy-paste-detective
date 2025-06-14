@@ -1,6 +1,6 @@
-import { SuspicionLevel } from "src/types";
-import { DuplicateRowsResult } from "src/types/strategies";
-import { levelToSymbol } from "src/utils/output";
+import { SuspicionLevel } from "../../types";
+import { DuplicateRowsResult } from "../../types/strategies";
+import { levelToSymbol } from "../../utils/output";
 
 export function printDuplicateRowsResults({
   duplicateRows

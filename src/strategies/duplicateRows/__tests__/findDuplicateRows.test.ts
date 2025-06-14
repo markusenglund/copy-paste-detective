@@ -1,7 +1,7 @@
 import { describe, it, expect } from "@jest/globals";
 import { findDuplicateRows } from "../findDuplicateRows";
-import { Sheet } from "src/entities/Sheet";
-import type { ColumnCategorization } from "src/ai/geminiService";
+import { Sheet } from "../../../entities/Sheet";
+import type { ColumnCategorization } from "../../../ai/geminiService";
 import xlsx from "xlsx";
 
 // Helper function to create a mock sheet with test data

@@ -2,7 +2,7 @@ import {
   DuplicateRowsResult,
   Strategy,
   StrategyName
-} from "src/types/strategies";
+} from "../../types/strategies";
 import { runDuplicateRowsStrategy } from "./runDuplicateRowsStrategy";
 import { printDuplicateRowsResults } from "./printDuplicateRowsResults";
 

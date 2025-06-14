@@ -1,4 +1,4 @@
-import { SuspicionLevel } from "src/types";
+import { SuspicionLevel } from "../types";
 
 export const levelToSymbol: Record<SuspicionLevel, string> = {
   [SuspicionLevel.None]: "",

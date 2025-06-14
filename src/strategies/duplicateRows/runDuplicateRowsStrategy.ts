@@ -1,11 +1,11 @@
-import { Sheet } from "src/entities/Sheet";
-import { findDuplicateRows } from "src/detection";
+import { Sheet } from "../../entities/Sheet";
+import { findDuplicateRows } from "../../detection";
 import {
   StrategyContext,
   DuplicateRowsResult,
   StrategyName
-} from "src/types/strategies";
-import { categorizeColumns, ColumnCategorization } from "src/ai/geminiService";
+} from "../../types/strategies";
+import { categorizeColumns, ColumnCategorization } from "../../ai/geminiService";
 import { readFileSync } from "fs";
 
 async function runDuplicateRowsStrategy(

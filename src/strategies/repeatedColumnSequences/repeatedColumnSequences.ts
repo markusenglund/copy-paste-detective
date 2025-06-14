@@ -2,7 +2,7 @@ import {
   RepeatedColumnSequencesResult,
   Strategy,
   StrategyName
-} from "src/types/strategies";
+} from "../../types/strategies";
 import { runRepeatedColumnSequencesStrategy } from "./runRepeatedColumnSequencesStrategy";
 import { printRepeatedColumnSequencesResults } from "./printRepeatedColumnSequencesResults";
 

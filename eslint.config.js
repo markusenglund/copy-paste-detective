@@ -46,6 +46,21 @@ export default [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // Enforce relative imports for local modules
+      'import/no-absolute-path': 'error',
+      'import/no-useless-path-segments': 'error',
+      // Disallow imports starting with 'src/' - enforce relative imports
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['src/*'],
+              message: 'Use relative imports instead of absolute imports starting with "src/".'
+            }
+          ]
+        }
+      ],
     },
   },
 ];

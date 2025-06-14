@@ -1,5 +1,5 @@
 import xlsx from "xlsx";
-import { roundFloatingPointInaccuracies } from "../utils/roundFloatingPointInaccuracies.js";
+import { roundFloatingPointInaccuracies } from "../utils/roundFloatingPointInaccuracies";
 
 export class EnhancedCell {
   public readonly value: unknown;

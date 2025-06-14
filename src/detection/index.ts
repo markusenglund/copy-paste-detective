@@ -3,15 +3,15 @@ import {
   type RepeatedSequence,
   type DuplicateValuesResult,
   DuplicateValue
-} from "src/types";
-import { Sheet } from "src/entities/Sheet";
-import { type EnhancedCell } from "src/entities/EnhancedCell";
+} from "../types";
+import { Sheet } from "../entities/Sheet";
+import { type EnhancedCell } from "../entities/EnhancedCell";
 import {
   calculateNumberEntropy,
   calculateEntropyScore,
   calculateSequenceEntropyScore
-} from "src/utils/entropy";
-import { calculateSequenceRegularity } from "src/utils/sequence";
+} from "../utils/entropy";
+import { calculateSequenceRegularity } from "../utils/sequence";
 
 export function deduplicateSortedSequences(
   repeatedSequences: RepeatedSequence[]
@@ -136,8 +136,7 @@ export function findRepeatedSequences(
                 intervalAdjustedSequenceEntropyScore,
               matrixSizeAdjustedEntropyScore,
               numberCount,
-              sheetName,
-              axis: isInverted ? "vertical" : "horizontal"
+              sheetName
             };
             if (repeatedSequence.matrixSizeAdjustedEntropyScore > 2) {
               repeatedSequences.push(repeatedSequence);

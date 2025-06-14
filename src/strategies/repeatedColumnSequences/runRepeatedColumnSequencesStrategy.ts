@@ -1,14 +1,14 @@
-import { Sheet } from "src/entities/Sheet";
+import { Sheet } from "../../entities/Sheet";
 import {
   findRepeatedSequences,
   deduplicateSortedSequences
-} from "src/detection";
+} from "../../detection";
 import {
   StrategyContext,
   RepeatedColumnSequencesResult,
   StrategyName
-} from "src/types/strategies";
-import { RepeatedSequence } from "src/types";
+} from "../../types/strategies";
+import { RepeatedSequence } from "../../types";
 
 export async function runRepeatedColumnSequencesStrategy(
   sheets: Sheet[],

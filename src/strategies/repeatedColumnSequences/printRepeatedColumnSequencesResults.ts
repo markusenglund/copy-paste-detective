@@ -1,6 +1,6 @@
-import { RepeatedColumnSequencesResult } from "src/types/strategies";
-import { SuspicionLevel, type RepeatedSequence } from "src/types";
-import { levelToSymbol } from "src/utils/output";
+import { RepeatedColumnSequencesResult } from "../../types/strategies";
+import { SuspicionLevel, type RepeatedSequence } from "../../types";
+import { levelToSymbol } from "../../utils/output";
 
 function formatSequencesForDisplay(sequences: RepeatedSequence[]): Array<{
   level: string;
@@ -8,13 +8,11 @@ function formatSequencesForDisplay(sequences: RepeatedSequence[]): Array<{
   values: string;
   length: number;
   sizeAdjEntropy: string;
-  adjEntropy: string;
   entropy: string;
   cell1: string;
   cell2: string;
   matrix: number;
   instances: number;
-  axis: string;
 }> {
   return sequences.map(sequence => {
     const firstCellID = sequence.positions[0].cellId;

@@ -1,5 +1,5 @@
-import { Sheet } from "src/entities/Sheet";
-import { DuplicateValue, RepeatedSequence, DuplicateRow } from "src/types";
+import { Sheet } from "../entities/Sheet";
+import { DuplicateValue, RepeatedSequence, DuplicateRow } from "./index";
 
 export interface StrategyResult {
   name: string;

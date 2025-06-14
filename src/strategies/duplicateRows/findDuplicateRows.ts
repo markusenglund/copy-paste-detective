@@ -1,11 +1,11 @@
-import { type DuplicateRowsResult, type DuplicateRow } from "src/types";
-import { Sheet } from "src/entities/Sheet";
-import { type EnhancedCell } from "src/entities/EnhancedCell";
+import { type DuplicateRowsResult, type DuplicateRow } from "../../types";
+import { Sheet } from "../../entities/Sheet";
+import { type EnhancedCell } from "../../entities/EnhancedCell";
 import {
   calculateNumberEntropy,
   calculateRowEntropyScore
-} from "src/utils/entropy";
-import { type ColumnCategorization } from "src/ai/geminiService";
+} from "../../utils/entropy";
+import { type ColumnCategorization } from "../../ai/geminiService";
 
 function compareRows(
   row1: EnhancedCell[],
