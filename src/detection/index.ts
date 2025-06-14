@@ -187,6 +187,4 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
   };
 }
 
-export { findDuplicateRows } from "./findDuplicateRows";
-
-
+export { findDuplicateRows } from "../strategies/duplicateRows/findDuplicateRows";

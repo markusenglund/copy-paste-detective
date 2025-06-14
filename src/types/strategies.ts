@@ -22,11 +22,15 @@ export interface DuplicateRowsResult extends StrategyResult {
   duplicateRows: DuplicateRow[];
 }
 
-export type AllStrategyResults = IndividualNumbersResult | RepeatedColumnSequencesResult | DuplicateRowsResult;
+export type AllStrategyResults =
+  | IndividualNumbersResult
+  | RepeatedColumnSequencesResult
+  | DuplicateRowsResult;
 
-export interface Strategy {
+export interface Strategy<T extends StrategyResult> {
   name: string;
-  execute(sheets: Sheet[], context: StrategyContext): Promise<StrategyResult>;
+  execute(sheets: Sheet[], context: StrategyContext): Promise<T>;
+  printResults(result: T): void;
 }
 
 export interface StrategyContext {
@@ -37,6 +41,6 @@ export interface StrategyContext {
 
 export enum StrategyName {
   IndividualNumbers = "individualNumbers",
-  RepeatedColumnSequences = "repeatedColumnSequences", 
+  RepeatedColumnSequences = "repeatedColumnSequences",
   DuplicateRows = "duplicateRows"
 }
