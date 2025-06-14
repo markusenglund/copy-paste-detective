@@ -7,9 +7,6 @@
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "migration:generate": "drizzle-kit generate",
-    "migration:run": "drizzle-kit migrate",
-    "migration:push": "drizzle-kit push",
     "detect": "tsx -r dotenv/config src/commands/detect"
   },
   "author": "Markus Englund",

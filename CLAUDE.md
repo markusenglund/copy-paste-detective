@@ -11,14 +11,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` - Lint source code with ESLint
 - `npm run typecheck` - Run TypeScript type checking without emitting files
 
-### Database (Planned - Not Yet Implemented)
-
-- `npm run migration:generate` - Generate new database migrations
-- `npm run migration:run` - Run pending migrations
-- `npm run migration:push` - Push schema changes directly to database
-
-_Note: Database functionality is planned but not yet implemented. No schema files or migrations exist._
-
 ## Architecture
 
 This is a fraud detection tool that analyzes Excel files for suspicious patterns. The tool uses a CLI interface built with Commander.js and currently analyzes hardcoded files.
