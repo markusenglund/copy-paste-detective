@@ -36,5 +36,6 @@ describe("calculateNumberEntropy", () => {
   it("should handle edge cases", () => {
     expect(calculateNumberEntropy(0)).toBe(0);
     expect(calculateNumberEntropy(1)).toBe(1);
+    expect(calculateNumberEntropy(-1.327)).toBe(1327);
   });
 });
