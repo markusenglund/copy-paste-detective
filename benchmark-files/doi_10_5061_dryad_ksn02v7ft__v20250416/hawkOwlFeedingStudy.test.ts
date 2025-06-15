@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
 import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
+import { runIndividualNumbersStrategy } from "../../src/strategies/individualNumbers/runIndividualNumbersStrategy";
 import { Sheet } from "../../src/entities/Sheet";
 import { MetadataSchema } from "../../src/types/metadata";
 import { StrategyContext, StrategyName } from "../../src/types/strategies";
@@ -113,6 +114,31 @@ describe("Hawk Owl Feeding Study", () => {
 
       // Should find zero repeated sequences (this test is expected to fail)
       expect(result.sequences).toHaveLength(0);
+    });
+  });
+
+  describe("Individual Numbers Strategy", () => {
+    it("should NOT report Q103 and Q155 as duplicates", async () => {
+      const result = await runIndividualNumbersStrategy(sheets, context);
+
+      // Verify basic result structure
+      expect(result.name).toBe(StrategyName.IndividualNumbers);
+      expect(result.executionTime).toBeGreaterThan(0);
+      expect(result.topEntropyDuplicates).toBeDefined();
+      expect(result.topOccurrenceHighEntropy).toBeDefined();
+
+      // Check that Q103 and Q155 are NOT reported as duplicates (this test should fail)
+      const allDuplicates = [
+        ...result.topEntropyDuplicates,
+        ...result.topOccurrenceHighEntropy
+      ];
+
+      const hasCellsQ103AndQ155 = allDuplicates.some(duplicate => {
+        const cellIds = duplicate.cells.map(cell => cell.cellId);
+        return cellIds.includes("Q103") && cellIds.includes("Q155");
+      });
+
+      expect(hasCellsQ103AndQ155).toBe(false);
     });
   });
 });

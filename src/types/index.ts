@@ -1,5 +1,3 @@
-import type { Sheet } from "../entities/Sheet.js";
-import type { EnhancedCell } from "../entities/EnhancedCell";
 
 export enum SuspicionLevel {
   None,
@@ -24,13 +22,8 @@ export type RepeatedSequence = {
   sheetName: string;
 };
 
-export type DuplicateValue = {
-  value: number;
-  numOccurences: number;
-  entropy: number;
-  sheet: Sheet;
-  cells: EnhancedCell[];
-};
+export { DuplicateValue } from "../entities/DuplicateValue";
+import { DuplicateValue } from "../entities/DuplicateValue";
 
 export type DuplicateValuesResult = {
   duplicateValuesSortedByEntropy: DuplicateValue[];

@@ -175,7 +175,7 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
     .filter(([_value, cells]) => cells.length > 1)
     .map(([value, cells]) => {
       const entropy = calculateNumberEntropy(value);
-      return { value, numOccurences: cells.length, entropy, sheet, cells };
+      return new DuplicateValue(value, entropy, sheet, cells);
     })
     .toSorted((a, b) => b.entropy - a.entropy);
 
