@@ -139,5 +139,19 @@ describe("Hawk Owl Feeding Study", () => {
 
       expect(hasCellsQ103AndQ155).toBe(false);
     });
+
+    it("should report F54 and F55 as a High suspicion duplicate pair", async () => {
+      const result = await runIndividualNumbersStrategy(sheets, context);
+
+
+      // Find the duplicate value that contains both F54 and F55
+      const f54F55Duplicate = result.duplicateValues.find(duplicate => {
+        const cellIds = duplicate.cells.map(cell => cell.cellId);
+        return cellIds.includes("F54") && cellIds.includes("F55");
+      });
+
+      expect(f54F55Duplicate).toBeDefined();
+      expect(f54F55Duplicate!.suspicionLevel).toBe(SuspicionLevel.High);
+    });
   });
 });

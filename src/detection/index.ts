@@ -177,7 +177,7 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
       const entropy = calculateNumberEntropy(value);
       return new DuplicateValue(value, entropy, sheet, cells);
     })
-    .filter(duplicateValue => duplicateValue.suspicionLevel >= SuspicionLevel.Low)
+    .filter(duplicateValue => [SuspicionLevel.Low, SuspicionLevel.Medium, SuspicionLevel.High].includes(duplicateValue.suspicionLevel))
     .toSorted((a, b) => b.entropyScore - a.entropyScore);
 
   return {
