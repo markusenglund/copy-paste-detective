@@ -2,9 +2,7 @@ import { type DuplicateRowsResult } from "../../types";
 import { DuplicateRow } from "../../entities/DuplicateRow";
 import { Sheet } from "../../entities/Sheet";
 import { type EnhancedCell } from "../../entities/EnhancedCell";
-import {
-  calculateNumberEntropy
-} from "../../utils/entropy";
+import { calculateNumberEntropy } from "../../utils/entropy";
 import { type ColumnCategorization } from "../../ai/ColumnCategorizer";
 
 function compareRows(
@@ -48,7 +46,7 @@ export function findDuplicateRows(
   // Rows require at least one duplicate value with this much entropy to be considered duplicates.
   const minNumberEntropyScore = 200;
   // Rows require a rowEntropyScore of at least this much to be considered duplicates.
-  const minRowEntropyScore = 0.1;
+  const minRowEntropyScore = 2;
   // Rows must have at least this many shared column values to be considered duplicates.
   const minSharedColumns = 2;
   const duplicateRows: DuplicateRow[] = [];
@@ -104,6 +102,10 @@ export function findDuplicateRows(
         const rowArray = Array.from(rowSet);
         for (let i = 0; i < rowArray.length; i++) {
           for (let j = i + 1; j < rowArray.length; j++) {
+            if (duplicateRows.length > 1000) {
+              // Bail out if we found >1000 duplicates to avoid performance issues
+              break;
+            }
             const row1Index = rowArray[i];
             const row2Index = rowArray[j];
             const pairKey = `${Math.min(row1Index, row2Index)}-${Math.max(

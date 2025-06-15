@@ -10,7 +10,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import xlsx from "xlsx";
 
-describe("Dual Drivers of Plant Invasions", () => {
+describe("Dual Drivers of Plant Invasions - Common garden", () => {
   let sheets: Sheet[];
   let context: StrategyContext;
 

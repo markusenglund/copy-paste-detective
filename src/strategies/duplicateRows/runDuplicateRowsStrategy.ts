@@ -19,7 +19,8 @@ async function runDuplicateRowsStrategy(
   const allDuplicateRows = [];
 
   // Use injected categorizeColumns function or default to Gemini
-  const categorizeColumns = dependencies?.categorizeColumns || categorizeColumnsWithGemini;
+  const categorizeColumns =
+    dependencies?.categorizeColumns || categorizeColumnsWithGemini;
 
   // Read README.md from the excel data folder
   const readmePath = `${context.excelDataFolder}/README.md`;
@@ -32,7 +33,6 @@ async function runDuplicateRowsStrategy(
       dataDescription
     });
     const { duplicateRows } = findDuplicateRows(sheet, columnCategorization);
-
     allDuplicateRows.push(...duplicateRows);
   }
 
@@ -44,6 +44,5 @@ async function runDuplicateRowsStrategy(
     duplicateRows: allDuplicateRows
   };
 }
-
 
 export { runDuplicateRowsStrategy };
