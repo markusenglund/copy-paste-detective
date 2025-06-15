@@ -22,7 +22,7 @@ export class DuplicateRow {
     sheet: Sheet,
     numComparedColumns: number
   ) {
-    this.rowIndices = rowIndices;
+    this.rowIndices = rowIndices.toSorted((a, b) => a - b) as [number, number];
     this.sharedValues = sharedValues;
     this.sharedColumns = sharedColumns;
     this.totalSharedCount = totalSharedCount;

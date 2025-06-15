@@ -14,11 +14,10 @@ export function printDuplicateRowsResults({
     .slice(0, 20); // Show top 20 most suspicious pairs
 
   const tableData = sortedDuplicateRows.map(duplicateRow => {
-
     // Format shared values for display (show first few if many)
     const sharedValuesDisplay =
       duplicateRow.sharedValues.length > 2
-        ? `${duplicateRow.sharedValues.slice(0, 2).join(", ")}... (+${duplicateRow.sharedValues.length - 3} more)`
+        ? `${duplicateRow.sharedValues.slice(0, 2).join(", ")}... (+${duplicateRow.sharedValues.length - 2} more)`
         : duplicateRow.sharedValues.join(", ");
 
     // Format shared columns with both names and letters
