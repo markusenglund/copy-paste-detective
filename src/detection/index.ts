@@ -153,24 +153,25 @@ export function findRepeatedSequences(
 }
 
 export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
-  const numOccurencesByNumericCellValue = new Map<number, number>();
+  const cellsByNumericValue = new Map<number, EnhancedCell[]>();
   sheet.enhancedMatrix.forEach(row => {
     row.forEach(cell => {
       if (cell.isNumeric && !cell.isDate) {
         const value = cell.value as number;
-        const numOccurences = numOccurencesByNumericCellValue.get(value) ?? 0;
-        numOccurencesByNumericCellValue.set(value, numOccurences + 1);
+        const existingCells = cellsByNumericValue.get(value) ?? [];
+        existingCells.push(cell);
+        cellsByNumericValue.set(value, existingCells);
       }
     });
   });
 
   const duplicateValuesSortedByEntropy: DuplicateValue[] = [
-    ...numOccurencesByNumericCellValue.entries()
+    ...cellsByNumericValue.entries()
   ]
-    .filter(([_value, numOccurences]) => numOccurences > 1)
-    .map(([value, numOccurences]) => {
+    .filter(([_value, cells]) => cells.length > 1)
+    .map(([value, cells]) => {
       const entropy = calculateNumberEntropy(value);
-      return { value, numOccurences, entropy, sheet };
+      return { value, numOccurences: cells.length, entropy, sheet, cells };
     })
     .toSorted((a, b) => b.entropy - a.entropy);
 

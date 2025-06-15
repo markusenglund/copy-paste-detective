@@ -89,16 +89,15 @@ describe("Dryad Dataset Integration Test", () => {
 
       // Verify the first result (rows 36, 38 in 1-based indexing)
       const firstResult = result.duplicateRows[0];
-      expect(firstResult.rowIndices).toEqual([35, 37]); // 0-based indexing (rows 36, 38 in 1-based)
+      expect(firstResult.rowIndices).toEqual([35, 37]);
       expect(firstResult.sharedColumns).toHaveLength(9);
-      expect(firstResult.sharedValues.length).toHaveLength(9);
+      expect(firstResult.sharedValues).toHaveLength(9);
 
       // Verify the second result (rows 54, 55 in 1-based indexing)
       const secondResult = result.duplicateRows[1];
-      expect(secondResult.rowIndices).toEqual([53, 54]); // 0-based indexing (rows 54, 55 in 1-based)
+      expect(secondResult.rowIndices).toEqual([53, 54]);
       expect(secondResult.sharedColumns).toHaveLength(2);
-      expect(secondResult.totalSharedCount).toBeGreaterThan(0);
-      expect(secondResult.sharedValues.length).toBeGreaterThan(0);
-    }, 30000); // 30 second timeout for integration test
+      expect(secondResult.sharedValues).toHaveLength(2);
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { type DuplicateRowsResult, type DuplicateRow } from "../../types";
+import { type DuplicateRowsResult, DuplicateRow } from "../../types";
 import { Sheet } from "../../entities/Sheet";
 import { type EnhancedCell } from "../../entities/EnhancedCell";
 import {
@@ -34,14 +34,14 @@ function compareRows(
   );
 
   const totalSharedCount = sharedValues.length;
-  const rowData: DuplicateRow = {
-    rowIndices: [row1[0].row, row2[0].row],
+  const rowData = new DuplicateRow(
+    [row1[0].row, row2[0].row],
     sharedValues,
     sharedColumns,
     totalSharedCount,
-    sheet: sheet,
+    sheet,
     rowEntropyScore
-  };
+  );
 
   return rowData;
 }

@@ -30,6 +30,7 @@ export type AllStrategyResults =
 
 export interface StrategyDependencies {
   categorizeColumns?: CategorizeColumnsFunction;
+  previousResults?: AllStrategyResults[];
 }
 
 export interface Strategy<T extends StrategyResult> {

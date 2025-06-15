@@ -1,9 +1,7 @@
 import { Sheet } from "./entities/Sheet";
 import {
   StrategyName,
-  Strategy,
   StrategyContext,
-  StrategyResult,
   StrategyDependencies
 } from "./types/strategies";
 import individualNumbersStrategy from "./strategies/individualNumbers/individualNumbers";
@@ -11,11 +9,6 @@ import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequence
 import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
 import xlsx from "xlsx";
 
-const availableStrategies: Record<StrategyName, Strategy<StrategyResult>> = {
-  [StrategyName.IndividualNumbers]: individualNumbersStrategy,
-  [StrategyName.RepeatedColumnSequences]: repeatedColumnSequencesStrategy,
-  [StrategyName.DuplicateRows]: duplicateRowsStrategy
-};
 
 export async function runStrategies(
   strategies: StrategyName[],
@@ -38,14 +31,39 @@ export async function runStrategies(
     return new Sheet(workbookSheet, sheetName);
   });
 
-  for (const strategyName of strategies) {
-    const strategy = availableStrategies[strategyName];
+  let duplicateRowsResult;
 
-    console.log(`\n🔍 Running ${strategyName} strategy...`);
-    const result = await strategy.execute(sheets, context, dependencies);
+  // 1. Run duplicateRows first if requested
+  if (strategies.includes(StrategyName.DuplicateRows)) {
+    console.log(`\n🔍 Running ${StrategyName.DuplicateRows} strategy...`);
+    duplicateRowsResult = await duplicateRowsStrategy.execute(sheets, context, dependencies);
     console.log(
-      `✅ ${strategyName} completed in ${result.executionTime.toFixed(2)}ms`
+      `✅ ${StrategyName.DuplicateRows} completed in ${duplicateRowsResult.executionTime.toFixed(2)}ms`
     );
-    strategy.printResults(result);
+    duplicateRowsStrategy.printResults(duplicateRowsResult);
+  }
+
+  // 2. Run repeatedColumnSequences second if requested
+  if (strategies.includes(StrategyName.RepeatedColumnSequences)) {
+    console.log(`\n🔍 Running ${StrategyName.RepeatedColumnSequences} strategy...`);
+    const result = await repeatedColumnSequencesStrategy.execute(sheets, context, dependencies);
+    console.log(
+      `✅ ${StrategyName.RepeatedColumnSequences} completed in ${result.executionTime.toFixed(2)}ms`
+    );
+    repeatedColumnSequencesStrategy.printResults(result);
+  }
+
+  // 3. Run individualNumbers last if requested, with duplicate rows results
+  if (strategies.includes(StrategyName.IndividualNumbers)) {
+    console.log(`\n🔍 Running ${StrategyName.IndividualNumbers} strategy...`);
+    const individualNumbersDependencies = {
+      ...dependencies,
+      previousResults: duplicateRowsResult ? [duplicateRowsResult] : []
+    };
+    const result = await individualNumbersStrategy.execute(sheets, context, individualNumbersDependencies);
+    console.log(
+      `✅ ${StrategyName.IndividualNumbers} completed in ${result.executionTime.toFixed(2)}ms`
+    );
+    individualNumbersStrategy.printResults(result);
   }
 }

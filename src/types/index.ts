@@ -1,4 +1,5 @@
 import type { Sheet } from "../entities/Sheet.js";
+import type { EnhancedCell } from "../entities/EnhancedCell";
 
 export enum SuspicionLevel {
   None,
@@ -28,6 +29,7 @@ export type DuplicateValue = {
   numOccurences: number;
   entropy: number;
   sheet: Sheet;
+  cells: EnhancedCell[];
 };
 
 export type DuplicateValuesResult = {
@@ -35,14 +37,8 @@ export type DuplicateValuesResult = {
   duplicatedValuesAboveThresholdSortedByOccurences: DuplicateValue[];
 };
 
-export type DuplicateRow = {
-  rowIndices: [number, number];
-  sharedValues: number[];
-  sharedColumns: number[];
-  totalSharedCount: number;
-  sheet: Sheet;
-  rowEntropyScore: number;
-};
+export { DuplicateRow } from "../entities/DuplicateRow";
+import { DuplicateRow } from "../entities/DuplicateRow";
 
 export type DuplicateRowsResult = {
   duplicateRows: DuplicateRow[];

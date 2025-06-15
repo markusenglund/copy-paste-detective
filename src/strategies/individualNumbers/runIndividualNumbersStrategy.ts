@@ -4,17 +4,54 @@ import {
   StrategyContext,
   IndividualNumbersResult,
   StrategyName,
-  StrategyDependencies
+  StrategyDependencies,
+  DuplicateRowsResult
 } from "../../types/strategies";
 import { DuplicateValue } from "../../types";
+import { DuplicateCellPair } from "../../entities/DuplicateCellPair";
+
+function areAllCellPairsAlreadyReported(
+  duplicateValue: DuplicateValue,
+  reportedCellPairIds: Set<string>
+): boolean {
+  const cells = duplicateValue.cells;
+  
+  // Generate all possible pairs from the cells
+  for (let i = 0; i < cells.length; i++) {
+    for (let j = i + 1; j < cells.length; j++) {
+      const cellPair = new DuplicateCellPair(cells[i], cells[j]);
+      if (!reportedCellPairIds.has(cellPair.id)) {
+        return false; // Found a pair that hasn't been reported
+      }
+    }
+  }
+  
+  return true; // All pairs have been reported
+}
 
 export async function runIndividualNumbersStrategy(
   sheets: Sheet[],
   _context: StrategyContext,
-  _dependencies?: StrategyDependencies
+  dependencies?: StrategyDependencies
 ): Promise<IndividualNumbersResult> {
   const startTime = performance.now();
+
+  // Get duplicate rows from previous results to filter them out
+  const duplicateRowsResult = dependencies?.previousResults?.find(
+    result => result.name === StrategyName.DuplicateRows
+  ) as DuplicateRowsResult | undefined;
+
+  const duplicateRowCellPairIds = new Set<string>();
   
+  if (duplicateRowsResult) {
+    // Collect all cell pair IDs from duplicate rows to exclude them from individual number analysis
+    for (const duplicateRow of duplicateRowsResult.duplicateRows) {
+      for (const cellPair of duplicateRow.duplicateCellPairs) {
+        duplicateRowCellPairIds.add(cellPair.id);
+      }
+    }
+  }
+
   const topEntropyDuplicateNumbers: DuplicateValue[] = [];
   const topOccurrenceHighEntropyDuplicateNumbers: DuplicateValue[] = [];
 
@@ -28,12 +65,21 @@ export async function runIndividualNumbersStrategy(
       duplicatedValuesAboveThresholdSortedByOccurences
     } = findDuplicateValues(sheet);
 
+    // Filter out values where all cell pairs have already been reported in duplicate rows
+    const filteredEntropyDuplicates = duplicateValuesSortedByEntropy.filter(
+      duplicate => !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds)
+    );
+
+    const filteredOccurrenceHighEntropy = duplicatedValuesAboveThresholdSortedByOccurences.filter(
+      duplicate => !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds)
+    );
+
     topEntropyDuplicateNumbers.push(
-      ...duplicateValuesSortedByEntropy.slice(0, 5)
+      ...filteredEntropyDuplicates.slice(0, 5)
     );
 
     topOccurrenceHighEntropyDuplicateNumbers.push(
-      ...duplicatedValuesAboveThresholdSortedByOccurences.slice(0, 5)
+      ...filteredOccurrenceHighEntropy.slice(0, 5)
     );
   }
 
