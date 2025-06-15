@@ -47,9 +47,15 @@ function formatSequencesForDisplay(sequences: RepeatedSequence[]): Array<{
 export function printRepeatedColumnSequencesResults({
   sequences
 }: RepeatedColumnSequencesResult): void {
+  console.log(`\nRepeated sequences:`);
+  
+  if (sequences.length === 0) {
+    console.log("No repeated sequences were found.");
+    return;
+  }
+  
   const humanReadableSequences = formatSequencesForDisplay(
     sequences.slice(0, 20)
   );
-  console.log(`\nRepeated sequences:`);
   console.table(humanReadableSequences);
 }
