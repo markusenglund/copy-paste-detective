@@ -1,9 +1,9 @@
 import {
   type Position,
   type RepeatedSequence,
-  type DuplicateValuesResult,
-  DuplicateValue
+  type DuplicateValuesResult
 } from "../types";
+import { DuplicateValue } from "../entities/DuplicateValue";
 import { Sheet } from "../entities/Sheet";
 import { type EnhancedCell } from "../entities/EnhancedCell";
 import {

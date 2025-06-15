@@ -1,5 +1,6 @@
 import { IndividualNumbersResult } from "../../types/strategies";
-import { SuspicionLevel, type DuplicateValue } from "../../types";
+import { SuspicionLevel } from "../../types";
+import { DuplicateValue } from "../../entities/DuplicateValue";
 import { levelToSymbol } from "../../utils/output";
 
 function formatDuplicatesByEntropyForDisplay(

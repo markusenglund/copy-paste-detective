@@ -7,7 +7,7 @@ import {
   StrategyDependencies,
   DuplicateRowsResult
 } from "../../types/strategies";
-import { DuplicateValue } from "../../types";
+import { DuplicateValue } from "../../entities/DuplicateValue";
 import { DuplicateCellPair } from "../../entities/DuplicateCellPair";
 
 function areAllCellPairsAlreadyReported(

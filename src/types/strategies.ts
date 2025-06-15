@@ -1,5 +1,7 @@
 import { Sheet } from "../entities/Sheet";
-import { DuplicateValue, RepeatedSequence, DuplicateRow } from "./index";
+import { DuplicateValue } from "../entities/DuplicateValue";
+import { DuplicateRow } from "../entities/DuplicateRow";
+import { RepeatedSequence } from "./index";
 import { CategorizeColumnsFunction } from "../ai/ColumnCategorizer";
 
 export interface StrategyResult {

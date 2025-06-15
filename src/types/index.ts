@@ -22,16 +22,13 @@ export type RepeatedSequence = {
   sheetName: string;
 };
 
-export { DuplicateValue } from "../entities/DuplicateValue";
 import { DuplicateValue } from "../entities/DuplicateValue";
+import { DuplicateRow } from "../entities/DuplicateRow";
 
 export type DuplicateValuesResult = {
   duplicateValuesSortedByEntropy: DuplicateValue[];
   duplicatedValuesAboveThresholdSortedByOccurences: DuplicateValue[];
 };
-
-export { DuplicateRow } from "../entities/DuplicateRow";
-import { DuplicateRow } from "../entities/DuplicateRow";
 
 export type DuplicateRowsResult = {
   duplicateRows: DuplicateRow[];

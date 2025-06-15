@@ -33,7 +33,7 @@ export function printDuplicateRowsResults({
     // Format shared columns with both names and letters
     const columnNames = duplicateRow.sheet.columnNames;
     let sharedColumnsDisplay = duplicateRow.sharedColumns
-      .map(colIndex => {
+      .map((colIndex: number) => {
         const columnName = columnNames[colIndex] || `Col${colIndex}`;
         const columnLetter = getColumnLetter(colIndex);
         return `${columnName}(${columnLetter})`;

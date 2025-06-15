@@ -1,4 +1,5 @@
-import { type DuplicateRowsResult, DuplicateRow } from "../../types";
+import { type DuplicateRowsResult } from "../../types";
+import { DuplicateRow } from "../../entities/DuplicateRow";
 import { Sheet } from "../../entities/Sheet";
 import { type EnhancedCell } from "../../entities/EnhancedCell";
 import {
