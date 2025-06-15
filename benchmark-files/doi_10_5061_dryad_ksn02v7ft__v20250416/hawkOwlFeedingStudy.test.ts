@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
-import { runDuplicateRowsStrategy } from "../strategies/duplicateRows/runDuplicateRowsStrategy";
-import { Sheet } from "../entities/Sheet";
-import { MetadataSchema } from "../types/metadata";
-import { StrategyContext, StrategyName } from "../types/strategies";
-import { createMockCategorizeColumns } from "../ai/MockColumnCategorizer";
+import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
+import { Sheet } from "../../src/entities/Sheet";
+import { MetadataSchema } from "../../src/types/metadata";
+import { StrategyContext, StrategyName } from "../../src/types/strategies";
+import { createMockCategorizeColumns } from "../../src/ai/MockColumnCategorizer";
 import { readFileSync } from "fs";
 import path from "path";
 import xlsx from "xlsx";
 
-describe("Dryad Dataset Integration Test", () => {
+describe("Hawk Owl Feeding Study", () => {
   let sheets: Sheet[];
   let context: StrategyContext;
 
@@ -42,7 +42,7 @@ describe("Dryad Dataset Integration Test", () => {
   });
 
   describe("Duplicate Rows Strategy", () => {
-    it("should detect the expected duplicate row patterns in Dryad dataset", async () => {
+    it("should detect the expected duplicate row patterns", async () => {
       // Create mock categorizeColumns function with expected categorization
       const mockCategorizeColumns = createMockCategorizeColumns({
         unique: [
