@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
+import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
 import { Sheet } from "../../src/entities/Sheet";
 import { MetadataSchema } from "../../src/types/metadata";
 import { StrategyContext, StrategyName } from "../../src/types/strategies";
@@ -98,6 +99,20 @@ describe("Hawk Owl Feeding Study", () => {
       expect(secondResult.rowIndices).toEqual([53, 54]);
       expect(secondResult.sharedColumns).toHaveLength(2);
       expect(secondResult.sharedValues).toHaveLength(2);
+    });
+  });
+
+  describe("Repeated Column Sequences Strategy", () => {
+    it("should find zero repeated sequences", async () => {
+      const result = await runRepeatedColumnSequencesStrategy(sheets, context);
+
+      // Verify basic result structure
+      expect(result.name).toBe(StrategyName.RepeatedColumnSequences);
+      expect(result.executionTime).toBeGreaterThan(0);
+      expect(result.sequences).toBeDefined();
+
+      // Should find zero repeated sequences (this test is expected to fail)
+      expect(result.sequences).toHaveLength(0);
     });
   });
 });

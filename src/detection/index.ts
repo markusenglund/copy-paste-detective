@@ -109,6 +109,10 @@ export function findRepeatedSequences(
               );
               length++;
             }
+            const minSequenceLength = 2;
+            if (repeatedValues.length < minSequenceLength) {
+              continue;
+            }
             const minSequenceEntropyScore = 10;
             const sequenceEntropyScore =
               calculateSequenceEntropyScore(repeatedValues);
