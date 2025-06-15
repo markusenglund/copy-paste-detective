@@ -1,7 +1,8 @@
 import {
   type Position,
   type RepeatedSequence,
-  type DuplicateValuesResult
+  type DuplicateValuesResult,
+  SuspicionLevel
 } from "../types";
 import { DuplicateValue } from "../entities/DuplicateValue";
 import { Sheet } from "../entities/Sheet";
@@ -67,7 +68,7 @@ export function findRepeatedSequences(
         break;
       }
       const cellData = matrix[columnIndex]?.[rowIndex];
-      if (cellData?.isNumeric && !cellData.isDate) {
+      if (cellData?.isAnalyzable) {
         const cellValue = cellData.value as number;
         const positions = positionsByValue.get(cellValue) ?? [];
         const newPosition: Position = {
@@ -91,8 +92,7 @@ export function findRepeatedSequences(
             let length = 1;
             const repeatedValues: number[] = [cellValue];
             while (
-              matrix[position.column][position.startRow + length]?.isNumeric &&
-              !matrix[position.column][position.startRow + length]?.isDate &&
+              matrix[position.column][position.startRow + length]?.isAnalyzable &&
               !(
                 position.column === columnIndex &&
                 rowIndex === position.startRow + length
@@ -160,7 +160,7 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
   const cellsByNumericValue = new Map<number, EnhancedCell[]>();
   sheet.enhancedMatrix.forEach(row => {
     row.forEach(cell => {
-      if (cell.isNumeric && !cell.isDate) {
+      if (cell.isAnalyzable) {
         const value = cell.value as number;
         const existingCells = cellsByNumericValue.get(value) ?? [];
         existingCells.push(cell);
@@ -169,7 +169,7 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
     });
   });
 
-  const duplicateValuesSortedByEntropy: DuplicateValue[] = [
+  const duplicateValues: DuplicateValue[] = [
     ...cellsByNumericValue.entries()
   ]
     .filter(([_value, cells]) => cells.length > 1)
@@ -177,17 +177,11 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
       const entropy = calculateNumberEntropy(value);
       return new DuplicateValue(value, entropy, sheet, cells);
     })
-    .toSorted((a, b) => b.entropy - a.entropy);
-
-  const entropyThreshold = 5000;
-  const duplicatedValuesAboveThresholdSortedByOccurences =
-    duplicateValuesSortedByEntropy
-      .filter(({ entropy }) => entropy > entropyThreshold)
-      .toSorted((a, b) => b.numOccurences - a.numOccurences);
+    .filter(duplicateValue => duplicateValue.suspicionLevel >= SuspicionLevel.Low)
+    .toSorted((a, b) => b.entropyScore - a.entropyScore);
 
   return {
-    duplicateValuesSortedByEntropy,
-    duplicatedValuesAboveThresholdSortedByOccurences
+    duplicateValues
   };
 }
 

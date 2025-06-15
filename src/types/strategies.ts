@@ -11,8 +11,7 @@ export interface StrategyResult {
 
 export interface IndividualNumbersResult extends StrategyResult {
   name: StrategyName.IndividualNumbers;
-  topEntropyDuplicates: DuplicateValue[];
-  topOccurrenceHighEntropy: DuplicateValue[];
+  duplicateValues: DuplicateValue[];
 }
 
 export interface RepeatedColumnSequencesResult extends StrategyResult {

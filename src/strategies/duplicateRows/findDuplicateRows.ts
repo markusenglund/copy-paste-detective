@@ -20,9 +20,8 @@ function compareRows(
   for (const colIndex of colIndices) {
     const cell1 = row1[colIndex];
     const cell2 = row2[colIndex];
-    const areCellsNumeric =
-      cell1?.isNumeric && !cell1.isDate && cell2?.isNumeric && !cell2.isDate;
-    if (areCellsNumeric) {
+    const areCellsAnalyzable = cell1?.isAnalyzable && cell2?.isAnalyzable;
+    if (areCellsAnalyzable) {
       if (cell1.value === cell2.value) {
         sharedValues.push(cell1.value as number);
         sharedColumns.push(colIndex);
@@ -85,7 +84,7 @@ export function findDuplicateRows(
     // Skip header row
     for (const colIndex of uniqueColumnIndices) {
       const cell = sheet.enhancedMatrix[rowIndex]?.[colIndex];
-      if (cell?.isNumeric && !cell.isDate) {
+      if (cell?.isAnalyzable) {
         const value = cell.value as number;
         const entropy = calculateNumberEntropy(value);
         if (entropy < minNumberEntropyScore) {

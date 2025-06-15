@@ -26,8 +26,7 @@ import { DuplicateValue } from "../entities/DuplicateValue";
 import { DuplicateRow } from "../entities/DuplicateRow";
 
 export type DuplicateValuesResult = {
-  duplicateValuesSortedByEntropy: DuplicateValue[];
-  duplicatedValuesAboveThresholdSortedByOccurences: DuplicateValue[];
+  duplicateValues: DuplicateValue[];
 };
 
 export type DuplicateRowsResult = {

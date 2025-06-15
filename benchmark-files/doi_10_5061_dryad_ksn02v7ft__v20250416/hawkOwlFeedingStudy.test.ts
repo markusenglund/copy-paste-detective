@@ -124,16 +124,10 @@ describe("Hawk Owl Feeding Study", () => {
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
       expect(result.executionTime).toBeGreaterThan(0);
-      expect(result.topEntropyDuplicates).toBeDefined();
-      expect(result.topOccurrenceHighEntropy).toBeDefined();
+      expect(result.duplicateValues).toBeDefined();
 
       // Check that Q103 and Q155 are NOT reported as duplicates (this test should fail)
-      const allDuplicates = [
-        ...result.topEntropyDuplicates,
-        ...result.topOccurrenceHighEntropy
-      ];
-
-      const hasCellsQ103AndQ155 = allDuplicates.some(duplicate => {
+      const hasCellsQ103AndQ155 = result.duplicateValues.some(duplicate => {
         const cellIds = duplicate.cells.map(cell => cell.cellId);
         return cellIds.includes("Q103") && cellIds.includes("Q155");
       });

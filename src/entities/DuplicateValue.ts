@@ -30,12 +30,12 @@ export class DuplicateValue {
 
   get suspicionLevel(): SuspicionLevel {
     const score = this.entropyScore;
-    
+
     if (score > 20_000_000) {
       return SuspicionLevel.High;
     } else if (score > 200_000) {
       return SuspicionLevel.Medium;
-    } else if (score > 20_000) {
+    } else if (score > 2_000) {
       return SuspicionLevel.Low;
     } else {
       return SuspicionLevel.None;

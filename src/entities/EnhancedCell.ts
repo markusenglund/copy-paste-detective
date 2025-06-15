@@ -49,4 +49,11 @@ export class EnhancedCell {
     return typeof this.value === "number" && !this.isDate;
   }
 
+  get isFormula(): boolean {
+    return this.originalCell?.f !== undefined;
+  }
+
+  get isAnalyzable(): boolean {
+    return this.isNumeric && !this.isFormula;
+  }
 }

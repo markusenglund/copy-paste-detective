@@ -57,7 +57,7 @@ export class Sheet {
     let numberCount = 0;
     this.enhancedMatrix.forEach(row =>
       row.forEach(cell => {
-        if (cell.isNumeric && !cell.isDate) {
+        if (cell.isAnalyzable) {
           numberCount++;
         }
       })

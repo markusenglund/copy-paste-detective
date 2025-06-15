@@ -52,43 +52,31 @@ export async function runIndividualNumbersStrategy(
     }
   }
 
-  const topEntropyDuplicateNumbers: DuplicateValue[] = [];
-  const topOccurrenceHighEntropyDuplicateNumbers: DuplicateValue[] = [];
+  const allDuplicateValues: DuplicateValue[] = [];
 
   for (const sheet of sheets) {
     console.log(
       `[${sheet.name}] Found ${sheet.numNumericCells} numeric values`
     );
 
-    const {
-      duplicateValuesSortedByEntropy,
-      duplicatedValuesAboveThresholdSortedByOccurences
-    } = findDuplicateValues(sheet);
+    const { duplicateValues } = findDuplicateValues(sheet);
 
     // Filter out values where all cell pairs have already been reported in duplicate rows
-    const filteredEntropyDuplicates = duplicateValuesSortedByEntropy.filter(
+    const filteredDuplicateValues = duplicateValues.filter(
       duplicate => !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds)
     );
 
-    const filteredOccurrenceHighEntropy = duplicatedValuesAboveThresholdSortedByOccurences.filter(
-      duplicate => !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds)
-    );
-
-    topEntropyDuplicateNumbers.push(
-      ...filteredEntropyDuplicates.slice(0, 5)
-    );
-
-    topOccurrenceHighEntropyDuplicateNumbers.push(
-      ...filteredOccurrenceHighEntropy.slice(0, 5)
-    );
+    allDuplicateValues.push(...filteredDuplicateValues);
   }
+
+  // Sort all duplicate values by entropy score (already sorted per sheet, but need to merge)
+  allDuplicateValues.sort((a, b) => b.entropyScore - a.entropyScore);
 
   const executionTime = performance.now() - startTime;
 
   return {
     name: StrategyName.IndividualNumbers,
     executionTime,
-    topEntropyDuplicates: topEntropyDuplicateNumbers,
-    topOccurrenceHighEntropy: topOccurrenceHighEntropyDuplicateNumbers
+    duplicateValues: allDuplicateValues
   };
 }

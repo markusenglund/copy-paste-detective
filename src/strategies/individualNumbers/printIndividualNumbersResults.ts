@@ -1,9 +1,8 @@
 import { IndividualNumbersResult } from "../../types/strategies";
-import { SuspicionLevel } from "../../types";
 import { DuplicateValue } from "../../entities/DuplicateValue";
 import { levelToSymbol } from "../../utils/output";
 
-function formatDuplicatesByEntropyForDisplay(
+function formatDuplicatesForDisplay(
   duplicates: DuplicateValue[]
 ): Array<{
   level: string;
@@ -11,73 +10,38 @@ function formatDuplicatesByEntropyForDisplay(
   value: number;
   n: number;
   entropy: number;
+  entropyScore: number;
   matrix: number;
 }> {
-  return duplicates
-    .toSorted((a, b) => (b.entropy ?? 0) - (a.entropy ?? 0))
-    .map(duplicateValue => {
-      let level = SuspicionLevel.None;
-      if (duplicateValue.entropy > 10_000_000) {
-        level = SuspicionLevel.High;
-      } else if (duplicateValue.entropy > 100_000) {
-        level = SuspicionLevel.Medium;
-      } else if (duplicateValue.entropy > 10_000) {
-        level = SuspicionLevel.Low;
-      }
-      return {
-        level: levelToSymbol[level],
-        sheetName: duplicateValue.sheet.name,
-        value: duplicateValue.value,
-        n: duplicateValue.numOccurences,
-        entropy: duplicateValue.entropy,
-        matrix: duplicateValue.sheet.numNumericCells
-      };
-    });
-}
-
-function formatDuplicatesByOccurrenceForDisplay(
-  duplicates: DuplicateValue[]
-): Array<{
-  level: string;
-  sheetName: string;
-  value: number;
-  n: number;
-  entropy: number;
-  matrix: number;
-}> {
-  return duplicates
-    .toSorted((a, b) => (b.numOccurences ?? 0) - (a.numOccurences ?? 0))
-    .map(obj => {
-      let level = SuspicionLevel.None;
-      if (obj.numOccurences > 100) {
-        level = SuspicionLevel.High;
-      } else if (obj.numOccurences > 20) {
-        level = SuspicionLevel.Medium;
-      } else if (obj.numOccurences > 5) {
-        level = SuspicionLevel.Low;
-      }
-      return {
-        level: levelToSymbol[level],
-        sheetName: obj.sheet.name,
-        value: obj.value,
-        n: obj.numOccurences,
-        entropy: obj.entropy,
-        matrix: obj.sheet.numNumericCells
-      };
-    });
+  return duplicates.map(duplicateValue => {
+    return {
+      level: levelToSymbol[duplicateValue.suspicionLevel],
+      sheetName: duplicateValue.sheet.name,
+      value: duplicateValue.value,
+      n: duplicateValue.numOccurences,
+      entropy: duplicateValue.entropy,
+      entropyScore: Math.round(duplicateValue.entropyScore),
+      matrix: duplicateValue.sheet.numNumericCells
+    };
+  });
 }
 
 export function printIndividualNumbersResults({
-  topEntropyDuplicates,
-  topOccurrenceHighEntropy
+  duplicateValues
 }: IndividualNumbersResult): void {
-  const humanReadableTopEntropyDuplicateNumbers =
-    formatDuplicatesByEntropyForDisplay(topEntropyDuplicates);
-  const humanReadableTopOccurrenceNumbers =
-    formatDuplicatesByOccurrenceForDisplay(topOccurrenceHighEntropy);
+  console.log(`\nSuspicious duplicate numbers:`);
+  
+  if (duplicateValues.length === 0) {
+    console.log("No suspicious duplicate numbers found.");
+    return;
+  }
 
-  console.log(`\nTop entropy duplicate numbers:`);
-  console.table(humanReadableTopEntropyDuplicateNumbers);
-  console.log(`Top occurrence numbers with entropy>5000:`);
-  console.table(humanReadableTopOccurrenceNumbers);
+  const topDuplicates = duplicateValues.slice(0, 10);
+  const humanReadableDuplicates = formatDuplicatesForDisplay(topDuplicates);
+  
+  console.table(humanReadableDuplicates);
+  
+  if (duplicateValues.length > 10) {
+    console.log(`\nShowing top 10 of ${duplicateValues.length} suspicious duplicates.`);
+  }
 }
