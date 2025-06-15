@@ -5,6 +5,7 @@ import { runIndividualNumbersStrategy } from "../../src/strategies/individualNum
 import { Sheet } from "../../src/entities/Sheet";
 import { MetadataSchema } from "../../src/types/metadata";
 import { StrategyContext, StrategyName } from "../../src/types/strategies";
+import { SuspicionLevel } from "../../src/types";
 import { createMockCategorizeColumns } from "../../src/ai/MockColumnCategorizer";
 import { readFileSync } from "fs";
 import path from "path";
@@ -89,17 +90,21 @@ describe("Hawk Owl Feeding Study", () => {
       // Should find exactly 2 duplicate row pairs
       expect(result.duplicateRows).toHaveLength(2);
 
-      // Verify the first result (rows 36, 38 in 1-based indexing)
+      // Verify the first result (rows 36, 38 in 1-based indexing) has High suspicion
       const firstResult = result.duplicateRows[0];
       expect(firstResult.rowIndices).toEqual([35, 37]);
       expect(firstResult.sharedColumns).toHaveLength(9);
       expect(firstResult.sharedValues).toHaveLength(9);
+      expect(firstResult.suspicionLevel).toBe(SuspicionLevel.High);
 
-      // Verify the second result (rows 54, 55 in 1-based indexing)
+      // Verify the second result (rows 54, 55 in 1-based indexing) has High suspicion
       const secondResult = result.duplicateRows[1];
       expect(secondResult.rowIndices).toEqual([53, 54]);
       expect(secondResult.sharedColumns).toHaveLength(2);
       expect(secondResult.sharedValues).toHaveLength(2);
+      expect([SuspicionLevel.High, SuspicionLevel.Medium]).toContain(
+        secondResult.suspicionLevel
+      );
     });
   });
 

@@ -53,22 +53,3 @@ export function calculateSequenceEntropyScore(values: number[]): number {
   return sum;
 }
 
-export function calculateRowEntropyScore(
-  sharedValues: number[],
-  numComparedColumns: number
-): number {
-  if (sharedValues.length === 0) {
-    return 0;
-  }
-
-  const sumEntropyScores = sharedValues.reduce((acc, value) => {
-    const rawNumberEntropy = calculateNumberEntropy(value);
-    const individualEntropyScore = calculateEntropyScore(rawNumberEntropy);
-    return acc + individualEntropyScore;
-  }, 0);
-
-  // Adjust the score based on the number of compared columns
-  const rowEntropyScore = sumEntropyScores / Math.sqrt(numComparedColumns);
-
-  return rowEntropyScore;
-}

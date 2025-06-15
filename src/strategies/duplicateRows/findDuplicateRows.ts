@@ -3,8 +3,7 @@ import { DuplicateRow } from "../../entities/DuplicateRow";
 import { Sheet } from "../../entities/Sheet";
 import { type EnhancedCell } from "../../entities/EnhancedCell";
 import {
-  calculateNumberEntropy,
-  calculateRowEntropyScore
+  calculateNumberEntropy
 } from "../../utils/entropy";
 import { type ColumnCategorization } from "../../ai/ColumnCategorizer";
 
@@ -28,10 +27,6 @@ function compareRows(
       }
     }
   }
-  const rowEntropyScore = calculateRowEntropyScore(
-    sharedValues,
-    colIndices.length
-  );
 
   const totalSharedCount = sharedValues.length;
   const rowData = new DuplicateRow(
@@ -40,7 +35,7 @@ function compareRows(
     sharedColumns,
     totalSharedCount,
     sheet,
-    rowEntropyScore
+    colIndices.length
   );
 
   return rowData;

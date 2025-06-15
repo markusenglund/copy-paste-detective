@@ -1,4 +1,3 @@
-import { SuspicionLevel } from "../../types";
 import { DuplicateRowsResult } from "../../types/strategies";
 import { levelToSymbol } from "../../utils/output";
 
@@ -15,14 +14,6 @@ export function printDuplicateRowsResults({
     .slice(0, 20); // Show top 20 most suspicious pairs
 
   const tableData = sortedDuplicateRows.map(duplicateRow => {
-    let level = SuspicionLevel.None;
-    if (duplicateRow.rowEntropyScore > 50) {
-      level = SuspicionLevel.High;
-    } else if (duplicateRow.rowEntropyScore > 20) {
-      level = SuspicionLevel.Medium;
-    } else if (duplicateRow.rowEntropyScore > 5) {
-      level = SuspicionLevel.Low;
-    }
 
     // Format shared values for display (show first few if many)
     const sharedValuesDisplay =
@@ -44,7 +35,7 @@ export function printDuplicateRowsResults({
     }
 
     return {
-      level: levelToSymbol[level],
+      level: levelToSymbol[duplicateRow.suspicionLevel],
       sheetName: duplicateRow.sheet.name,
       row1: duplicateRow.rowIndices[0] + 1, // Convert to 1-based indexing for display
       row2: duplicateRow.rowIndices[1] + 1,
