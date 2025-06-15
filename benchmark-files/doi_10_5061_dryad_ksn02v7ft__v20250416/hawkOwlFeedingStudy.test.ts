@@ -123,9 +123,8 @@ describe("Hawk Owl Feeding Study", () => {
   });
 
   describe("Individual Numbers Strategy", () => {
-    it("should NOT report Q103 and Q155 as duplicates", async () => {
-      const result = await runIndividualNumbersStrategy(sheets, context);
-
+    it("should NOT report Q103 and Q155 as duplicates", () => {
+      const result = runIndividualNumbersStrategy(sheets, context);
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
       expect(result.executionTime).toBeGreaterThan(0);
@@ -140,9 +139,8 @@ describe("Hawk Owl Feeding Study", () => {
       expect(hasCellsQ103AndQ155).toBe(false);
     });
 
-    it("should report F54 and F55 as a High suspicion duplicate pair", async () => {
-      const result = await runIndividualNumbersStrategy(sheets, context);
-
+    it("should report F54 and F55 as a High suspicion duplicate pair", () => {
+      const result = runIndividualNumbersStrategy(sheets, context);
 
       // Find the duplicate value that contains both F54 and F55
       const f54F55Duplicate = result.duplicateValues.find(duplicate => {

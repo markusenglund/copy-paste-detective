@@ -15,7 +15,7 @@ function areAllCellPairsAlreadyReported(
   reportedCellPairIds: Set<string>
 ): boolean {
   const cells = duplicateValue.cells;
-  
+
   // Generate all possible pairs from the cells
   for (let i = 0; i < cells.length; i++) {
     for (let j = i + 1; j < cells.length; j++) {
@@ -25,15 +25,15 @@ function areAllCellPairsAlreadyReported(
       }
     }
   }
-  
+
   return true; // All pairs have been reported
 }
 
-export async function runIndividualNumbersStrategy(
+export function runIndividualNumbersStrategy(
   sheets: Sheet[],
   _context: StrategyContext,
   dependencies?: StrategyDependencies
-): Promise<IndividualNumbersResult> {
+): IndividualNumbersResult {
   const startTime = performance.now();
 
   // Get duplicate rows from previous results to filter them out
@@ -42,7 +42,7 @@ export async function runIndividualNumbersStrategy(
   ) as DuplicateRowsResult | undefined;
 
   const duplicateRowCellPairIds = new Set<string>();
-  
+
   if (duplicateRowsResult) {
     // Collect all cell pair IDs from duplicate rows to exclude them from individual number analysis
     for (const duplicateRow of duplicateRowsResult.duplicateRows) {
@@ -63,7 +63,8 @@ export async function runIndividualNumbersStrategy(
 
     // Filter out values where all cell pairs have already been reported in duplicate rows
     const filteredDuplicateValues = duplicateValues.filter(
-      duplicate => !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds)
+      duplicate =>
+        !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds)
     );
 
     allDuplicateValues.push(...filteredDuplicateValues);

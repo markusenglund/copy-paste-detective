@@ -37,10 +37,10 @@ export interface StrategyDependencies {
 export interface Strategy<T extends StrategyResult> {
   name: string;
   execute(
-    sheets: Sheet[], 
-    context: StrategyContext, 
+    sheets: Sheet[],
+    context: StrategyContext,
     dependencies?: StrategyDependencies
-  ): Promise<T>;
+  ): T | Promise<T>;
   printResults(result: T): void;
 }
 

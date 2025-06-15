@@ -4,17 +4,12 @@ import {
   ColumnCategorization
 } from "./ColumnCategorizer";
 
-export const createMockCategorizeColumns = (mockResponse: ColumnCategorization): CategorizeColumnsFunction => {
-  return async ({ sheet }: ColumnCategorizationParams): Promise<ColumnCategorization> => {
-    console.log(
-      `[${sheet.name}] Unique columns:`,
-      mockResponse.unique.join(", ")
-    );
-    console.log(
-      `[${sheet.name}] Shared columns:`,
-      mockResponse.shared.join(", ")
-    );
-
+export const createMockCategorizeColumns = (
+  mockResponse: ColumnCategorization
+): CategorizeColumnsFunction => {
+  return async ({
+    sheet: _sheet
+  }: ColumnCategorizationParams): Promise<ColumnCategorization> => {
     return mockResponse;
   };
 };
