@@ -7,7 +7,7 @@ export interface PromptTemplateParams {
 }
 
 export function generateColumnCategorizationPrompt(
-  params: PromptTemplateParams,
+  params: PromptTemplateParams
 ): string {
   const { paperName, excelFileName, readmeContent, columnNames, columnData } =
     params;
@@ -16,41 +16,55 @@ export function generateColumnCategorizationPrompt(
   const columnHeaders = columnNames.join("\t");
 
   // Format sample rows
-  const sampleRows = columnData.map((row) => row.join("\t")).join("\n");
+  const sampleRows = columnData.map(row => row.join("\t")).join("\n");
 
-  return `Your job is to categorize all columns from an excel sheet by whether or not its data is expected to be shared by multiple rows. You will create two lists - 'shared' and 'unique'. The columns in the 'shared' list should represent data that applies to a group of rows while the 'unique' list should have data that only belongs to this particular row.
+  return `**Your Task:**
 
-Example:
-You are given a spreadsheet where every row is a house. The spreadsheet has the following columns: price, cityPopulation, address, livingArea, yardArea, annualPrecipitation, meanTemperatureJanuary.
+You are an expert data scientist analyzing a dataset from a scientific paper. Your goal is to determine which data columns represent direct measurements of individual samples and which represent contextual or grouping information.
 
-In this case a good response would be
+You will categorize every column name into one of two lists: \`unique\` or \`shared\`.
 
-\`\`\`
-{
-  unique: ["price", "address", "livingArea", "yardArea"],
-  shared: ["cityPopulation", "annualPrecipitation", "meanTemperatureJanuary"]
-}
-\`\`\`
+* **\`unique\`**: Columns where each value is a direct measurement or observation of the specific, individual subject of that row (e.g., a single plant).
+* **\`shared\`**: Columns where the same value is expected to apply to multiple rows because they belong to the same group or location (e.g., site-level weather data).
 
-Explanation: A house's price, address, living area and yard area are data that are specific to this one house. But the population and weather data (annual precipitation and mean temperature in January) is expected to be shared by many rows since two houses in the same city will have weather data from the exact same weather station. Although two houses could potentially sell for the exact same price or have the exact same yard area, these are still individual data points so do not count as shared.
+After categorizing the columns, you will provide a brief \`motivation\` for your choices in the same JSON object.
 
-Assignment:
+**Example Scenario:**
 
-The data is a supplement of a scientific paper called "${paperName}"
+-   **Context:** A spreadsheet about house sales.
+-   **Columns:** \`price\`, \`address\`, \`livingArea\`, \`cityPopulation\`, \`annualPrecipitation\`
+-   **Correct Output:**
+    \`\`\`json
+    {
+      "motivation": "The 'unique' columns are properties of an individual house. The 'shared' columns, cityPopulation and annualPrecipitation, are characteristics of the entire city and would be the same for all houses in that location.",
+      "unique": ["price", "address", "livingArea"],
+      "shared": ["cityPopulation", "annualPrecipitation"]
+    }
+    \`\`\`
 
-The excel file is called "${excelFileName}"
+---
 
-Here's the README that describes the data: 
+**Assignment Details:**
+
+**1. Scientific Paper:** "${paperName}"
+**2. Data File:** "${excelFileName}"
+**3. Data Description (from README):**
 
 \`\`\`
 ${readmeContent}
 \`\`\`
 
-Here are the column names and sample rows:
+**4. Column Headers & Sample Data:**
+*Headers:*
+\`${columnHeaders}\`
 
-${columnHeaders}
-${sampleRows}
+*Sample Rows:*
+\`${sampleRows}\`
 
+---
 
-Categorize every column name into either unique or shared.`;
+**Your Analysis:**
+
+Based on all the information provided, categorize the column headers. In your \`motivation\`, explain the general logic you applied, especially referencing the README.
+`;
 }

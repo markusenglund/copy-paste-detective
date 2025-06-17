@@ -186,6 +186,10 @@ program
             uniqueColumnSet.has(col)
           );
 
+        console.log(
+          `${testCase.description} motivation: ${actualCategorization.motivation}`
+        );
+
         const isSuccess =
           missingColumns.length === 0 && unexpectedColumns.length === 0;
         if (isSuccess) {

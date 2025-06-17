@@ -9,8 +9,9 @@ export interface ColumnCategorizationParams {
 export interface ColumnCategorization {
   unique: string[];
   shared: string[];
+  motivation: string;
 }
 
 export type CategorizeColumnsFunction = (
-  params: ColumnCategorizationParams,
+  params: ColumnCategorizationParams
 ) => Promise<ColumnCategorization>;
