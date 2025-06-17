@@ -1,12 +1,11 @@
-import { Sheet } from "../../entities/Sheet";
 import { findDuplicateValues } from "../../detection";
 import {
-  StrategyContext,
   IndividualNumbersResult,
   StrategyName,
   StrategyDependencies,
   DuplicateRowsResult
 } from "../../types/strategies";
+import { ExcelFileData } from "../../types/ExcelFileData";
 import { DuplicateValue } from "../../entities/DuplicateValue";
 import { DuplicateCellPair } from "../../entities/DuplicateCellPair";
 
@@ -30,8 +29,7 @@ function areAllCellPairsAlreadyReported(
 }
 
 export function runIndividualNumbersStrategy(
-  sheets: Sheet[],
-  _context: StrategyContext,
+  excelFileData: ExcelFileData,
   dependencies?: StrategyDependencies
 ): IndividualNumbersResult {
   const startTime = performance.now();
@@ -54,7 +52,7 @@ export function runIndividualNumbersStrategy(
 
   const allDuplicateValues: DuplicateValue[] = [];
 
-  for (const sheet of sheets) {
+  for (const sheet of excelFileData.sheets) {
     console.log(
       `[${sheet.name}] Found ${sheet.numNumericCells} numeric values`
     );

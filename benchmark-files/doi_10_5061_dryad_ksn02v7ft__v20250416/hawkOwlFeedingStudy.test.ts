@@ -3,45 +3,23 @@ import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/run
 import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
 import { runIndividualNumbersStrategy } from "../../src/strategies/individualNumbers/runIndividualNumbersStrategy";
 import { Sheet } from "../../src/entities/Sheet";
-import { MetadataSchema } from "../../src/types/metadata";
-import { StrategyContext, StrategyName } from "../../src/types/strategies";
+import { StrategyName } from "../../src/types/strategies";
 import { SuspicionLevel } from "../../src/types";
 import { createMockCategorizeColumns } from "../../src/ai/MockColumnCategorizer";
-import { readFileSync } from "fs";
-import path from "path";
-import xlsx from "xlsx";
+import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
+import { ExcelFileData } from "../../src/types/ExcelFileData";
 
 describe("Hawk Owl Feeding Study", () => {
+  let excelFileData: ExcelFileData;
   let sheets: Sheet[];
-  let context: StrategyContext;
 
   beforeAll(() => {
     // Load the actual Dryad dataset
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_ksn02v7ft__v20250416";
-    const metadataPath = path.join(datasetFolder, "metadata.json");
-
-    // Read and validate metadata
-    const metadataContent = readFileSync(metadataPath, "utf-8");
-    const metadataJson = JSON.parse(metadataContent);
-    const metadata = MetadataSchema.parse(metadataJson);
-
-    // Load Excel file
-    const excelPath = path.join(datasetFolder, metadata.files[0].name);
-    const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
-
-    // Create Sheet objects
-    sheets = workbook.SheetNames.map(sheetName => {
-      const workbookSheet = workbook.Sheets[sheetName];
-      return new Sheet(workbookSheet, sheetName);
-    });
-
-    // Setup strategy context
-    context = {
-      excelDataFolder: datasetFolder,
-      excelFileName: metadata.files[0].name,
-      articleName: metadata.name
-    };
+    
+    excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+    sheets = excelFileData.sheets;
   });
 
   describe("Duplicate Rows Strategy", () => {
@@ -78,7 +56,7 @@ describe("Hawk Owl Feeding Study", () => {
         ]
       });
 
-      const result = await runDuplicateRowsStrategy(sheets, context, {
+      const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizeColumns: mockCategorizeColumns
       });
 
@@ -110,7 +88,7 @@ describe("Hawk Owl Feeding Study", () => {
 
   describe("Repeated Column Sequences Strategy", () => {
     it("should find zero repeated sequences", async () => {
-      const result = await runRepeatedColumnSequencesStrategy(sheets, context);
+      const result = await runRepeatedColumnSequencesStrategy(excelFileData);
 
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.RepeatedColumnSequences);
@@ -124,7 +102,7 @@ describe("Hawk Owl Feeding Study", () => {
 
   describe("Individual Numbers Strategy", () => {
     it("should NOT report Q103 and Q155 as duplicates", () => {
-      const result = runIndividualNumbersStrategy(sheets, context);
+      const result = runIndividualNumbersStrategy(excelFileData);
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
       expect(result.executionTime).toBeGreaterThan(0);
@@ -140,7 +118,7 @@ describe("Hawk Owl Feeding Study", () => {
     });
 
     it("should report F54 and F55 as a High suspicion duplicate pair", () => {
-      const result = runIndividualNumbersStrategy(sheets, context);
+      const result = runIndividualNumbersStrategy(excelFileData);
 
       // Find the duplicate value that contains both F54 and F55
       const f54F55Duplicate = result.duplicateValues.find(duplicate => {

@@ -1,8 +1,8 @@
-import { Sheet } from "../entities/Sheet";
 import { DuplicateValue } from "../entities/DuplicateValue";
 import { DuplicateRow } from "../entities/DuplicateRow";
 import { RepeatedSequence } from "./index";
 import { CategorizeColumnsFunction } from "../ai/ColumnCategorizer";
+import { ExcelFileData } from "./ExcelFileData";
 
 export interface StrategyResult {
   name: string;
@@ -37,17 +37,10 @@ export interface StrategyDependencies {
 export interface Strategy<T extends StrategyResult> {
   name: string;
   execute(
-    sheets: Sheet[],
-    context: StrategyContext,
+    excelFileData: ExcelFileData,
     dependencies?: StrategyDependencies
   ): T | Promise<T>;
   printResults(result: T): void;
-}
-
-export interface StrategyContext {
-  excelDataFolder: string;
-  excelFileName: string;
-  articleName: string;
 }
 
 export enum StrategyName {

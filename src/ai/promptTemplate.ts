@@ -1,7 +1,7 @@
 export interface PromptTemplateParams {
   paperName: string;
   excelFileName: string;
-  dataDescription: string;
+  readmeContent: string;
   columnNames: string[];
   columnData: string[][];
 }
@@ -9,7 +9,7 @@ export interface PromptTemplateParams {
 export function generateColumnCategorizationPrompt(
   params: PromptTemplateParams
 ): string {
-  const { paperName, excelFileName, dataDescription, columnNames, columnData } =
+  const { paperName, excelFileName, readmeContent, columnNames, columnData } =
     params;
 
   // Format column headers
@@ -43,7 +43,7 @@ The excel file is called "${excelFileName}"
 Here's the README that describes the data: 
 
 \`\`\`
-${dataDescription}
+${readmeContent}
 \`\`\`
 
 Here are the column names and sample rows:

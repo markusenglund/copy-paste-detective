@@ -1,42 +1,29 @@
-import { Sheet } from "./entities/Sheet";
 import {
   StrategyName,
-  StrategyContext,
   StrategyDependencies
 } from "./types/strategies";
 import individualNumbersStrategy from "./strategies/individualNumbers/individualNumbers";
 import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequences/repeatedColumnSequences";
 import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
-import xlsx from "xlsx";
+import { ExcelFileData } from "./types/ExcelFileData";
 
 
 export async function runStrategies(
   strategies: StrategyName[],
-  context: StrategyContext,
+  excelFileData: ExcelFileData,
   dependencies?: StrategyDependencies
 ): Promise<void> {
   console.log("🔍 Running strategies:", strategies.join(", "));
 
-  console.time("Read Excel file in");
-  const workbook = xlsx.readFile(
-    `${context.excelDataFolder}/${context.excelFileName}`,
-    { sheetRows: 5000 } // Only read the first 5000 rows from each sheet
-  );
-  console.timeEnd("Read Excel file in");
-
-  const sheetNames = workbook.SheetNames;
-  console.log(`Found ${sheetNames.length} sheet(s): ${sheetNames.join(", ")}`);
-  const sheets: Sheet[] = sheetNames.map(sheetName => {
-    const workbookSheet = workbook.Sheets[sheetName];
-    return new Sheet(workbookSheet, sheetName);
-  });
+  const { sheets } = excelFileData;
+  console.log(`Found ${sheets.length} sheet(s): ${sheets.map(s => s.name).join(", ")}`);
 
   let duplicateRowsResult;
 
   // 1. Run duplicateRows first if requested
   if (strategies.includes(StrategyName.DuplicateRows)) {
     console.log(`\n🔍 Running ${StrategyName.DuplicateRows} strategy...`);
-    duplicateRowsResult = await duplicateRowsStrategy.execute(sheets, context, dependencies);
+    duplicateRowsResult = await duplicateRowsStrategy.execute(excelFileData, dependencies);
     console.log(
       `✅ ${StrategyName.DuplicateRows} completed in ${duplicateRowsResult.executionTime.toFixed(2)}ms`
     );
@@ -46,7 +33,7 @@ export async function runStrategies(
   // 2. Run repeatedColumnSequences second if requested
   if (strategies.includes(StrategyName.RepeatedColumnSequences)) {
     console.log(`\n🔍 Running ${StrategyName.RepeatedColumnSequences} strategy...`);
-    const result = await repeatedColumnSequencesStrategy.execute(sheets, context, dependencies);
+    const result = await repeatedColumnSequencesStrategy.execute(excelFileData, dependencies);
     console.log(
       `✅ ${StrategyName.RepeatedColumnSequences} completed in ${result.executionTime.toFixed(2)}ms`
     );
@@ -60,7 +47,7 @@ export async function runStrategies(
       ...dependencies,
       previousResults: duplicateRowsResult ? [duplicateRowsResult] : []
     };
-    const result = await individualNumbersStrategy.execute(sheets, context, individualNumbersDependencies);
+    const result = await individualNumbersStrategy.execute(excelFileData, individualNumbersDependencies);
     console.log(
       `✅ ${StrategyName.IndividualNumbers} completed in ${result.executionTime.toFixed(2)}ms`
     );

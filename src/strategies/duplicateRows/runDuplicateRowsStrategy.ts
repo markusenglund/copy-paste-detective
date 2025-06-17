@@ -1,17 +1,14 @@
-import { Sheet } from "../../entities/Sheet";
 import { findDuplicateRows } from "../../detection";
 import {
-  StrategyContext,
   DuplicateRowsResult,
   StrategyName,
   StrategyDependencies
 } from "../../types/strategies";
+import { ExcelFileData } from "../../types/ExcelFileData";
 import { categorizeColumnsWithGemini } from "../../ai/GeminiColumnCategorizer";
-import { readFileSync } from "fs";
 
 async function runDuplicateRowsStrategy(
-  sheets: Sheet[],
-  context: StrategyContext,
+  excelFileData: ExcelFileData,
   dependencies?: StrategyDependencies
 ): Promise<DuplicateRowsResult> {
   const startTime = performance.now();
@@ -22,15 +19,11 @@ async function runDuplicateRowsStrategy(
   const categorizeColumns =
     dependencies?.categorizeColumns || categorizeColumnsWithGemini;
 
-  // Read README.md from the excel data folder
-  const readmePath = `${context.excelDataFolder}/README.md`;
-  const dataDescription = readFileSync(readmePath, "utf-8");
 
-  for (const sheet of sheets) {
+  for (const sheet of excelFileData.sheets) {
     const columnCategorization = await categorizeColumns({
       sheet,
-      context,
-      dataDescription
+      excelFileData
     });
     const { duplicateRows } = findDuplicateRows(sheet, columnCategorization);
     allDuplicateRows.push(...duplicateRows);

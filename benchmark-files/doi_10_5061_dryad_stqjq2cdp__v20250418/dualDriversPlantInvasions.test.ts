@@ -2,45 +2,23 @@ import { describe, it, expect, beforeAll } from "@jest/globals";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
 import { runIndividualNumbersStrategy } from "../../src/strategies/individualNumbers/runIndividualNumbersStrategy";
 import { Sheet } from "../../src/entities/Sheet";
-import { MetadataSchema } from "../../src/types/metadata";
-import { StrategyContext, StrategyName } from "../../src/types/strategies";
+import { StrategyName } from "../../src/types/strategies";
 import { SuspicionLevel } from "../../src/types";
 import { createMockCategorizeColumns } from "../../src/ai/MockColumnCategorizer";
-import { readFileSync } from "fs";
-import path from "path";
-import xlsx from "xlsx";
+import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
+import { ExcelFileData } from "../../src/types/ExcelFileData";
 
 describe("Dual Drivers of Plant Invasions - Common garden", () => {
+  let excelFileData: ExcelFileData;
   let sheets: Sheet[];
-  let context: StrategyContext;
 
   beforeAll(() => {
     // Load the actual Dryad dataset
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418";
-    const metadataPath = path.join(datasetFolder, "metadata.json");
-
-    // Read and validate metadata
-    const metadataContent = readFileSync(metadataPath, "utf-8");
-    const metadataJson = JSON.parse(metadataContent);
-    const metadata = MetadataSchema.parse(metadataJson);
-
-    // Load Excel file (use the first file for now)
-    const excelPath = path.join(datasetFolder, metadata.files[0].name);
-    const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
-
-    // Create Sheet objects
-    sheets = workbook.SheetNames.map(sheetName => {
-      const workbookSheet = workbook.Sheets[sheetName];
-      return new Sheet(workbookSheet, sheetName);
-    });
-
-    // Setup strategy context
-    context = {
-      excelDataFolder: datasetFolder,
-      excelFileName: metadata.files[0].name,
-      articleName: metadata.name
-    };
+    
+    excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+    sheets = excelFileData.sheets;
   });
 
   describe("Duplicate Rows Strategy", () => {
@@ -75,7 +53,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     });
 
     it("should detect duplicate row pair at rows 354 and 358 with 3 matching columns", async () => {
-      const result = await runDuplicateRowsStrategy(sheets, context, {
+      const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizeColumns: mockCategorizeColumns
       });
 
@@ -97,7 +75,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     });
 
     it("should detect duplicate row pair at rows 96 and 330 with 3 matching columns", async () => {
-      const result = await runDuplicateRowsStrategy(sheets, context, {
+      const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizeColumns: mockCategorizeColumns
       });
 
@@ -117,7 +95,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
 
   describe("Individual Numbers Strategy", () => {
     it("should detect duplicate value 106.9391 in S354, S358 & S242", async () => {
-      const result = runIndividualNumbersStrategy(sheets, context);
+      const result = runIndividualNumbersStrategy(excelFileData);
 
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
@@ -139,7 +117,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     });
 
     it("should detect duplicate value 154.5642 in S15 & S353", async () => {
-      const result = runIndividualNumbersStrategy(sheets, context);
+      const result = runIndividualNumbersStrategy(excelFileData);
 
       // Find the duplicate value 154.5642
       const targetValue = 154.5642;
@@ -156,7 +134,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     });
 
     it("should detect duplicate value 118.8588 in S85 & S193", async () => {
-      const result = runIndividualNumbersStrategy(sheets, context);
+      const result = runIndividualNumbersStrategy(excelFileData);
 
       // Find the duplicate value 118.8588
       const targetValue = 118.8588;

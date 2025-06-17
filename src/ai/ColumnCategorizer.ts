@@ -1,10 +1,9 @@
 import { Sheet } from "../entities/Sheet";
-import { StrategyContext } from "../types/strategies";
+import { ExcelFileData } from "../types/ExcelFileData";
 
 export interface ColumnCategorizationParams {
   sheet: Sheet;
-  context: StrategyContext;
-  dataDescription: string;
+  excelFileData: ExcelFileData;
 }
 
 export interface ColumnCategorization {

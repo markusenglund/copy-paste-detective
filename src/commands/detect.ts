@@ -1,9 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import { runStrategies } from "../runStrategies";
 import { StrategyName } from "../types/strategies";
-import { MetadataSchema } from "../types/metadata";
-import { readFileSync } from "fs";
-import path from "path";
+import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
 
 function parseIntArgument(value: string): number {
   const parsed = parseInt(value, 10);
@@ -51,40 +49,24 @@ program
   )
   .action(async (folder, fileIndex, options) => {
     console.time("Total execution time");
-    const metadataPath = path.join(folder, "metadata.json");
-    let metadata;
-
+    
+    let excelFileData;
     try {
-      const metadataContent = readFileSync(metadataPath, "utf-8");
-      const metadataJson = JSON.parse(metadataContent);
-      metadata = MetadataSchema.parse(metadataJson);
+      excelFileData = loadExcelFileFromFolder(folder, fileIndex);
     } catch (error) {
-      console.error("❌ Failed to read or validate metadata.json:", error);
+      console.error("❌ Failed to load Excel file from folder:", error);
       process.exit(1);
     }
 
-    // Validate file index range
-    if (fileIndex < 0 || fileIndex >= metadata.files.length) {
-      console.error(
-        `❌ Invalid file index: ${fileIndex}. Available files: 0-${metadata.files.length - 1}`
-      );
-      process.exit(1);
-    }
-
-    const selectedFile = metadata.files[fileIndex];
     console.log(
-      `📄 Selected file '${selectedFile.name}' (index ${fileIndex}) from folder: '${folder}'`
+      `📄 Selected file '${excelFileData.excelFileName}' (index ${fileIndex}) from folder: '${folder}'`
     );
 
     const strategies: StrategyName[] = options.strategies
       .split(",")
       .map((s: string) => s.trim()) as StrategyName[];
 
-    await runStrategies(strategies, {
-      excelDataFolder: folder,
-      excelFileName: selectedFile.name,
-      articleName: metadata.name
-    });
+    await runStrategies(strategies, excelFileData);
     console.timeEnd("Total execution time");
   });
 

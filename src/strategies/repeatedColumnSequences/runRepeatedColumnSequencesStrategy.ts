@@ -1,19 +1,17 @@
-import { Sheet } from "../../entities/Sheet";
 import {
   findRepeatedSequences,
   deduplicateSortedSequences
 } from "../../detection";
 import {
-  StrategyContext,
   RepeatedColumnSequencesResult,
   StrategyName,
   StrategyDependencies
 } from "../../types/strategies";
+import { ExcelFileData } from "../../types/ExcelFileData";
 import { RepeatedSequence } from "../../types";
 
 export async function runRepeatedColumnSequencesStrategy(
-  sheets: Sheet[],
-  _context: StrategyContext,
+  excelFileData: ExcelFileData,
   _dependencies?: StrategyDependencies
 ): Promise<RepeatedColumnSequencesResult> {
   const startTime = performance.now();
@@ -21,7 +19,7 @@ export async function runRepeatedColumnSequencesStrategy(
   const repeatedColumnSequences: (RepeatedSequence & { sheetName: string })[] =
     [];
 
-  for (const sheet of sheets) {
+  for (const sheet of excelFileData.sheets) {
     const sheetRepeatedColumnSequences = findRepeatedSequences(
       sheet.invertedEnhancedMatrix,
       {
