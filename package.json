@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "detect": "tsx -r dotenv/config src/commands/detect",
+    "test-ai": "tsx -r dotenv/config src/commands/test-ai",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",

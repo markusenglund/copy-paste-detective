@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
 import { runIndividualNumbersStrategy } from "../../src/strategies/individualNumbers/runIndividualNumbersStrategy";
-import { Sheet } from "../../src/entities/Sheet";
 import { StrategyName } from "../../src/types/strategies";
 import { SuspicionLevel } from "../../src/types";
 import { createMockCategorizeColumns } from "../../src/ai/MockColumnCategorizer";
@@ -20,56 +19,65 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
   });
 
   describe("Duplicate Rows Strategy", () => {
-    let categorizeColumnsBySheet: Map<string, ReturnType<typeof createMockCategorizeColumns>>;
+    let categorizeColumnsBySheet: Map<
+      string,
+      ReturnType<typeof createMockCategorizeColumns>
+    >;
 
     beforeAll(() => {
       // Create sheet-specific mock categorizeColumns functions
       categorizeColumnsBySheet = new Map();
-      
+
       // Mock categorizer for "common garden-data" sheet
-      categorizeColumnsBySheet.set("common garden-data", createMockCategorizeColumns({
-        unique: [
-          "Plot",
-          "Species",
-          "Treatment",
-          "Coarse root soluble sugar concentrations(mg/g)",
-          "Fine root soluble sugar concentrations(mg/g)",
-          "AMF colonization rate(%)",
-          "Damage(%)",
-          "Aboveground mass(g)",
-          "Belowground mass(g)",
-          "Root length(cm)",
-          "Root surface area(cm2)",
-          "Root average diameter(mm)",
-          "Root volume(cm3)",
-          "Root tissue density(g/cm3)",
-          "Fine root length(cm)",
-          "Coarse root length(cm)",
-          "Fine root surface area(cm2)",
-          "Coarse root  surface area(cm2)"
-        ],
-        shared: ["Time", "Name", "Origin"]
-      }));
-      
+      categorizeColumnsBySheet.set(
+        "common garden-data",
+        createMockCategorizeColumns({
+          unique: [
+            "Plot",
+            "Species",
+            "Treatment",
+            "Coarse root soluble sugar concentrations(mg/g)",
+            "Fine root soluble sugar concentrations(mg/g)",
+            "AMF colonization rate(%)",
+            "Damage(%)",
+            "Aboveground mass(g)",
+            "Belowground mass(g)",
+            "Root length(cm)",
+            "Root surface area(cm2)",
+            "Root average diameter(mm)",
+            "Root volume(cm3)",
+            "Root tissue density(g/cm3)",
+            "Fine root length(cm)",
+            "Coarse root length(cm)",
+            "Fine root surface area(cm2)",
+            "Coarse root  surface area(cm2)"
+          ],
+          shared: ["Time", "Name", "Origin"]
+        })
+      );
+
       // Mock categorizer for "common garden-Herbiory" sheet
-      categorizeColumnsBySheet.set("common garden-Herbiory", createMockCategorizeColumns({
-        unique: [
-          "Plot",
-          "Species",
-          "Insects(#)",
-          "no-Hemiptera(#)",
-          "Neuroptera(#)",
-          "Hemiptera(#)",
-          "Orthoptera(#)",
-          "Lepidoptera(#)",
-          "Araneida(#)",
-          "Coleoptera(#)",
-          "Diptera(#)",
-          "Hymenoptera(#)",
-          "others(#)"
-        ],
-        shared: ["Time", "Name", "Origin", "Treatment"]
-      }));
+      categorizeColumnsBySheet.set(
+        "common garden-Herbiory",
+        createMockCategorizeColumns({
+          unique: [
+            "Plot",
+            "Species",
+            "Insects(#)",
+            "no-Hemiptera(#)",
+            "Neuroptera(#)",
+            "Hemiptera(#)",
+            "Orthoptera(#)",
+            "Lepidoptera(#)",
+            "Araneida(#)",
+            "Coleoptera(#)",
+            "Diptera(#)",
+            "Hymenoptera(#)",
+            "others(#)"
+          ],
+          shared: ["Time", "Name", "Origin", "Treatment"]
+        })
+      );
     });
 
     it("should detect duplicate row pair at rows 354 and 358 with 3 matching columns", async () => {
