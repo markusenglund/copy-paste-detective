@@ -56,8 +56,11 @@ describe("Hawk Owl Feeding Study", () => {
         ],
       });
 
+      const categorizeColumnsBySheet = new Map();
+      categorizeColumnsBySheet.set(sheets[0].name, mockCategorizeColumns);
+      
       const result = await runDuplicateRowsStrategy(excelFileData, {
-        categorizeColumns: mockCategorizeColumns,
+        categorizeColumnsBySheet,
       });
 
       // Verify basic result structure
