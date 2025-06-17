@@ -30,12 +30,12 @@ function areAllCellPairsAlreadyReported(
 
 export function runIndividualNumbersStrategy(
   excelFileData: ExcelFileData,
-  dependencies?: StrategyDependencies,
+  { previousResults, categorizedColumnsBySheet }: StrategyDependencies,
 ): IndividualNumbersResult {
   const startTime = performance.now();
 
   // Get duplicate rows from previous results to filter them out
-  const duplicateRowsResult = dependencies?.previousResults?.find(
+  const duplicateRowsResult = previousResults?.find(
     (result) => result.name === StrategyName.DuplicateRows,
   ) as DuplicateRowsResult | undefined;
 
@@ -57,7 +57,12 @@ export function runIndividualNumbersStrategy(
       `[${sheet.name}] Found ${sheet.numNumericCells} numeric values`,
     );
 
-    const { duplicateValues } = findDuplicateValues(sheet);
+    const categorizedColumns = categorizedColumnsBySheet.get(sheet.name);
+    if (!categorizedColumns) {
+      throw new Error(`Categorized columns not found for sheet: ${sheet.name}`);
+    }
+
+    const { duplicateValues } = findDuplicateValues(sheet, categorizedColumns);
 
     // Filter out values where all cell pairs have already been reported in duplicate rows
     const filteredDuplicateValues = duplicateValues.filter(

@@ -166,17 +166,32 @@ export function findRepeatedSequences(
   return repeatedSequences;
 }
 
-export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
+export function findDuplicateValues(
+  sheet: Sheet,
+  categorizedColumns: ColumnCategorization,
+): DuplicateValuesResult {
+  // Get numeric columns that should be unique
+  const uniqueColumnIndices = categorizedColumns.unique
+    .map((name) => sheet.getColumnIndex(name))
+    .filter(
+      (index) => index !== -1 && sheet.numericColumnIndices.includes(index),
+    );
+
+  if (uniqueColumnIndices.length === 0) {
+    return { duplicateValues: [] };
+  }
+
   const cellsByNumericValue = new Map<number, EnhancedCell[]>();
   sheet.enhancedMatrix.forEach((row) => {
-    row.forEach((cell) => {
+    for (const colIndex of uniqueColumnIndices) {
+      const cell = row[colIndex];
       if (cell.isAnalyzable) {
         const value = cell.value as number;
         const existingCells = cellsByNumericValue.get(value) ?? [];
         existingCells.push(cell);
         cellsByNumericValue.set(value, existingCells);
       }
-    });
+    }
   });
 
   const duplicateValues: DuplicateValue[] = [...cellsByNumericValue.entries()]
