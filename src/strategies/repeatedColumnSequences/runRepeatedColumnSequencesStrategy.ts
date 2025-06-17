@@ -12,7 +12,7 @@ import { RepeatedSequence } from "../../types";
 
 export async function runRepeatedColumnSequencesStrategy(
   excelFileData: ExcelFileData,
-  _dependencies?: StrategyDependencies,
+  { categorizedColumnsBySheet }: StrategyDependencies,
 ): Promise<RepeatedColumnSequencesResult> {
   const startTime = performance.now();
 
@@ -20,13 +20,13 @@ export async function runRepeatedColumnSequencesStrategy(
     [];
 
   for (const sheet of excelFileData.sheets) {
+    const categorizedColumns = categorizedColumnsBySheet.get(sheet.name);
+    if (!categorizedColumns) {
+      throw new Error(`Categorized columns not found for sheet: ${sheet.name}`);
+    }
     const sheetRepeatedColumnSequences = findRepeatedSequences(
-      sheet.invertedEnhancedMatrix,
-      {
-        sheetName: sheet.name,
-        isInverted: true,
-        numberCount: sheet.numNumericCells,
-      },
+      sheet,
+      categorizedColumns,
     );
 
     console.log(

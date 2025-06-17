@@ -13,6 +13,7 @@ import {
   calculateSequenceEntropyScore,
 } from "../utils/entropy";
 import { calculateSequenceRegularity } from "../utils/sequence";
+import { ColumnCategorization } from "../ai/geminiService";
 
 export function deduplicateSortedSequences(
   repeatedSequences: RepeatedSequence[],
@@ -47,21 +48,29 @@ export function deduplicateSortedSequences(
 }
 
 export function findRepeatedSequences(
-  matrix: EnhancedCell[][],
-  {
-    isInverted,
-    sheetName,
-    numberCount,
-  }: { isInverted: boolean; sheetName: string; numberCount: number },
+  sheet: Sheet,
+  categorizedColumns: ColumnCategorization,
 ): RepeatedSequence[] {
+  // Get numeric columns that should be unique
+  const uniqueColumnIndices = categorizedColumns.unique
+    .map((name) => sheet.getColumnIndex(name))
+    .filter(
+      (index) => index !== -1 && sheet.numericColumnIndices.includes(index),
+    );
+
+  if (uniqueColumnIndices.length === 0) {
+    return [];
+  }
+
+  const matrix = sheet.invertedEnhancedMatrix;
   const numberCountEntropyScore = calculateEntropyScore(
-    Math.max(numberCount, 500), // Prevent very small excel files from getting too high of an entropy score
+    Math.max(sheet.numNumericCells, 500), // Prevent very small excel files from getting too high of an entropy score
   );
 
   const repeatedSequences: RepeatedSequence[] = [];
   const positionsByValue = new Map<number, Position[]>();
   const checkedPositionPairs = new Set<string>();
-  for (let columnIndex = 0; columnIndex < matrix.length; columnIndex++) {
+  for (const columnIndex of uniqueColumnIndices) {
     for (let rowIndex = 0; rowIndex < matrix[columnIndex].length; rowIndex++) {
       if (repeatedSequences.length > 1000) {
         // Limit the number of sequences to avoid memory issues
@@ -86,7 +95,7 @@ export function findRepeatedSequences(
               continue;
             }
             // If the values are on the same row, skip since this is often expected to be the case in legitimate data (only in inverted mode, since the same is not true for columns)
-            if (position.startRow === rowIndex && isInverted) {
+            if (position.startRow === rowIndex) {
               continue;
             }
             let length = 1;
@@ -140,8 +149,8 @@ export function findRepeatedSequences(
               adjustedSequenceEntropyScore:
                 intervalAdjustedSequenceEntropyScore,
               matrixSizeAdjustedEntropyScore,
-              numberCount,
-              sheetName,
+              numberCount: sheet.numNumericCells,
+              sheetName: sheet.name,
             };
             if (repeatedSequence.matrixSizeAdjustedEntropyScore > 2) {
               repeatedSequences.push(repeatedSequence);
