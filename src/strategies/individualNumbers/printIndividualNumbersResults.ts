@@ -2,9 +2,7 @@ import { IndividualNumbersResult } from "../../types/strategies";
 import { DuplicateValue } from "../../entities/DuplicateValue";
 import { levelToSymbol } from "../../utils/output";
 
-function formatDuplicatesForDisplay(
-  duplicates: DuplicateValue[]
-): Array<{
+function formatDuplicatesForDisplay(duplicates: DuplicateValue[]): Array<{
   level: string;
   sheetName: string;
   value: number;
@@ -13,7 +11,7 @@ function formatDuplicatesForDisplay(
   entropyScore: number;
   matrix: number;
 }> {
-  return duplicates.map(duplicateValue => {
+  return duplicates.map((duplicateValue) => {
     return {
       level: levelToSymbol[duplicateValue.suspicionLevel],
       sheetName: duplicateValue.sheet.name,
@@ -21,16 +19,16 @@ function formatDuplicatesForDisplay(
       n: duplicateValue.numOccurences,
       entropy: duplicateValue.entropy,
       entropyScore: Math.round(duplicateValue.entropyScore),
-      matrix: duplicateValue.sheet.numNumericCells
+      matrix: duplicateValue.sheet.numNumericCells,
     };
   });
 }
 
 export function printIndividualNumbersResults({
-  duplicateValues
+  duplicateValues,
 }: IndividualNumbersResult): void {
   console.log(`\nSuspicious duplicate numbers:`);
-  
+
   if (duplicateValues.length === 0) {
     console.log("No suspicious duplicate numbers found.");
     return;
@@ -38,10 +36,12 @@ export function printIndividualNumbersResults({
 
   const topDuplicates = duplicateValues.slice(0, 10);
   const humanReadableDuplicates = formatDuplicatesForDisplay(topDuplicates);
-  
+
   console.table(humanReadableDuplicates);
-  
+
   if (duplicateValues.length > 10) {
-    console.log(`\nShowing top 10 of ${duplicateValues.length} suspicious duplicates.`);
+    console.log(
+      `\nShowing top 10 of ${duplicateValues.length} suspicious duplicates.`,
+    );
   }
 }

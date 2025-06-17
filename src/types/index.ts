@@ -1,9 +1,8 @@
-
 export enum SuspicionLevel {
   None = "None",
-  Low = "Low", 
+  Low = "Low",
   Medium = "Medium",
-  High = "High"
+  High = "High",
 }
 
 export type Position = {

@@ -1,14 +1,14 @@
 import {
   CategorizeColumnsFunction,
   ColumnCategorizationParams,
-  ColumnCategorization
+  ColumnCategorization,
 } from "./ColumnCategorizer";
 
 export const createMockCategorizeColumns = (
-  mockResponse: ColumnCategorization
+  mockResponse: ColumnCategorization,
 ): CategorizeColumnsFunction => {
   return async ({
-    sheet: _sheet
+    sheet: _sheet,
   }: ColumnCategorizationParams): Promise<ColumnCategorization> => {
     return mockResponse;
   };

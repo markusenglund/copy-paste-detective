@@ -17,7 +17,7 @@ describe("Hawk Owl Feeding Study", () => {
     // Load the actual Dryad dataset
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_ksn02v7ft__v20250416";
-    
+
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
     sheets = excelFileData.sheets;
   });
@@ -45,19 +45,19 @@ describe("Hawk Owl Feeding Study", () => {
           "max blank Sr/sample Sr",
           "Pellet notes",
           "Fecal appearance notes",
-          "Other notes"
+          "Other notes",
         ],
         shared: [
           "Individual",
           "Date collected",
           "Tissue",
           "Pre or post digestion",
-          "Date Run"
-        ]
+          "Date Run",
+        ],
       });
 
       const result = await runDuplicateRowsStrategy(excelFileData, {
-        categorizeColumns: mockCategorizeColumns
+        categorizeColumns: mockCategorizeColumns,
       });
 
       // Verify basic result structure
@@ -81,7 +81,7 @@ describe("Hawk Owl Feeding Study", () => {
       expect(secondResult.sharedColumns).toHaveLength(2);
       expect(secondResult.sharedValues).toHaveLength(2);
       expect([SuspicionLevel.High, SuspicionLevel.Medium]).toContain(
-        secondResult.suspicionLevel
+        secondResult.suspicionLevel,
       );
     });
   });
@@ -109,8 +109,8 @@ describe("Hawk Owl Feeding Study", () => {
       expect(result.duplicateValues).toBeDefined();
 
       // Check that Q103 and Q155 are NOT reported as duplicates (this test should fail)
-      const hasCellsQ103AndQ155 = result.duplicateValues.some(duplicate => {
-        const cellIds = duplicate.cells.map(cell => cell.cellId);
+      const hasCellsQ103AndQ155 = result.duplicateValues.some((duplicate) => {
+        const cellIds = duplicate.cells.map((cell) => cell.cellId);
         return cellIds.includes("Q103") && cellIds.includes("Q155");
       });
 
@@ -121,8 +121,8 @@ describe("Hawk Owl Feeding Study", () => {
       const result = runIndividualNumbersStrategy(excelFileData);
 
       // Find the duplicate value that contains both F54 and F55
-      const f54F55Duplicate = result.duplicateValues.find(duplicate => {
-        const cellIds = duplicate.cells.map(cell => cell.cellId);
+      const f54F55Duplicate = result.duplicateValues.find((duplicate) => {
+        const cellIds = duplicate.cells.map((cell) => cell.cellId);
         return cellIds.includes("F54") && cellIds.includes("F55");
       });
 

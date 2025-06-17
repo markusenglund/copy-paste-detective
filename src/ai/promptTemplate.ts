@@ -7,7 +7,7 @@ export interface PromptTemplateParams {
 }
 
 export function generateColumnCategorizationPrompt(
-  params: PromptTemplateParams
+  params: PromptTemplateParams,
 ): string {
   const { paperName, excelFileName, readmeContent, columnNames, columnData } =
     params;
@@ -16,7 +16,7 @@ export function generateColumnCategorizationPrompt(
   const columnHeaders = columnNames.join("\t");
 
   // Format sample rows
-  const sampleRows = columnData.map(row => row.join("\t")).join("\n");
+  const sampleRows = columnData.map((row) => row.join("\t")).join("\n");
 
   return `Your job is to categorize all columns from an excel sheet by whether or not its data is expected to be shared by multiple rows. You will create two lists - 'shared' and 'unique'. The columns in the 'shared' list should represent data that applies to a group of rows while the 'unique' list should have data that only belongs to this particular row.
 

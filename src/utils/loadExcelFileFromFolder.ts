@@ -7,7 +7,7 @@ import { ExcelFileData } from "../types/ExcelFileData";
 
 export function loadExcelFileFromFolder(
   datasetFolder: string,
-  fileIndex: number = 0
+  fileIndex: number = 0,
 ): ExcelFileData {
   const metadataPath = path.join(datasetFolder, "metadata.json");
 
@@ -19,7 +19,7 @@ export function loadExcelFileFromFolder(
   // Validate file index range
   if (fileIndex < 0 || fileIndex >= metadata.files.length) {
     throw new Error(
-      `Invalid file index: ${fileIndex}. Available files: 0-${metadata.files.length - 1}`
+      `Invalid file index: ${fileIndex}. Available files: 0-${metadata.files.length - 1}`,
     );
   }
 
@@ -29,7 +29,7 @@ export function loadExcelFileFromFolder(
   const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
 
   // Create Sheet objects
-  const sheets = workbook.SheetNames.map(sheetName => {
+  const sheets = workbook.SheetNames.map((sheetName) => {
     const workbookSheet = workbook.Sheets[sheetName];
     return new Sheet(workbookSheet, sheetName);
   });
@@ -43,6 +43,6 @@ export function loadExcelFileFromFolder(
     excelFileName: selectedFile.name,
     articleName: metadata.name,
     readmeContent,
-    excelDataFolder: datasetFolder
+    excelDataFolder: datasetFolder,
   };
 }

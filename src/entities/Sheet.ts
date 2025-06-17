@@ -14,7 +14,7 @@ export class Sheet {
     // Build enhanced matrix with full cell data
     this.enhancedMatrix = this.buildEnhancedMatrix();
     this.invertedEnhancedMatrix = Sheet.invertEnhancedMatrix(
-      this.enhancedMatrix
+      this.enhancedMatrix,
     );
 
     // Calculate properties
@@ -30,7 +30,9 @@ export class Sheet {
   }
 
   get columnNames(): string[] {
-    return (this.enhancedMatrix[0] || []).map(cell => String(cell.value || ""));
+    return (this.enhancedMatrix[0] || []).map((cell) =>
+      String(cell.value || ""),
+    );
   }
 
   get numericColumnIndices(): number[] {
@@ -40,7 +42,7 @@ export class Sheet {
     for (let colIndex = 0; colIndex < this.numColumns; colIndex++) {
       const hasNumericData = this.enhancedMatrix
         .slice(0, sampleRows)
-        .some(row => {
+        .some((row) => {
           const cell = row[colIndex];
           return cell?.isNumeric && !cell.isDate;
         });
@@ -55,12 +57,12 @@ export class Sheet {
 
   get numNumericCells(): number {
     let numberCount = 0;
-    this.enhancedMatrix.forEach(row =>
-      row.forEach(cell => {
+    this.enhancedMatrix.forEach((row) =>
+      row.forEach((cell) => {
         if (cell.isAnalyzable) {
           numberCount++;
         }
-      })
+      }),
     );
     return numberCount;
   }
@@ -68,7 +70,7 @@ export class Sheet {
   getFirstNRows(n: number): unknown[][] {
     return this.enhancedMatrix
       .slice(1, n + 1)
-      .map(row => row.map(cell => cell.value)); // Skip header row, take n data rows
+      .map((row) => row.map((cell) => cell.value)); // Skip header row, take n data rows
   }
 
   getColumnIndex(columnName: string): number {
@@ -102,7 +104,7 @@ export class Sheet {
         enhancedMatrix[matrixRowIndex][matrixColIndex] = new EnhancedCell(
           originalCell,
           row,
-          col
+          col,
         );
       }
     }

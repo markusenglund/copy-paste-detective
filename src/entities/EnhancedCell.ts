@@ -11,12 +11,13 @@ export class EnhancedCell {
     this.originalCell = originalCell;
     this.row = row;
     this.col = col;
-    
+
     // Extract and process the value from the original cell
     const rawValue = originalCell?.v;
-    this.value = typeof rawValue === "number" 
-      ? roundFloatingPointInaccuracies(rawValue)
-      : rawValue;
+    this.value =
+      typeof rawValue === "number"
+        ? roundFloatingPointInaccuracies(rawValue)
+        : rawValue;
   }
 
   get cellId(): string {

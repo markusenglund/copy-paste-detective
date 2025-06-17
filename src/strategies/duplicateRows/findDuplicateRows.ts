@@ -9,7 +9,7 @@ function compareRows(
   row1: EnhancedCell[],
   row2: EnhancedCell[],
   colIndices: number[],
-  sheet: Sheet
+  sheet: Sheet,
 ): DuplicateRow {
   const sharedValues: number[] = [];
   const sharedColumns: number[] = [];
@@ -33,7 +33,7 @@ function compareRows(
     sharedColumns,
     totalSharedCount,
     sheet,
-    colIndices.length
+    colIndices.length,
   );
 
   return rowData;
@@ -41,7 +41,7 @@ function compareRows(
 
 export function findDuplicateRows(
   sheet: Sheet,
-  columnCategorization: ColumnCategorization
+  columnCategorization: ColumnCategorization,
 ): DuplicateRowsResult {
   // Rows require at least one duplicate value with this much entropy to be considered duplicates.
   const minNumberEntropyScore = 200;
@@ -53,9 +53,9 @@ export function findDuplicateRows(
 
   // Get numeric columns that should be unique
   const uniqueColumnIndices = columnCategorization.unique
-    .map(name => sheet.getColumnIndex(name))
+    .map((name) => sheet.getColumnIndex(name))
     .filter(
-      index => index !== -1 && sheet.numericColumnIndices.includes(index)
+      (index) => index !== -1 && sheet.numericColumnIndices.includes(index),
     );
 
   if (uniqueColumnIndices.length === 0) {
@@ -110,7 +110,7 @@ export function findDuplicateRows(
             const row2Index = rowArray[j];
             const pairKey = `${Math.min(row1Index, row2Index)}-${Math.max(
               row1Index,
-              row2Index
+              row2Index,
             )}`;
 
             if (alreadyComparedRowPairs.has(pairKey)) {
@@ -121,7 +121,7 @@ export function findDuplicateRows(
               sheet.enhancedMatrix[row1Index],
               sheet.enhancedMatrix[row2Index],
               uniqueColumnIndices,
-              sheet
+              sheet,
             );
             alreadyComparedRowPairs.add(pairKey);
             if (

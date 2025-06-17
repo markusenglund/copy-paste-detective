@@ -3,7 +3,7 @@ import { DuplicateCellPair } from "./DuplicateCellPair";
 import { SuspicionLevel } from "../types";
 import {
   calculateNumberEntropy,
-  calculateEntropyScore
+  calculateEntropyScore,
 } from "../utils/entropy";
 
 export class DuplicateRow {
@@ -20,7 +20,7 @@ export class DuplicateRow {
     sharedColumns: number[],
     totalSharedCount: number,
     sheet: Sheet,
-    numComparedColumns: number
+    numComparedColumns: number,
   ) {
     this.rowIndices = rowIndices.toSorted((a, b) => a - b) as [number, number];
     this.sharedValues = sharedValues;

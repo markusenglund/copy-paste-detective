@@ -6,14 +6,14 @@ import { generateColumnCategorizationPrompt } from "./promptTemplate";
 
 const columnCategorizationSchema = z.object({
   unique: z.array(z.string()),
-  shared: z.array(z.string())
+  shared: z.array(z.string()),
 });
 
 export type ColumnCategorization = z.infer<typeof columnCategorizationSchema>;
 const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
 export async function categorizeColumns(
-  params: PromptTemplateParams
+  params: PromptTemplateParams,
 ): Promise<ColumnCategorization> {
   const prompt = generateColumnCategorizationPrompt(params);
 
@@ -30,20 +30,20 @@ export async function categorizeColumns(
             unique: {
               type: Type.ARRAY,
               items: {
-                type: Type.STRING
-              }
+                type: Type.STRING,
+              },
             },
             shared: {
               type: Type.ARRAY,
               items: {
-                type: Type.STRING
-              }
-            }
+                type: Type.STRING,
+              },
+            },
           },
           propertyOrdering: ["unique", "shared"],
-          required: ["unique", "shared"]
-        }
-      }
+          required: ["unique", "shared"],
+        },
+      },
     });
 
     if (!response.text) {
@@ -57,7 +57,7 @@ export async function categorizeColumns(
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     throw new Error(
-      `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`
+      `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }

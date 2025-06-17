@@ -3,7 +3,7 @@ import { createDefaultEsmPreset } from "ts-jest";
 const presetConfig = createDefaultEsmPreset({});
 
 const jestConfig = {
-  ...presetConfig
+  ...presetConfig,
 };
 
 export default jestConfig;

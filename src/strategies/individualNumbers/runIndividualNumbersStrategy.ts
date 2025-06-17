@@ -3,7 +3,7 @@ import {
   IndividualNumbersResult,
   StrategyName,
   StrategyDependencies,
-  DuplicateRowsResult
+  DuplicateRowsResult,
 } from "../../types/strategies";
 import { ExcelFileData } from "../../types/ExcelFileData";
 import { DuplicateValue } from "../../entities/DuplicateValue";
@@ -11,7 +11,7 @@ import { DuplicateCellPair } from "../../entities/DuplicateCellPair";
 
 function areAllCellPairsAlreadyReported(
   duplicateValue: DuplicateValue,
-  reportedCellPairIds: Set<string>
+  reportedCellPairIds: Set<string>,
 ): boolean {
   const cells = duplicateValue.cells;
 
@@ -30,13 +30,13 @@ function areAllCellPairsAlreadyReported(
 
 export function runIndividualNumbersStrategy(
   excelFileData: ExcelFileData,
-  dependencies?: StrategyDependencies
+  dependencies?: StrategyDependencies,
 ): IndividualNumbersResult {
   const startTime = performance.now();
 
   // Get duplicate rows from previous results to filter them out
   const duplicateRowsResult = dependencies?.previousResults?.find(
-    result => result.name === StrategyName.DuplicateRows
+    (result) => result.name === StrategyName.DuplicateRows,
   ) as DuplicateRowsResult | undefined;
 
   const duplicateRowCellPairIds = new Set<string>();
@@ -54,15 +54,15 @@ export function runIndividualNumbersStrategy(
 
   for (const sheet of excelFileData.sheets) {
     console.log(
-      `[${sheet.name}] Found ${sheet.numNumericCells} numeric values`
+      `[${sheet.name}] Found ${sheet.numNumericCells} numeric values`,
     );
 
     const { duplicateValues } = findDuplicateValues(sheet);
 
     // Filter out values where all cell pairs have already been reported in duplicate rows
     const filteredDuplicateValues = duplicateValues.filter(
-      duplicate =>
-        !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds)
+      (duplicate) =>
+        !areAllCellPairsAlreadyReported(duplicate, duplicateRowCellPairIds),
     );
 
     allDuplicateValues.push(...filteredDuplicateValues);
@@ -76,6 +76,6 @@ export function runIndividualNumbersStrategy(
   return {
     name: StrategyName.IndividualNumbers,
     executionTime,
-    duplicateValues: allDuplicateValues
+    duplicateValues: allDuplicateValues,
   };
 }

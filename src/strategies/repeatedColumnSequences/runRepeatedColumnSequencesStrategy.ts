@@ -1,18 +1,18 @@
 import {
   findRepeatedSequences,
-  deduplicateSortedSequences
+  deduplicateSortedSequences,
 } from "../../detection";
 import {
   RepeatedColumnSequencesResult,
   StrategyName,
-  StrategyDependencies
+  StrategyDependencies,
 } from "../../types/strategies";
 import { ExcelFileData } from "../../types/ExcelFileData";
 import { RepeatedSequence } from "../../types";
 
 export async function runRepeatedColumnSequencesStrategy(
   excelFileData: ExcelFileData,
-  _dependencies?: StrategyDependencies
+  _dependencies?: StrategyDependencies,
 ): Promise<RepeatedColumnSequencesResult> {
   const startTime = performance.now();
 
@@ -25,12 +25,12 @@ export async function runRepeatedColumnSequencesStrategy(
       {
         sheetName: sheet.name,
         isInverted: true,
-        numberCount: sheet.numNumericCells
-      }
+        numberCount: sheet.numNumericCells,
+      },
     );
 
     console.log(
-      `[${sheet.name}] ${sheetRepeatedColumnSequences.length} column sequences found.`
+      `[${sheet.name}] ${sheetRepeatedColumnSequences.length} column sequences found.`,
     );
 
     repeatedColumnSequences.push(...sheetRepeatedColumnSequences);
@@ -43,7 +43,7 @@ export async function runRepeatedColumnSequencesStrategy(
         (a.matrixSizeAdjustedEntropyScore || 0)
       ); // Use || 0 to handle NaN values. TODO: Fix this in the findRepeatedSequences function
     })
-    .filter(sequence => sequence.matrixSizeAdjustedEntropyScore > 1);
+    .filter((sequence) => sequence.matrixSizeAdjustedEntropyScore > 1);
 
   const deduplicatedSortedSequences =
     deduplicateSortedSequences(sortedSequences);
@@ -53,6 +53,6 @@ export async function runRepeatedColumnSequencesStrategy(
   return {
     name: StrategyName.RepeatedColumnSequences,
     executionTime,
-    sequences: deduplicatedSortedSequences
+    sequences: deduplicatedSortedSequences,
   };
 }

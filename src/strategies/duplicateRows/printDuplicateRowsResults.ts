@@ -2,7 +2,7 @@ import { DuplicateRowsResult } from "../../types/strategies";
 import { levelToSymbol } from "../../utils/output";
 
 export function printDuplicateRowsResults({
-  duplicateRows
+  duplicateRows,
 }: DuplicateRowsResult): void {
   if (duplicateRows.length === 0) {
     console.log(`\n✅ No duplicate rows found in unique columns!`);
@@ -13,7 +13,7 @@ export function printDuplicateRowsResults({
     .toSorted((a, b) => b.rowEntropyScore - a.rowEntropyScore)
     .slice(0, 20); // Show top 20 most suspicious pairs
 
-  const tableData = sortedDuplicateRows.map(duplicateRow => {
+  const tableData = sortedDuplicateRows.map((duplicateRow) => {
     // Format shared values for display (show first few if many)
     const sharedValuesDisplay =
       duplicateRow.sharedValues.length > 2
@@ -41,12 +41,12 @@ export function printDuplicateRowsResults({
       sharedCount: duplicateRow.totalSharedCount,
       sharedValues: sharedValuesDisplay,
       sharedColumns: sharedColumnsDisplay,
-      entropyScore: duplicateRow.rowEntropyScore.toFixed(1)
+      entropyScore: duplicateRow.rowEntropyScore.toFixed(1),
     };
   });
 
   console.log(
-    `\nDuplicate rows (${duplicateRows.length} total, showing top ${tableData.length}):`
+    `\nDuplicate rows (${duplicateRows.length} total, showing top ${tableData.length}):`,
   );
   console.table(tableData);
 }

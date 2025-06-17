@@ -38,7 +38,7 @@ export interface Strategy<T extends StrategyResult> {
   name: string;
   execute(
     excelFileData: ExcelFileData,
-    dependencies?: StrategyDependencies
+    dependencies?: StrategyDependencies,
   ): T | Promise<T>;
   printResults(result: T): void;
 }
@@ -46,5 +46,5 @@ export interface Strategy<T extends StrategyResult> {
 export enum StrategyName {
   IndividualNumbers = "individualNumbers",
   RepeatedColumnSequences = "repeatedColumnSequences",
-  DuplicateRows = "duplicateRows"
+  DuplicateRows = "duplicateRows",
 }

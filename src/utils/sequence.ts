@@ -5,10 +5,10 @@ export function calculateSequenceRegularity(sequence: number[]): {
   if (sequence.length < 2) {
     return { mostCommonIntervalSize: 0, mostCommonIntervalSizePercentage: 0 };
   }
-  if (sequence.every(value => value === sequence[0])) {
+  if (sequence.every((value) => value === sequence[0])) {
     return {
       mostCommonIntervalSize: sequence.length - 1,
-      mostCommonIntervalSizePercentage: (sequence.length - 1) / sequence.length
+      mostCommonIntervalSizePercentage: (sequence.length - 1) / sequence.length,
     };
   }
 
@@ -21,7 +21,7 @@ export function calculateSequenceRegularity(sequence: number[]): {
   const sortedIntervalSizes = [...intervalSizeByNumOccurences.entries()]
     .map(([intervalSize, numOccurences]) => ({
       intervalSize,
-      numOccurences
+      numOccurences,
     }))
     .sort((a, b) => b.numOccurences - a.numOccurences);
 

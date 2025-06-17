@@ -4,10 +4,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "detect": "tsx -r dotenv/config src/commands/detect",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
-    "detect": "tsx -r dotenv/config src/commands/detect"
+    "format": "prettier --write \"**/*.{ts,tsx}\""
   },
   "author": "Markus Englund",
   "license": "UNLICENSED",

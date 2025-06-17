@@ -12,7 +12,7 @@ export class DuplicateValue {
     value: number,
     entropy: number,
     sheet: Sheet,
-    cells: EnhancedCell[]
+    cells: EnhancedCell[],
   ) {
     this.value = value;
     this.entropy = entropy;

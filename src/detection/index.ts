@@ -2,7 +2,7 @@ import {
   type Position,
   type RepeatedSequence,
   type DuplicateValuesResult,
-  SuspicionLevel
+  SuspicionLevel,
 } from "../types";
 import { DuplicateValue } from "../entities/DuplicateValue";
 import { Sheet } from "../entities/Sheet";
@@ -10,12 +10,12 @@ import { type EnhancedCell } from "../entities/EnhancedCell";
 import {
   calculateNumberEntropy,
   calculateEntropyScore,
-  calculateSequenceEntropyScore
+  calculateSequenceEntropyScore,
 } from "../utils/entropy";
 import { calculateSequenceRegularity } from "../utils/sequence";
 
 export function deduplicateSortedSequences(
-  repeatedSequences: RepeatedSequence[]
+  repeatedSequences: RepeatedSequence[],
 ): RepeatedSequence[] {
   let previousSequence: RepeatedSequence | null = null;
   const deduplicatedSortedSequences: RepeatedSequence[] = [];
@@ -28,10 +28,10 @@ export function deduplicateSortedSequences(
           return value === sequence.values[index];
         });
       if (isSameSequence) {
-        sequence.positions.forEach(position => {
+        sequence.positions.forEach((position) => {
           // Check if position already exists in previousSequence and if not, add it
           const exists = previousSequence?.positions.find(
-            p => p.cellId === position.cellId
+            (p) => p.cellId === position.cellId,
           );
           if (!exists) {
             previousSequence?.positions.push(position);
@@ -51,11 +51,11 @@ export function findRepeatedSequences(
   {
     isInverted,
     sheetName,
-    numberCount
-  }: { isInverted: boolean; sheetName: string; numberCount: number }
+    numberCount,
+  }: { isInverted: boolean; sheetName: string; numberCount: number },
 ): RepeatedSequence[] {
   const numberCountEntropyScore = calculateEntropyScore(
-    Math.max(numberCount, 500) // Prevent very small excel files from getting too high of an entropy score
+    Math.max(numberCount, 500), // Prevent very small excel files from getting too high of an entropy score
   );
 
   const repeatedSequences: RepeatedSequence[] = [];
@@ -74,13 +74,13 @@ export function findRepeatedSequences(
         const newPosition: Position = {
           column: columnIndex,
           startRow: rowIndex,
-          cellId: cellData.cellId
+          cellId: cellData.cellId,
         };
         if (positions.length < 100) {
           for (const position of positions) {
             if (
               checkedPositionPairs.has(
-                `${position.column}-${position.startRow}-${columnIndex}-${rowIndex}`
+                `${position.column}-${position.startRow}-${columnIndex}-${rowIndex}`,
               )
             ) {
               continue;
@@ -92,7 +92,8 @@ export function findRepeatedSequences(
             let length = 1;
             const repeatedValues: number[] = [cellValue];
             while (
-              matrix[position.column][position.startRow + length]?.isAnalyzable &&
+              matrix[position.column][position.startRow + length]
+                ?.isAnalyzable &&
               !(
                 position.column === columnIndex &&
                 rowIndex === position.startRow + length
@@ -102,10 +103,10 @@ export function findRepeatedSequences(
             ) {
               repeatedValues.push(
                 matrix[position.column][position.startRow + length]
-                  .value as number
+                  .value as number,
               );
               checkedPositionPairs.add(
-                `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`
+                `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`,
               );
               length++;
             }
@@ -140,7 +141,7 @@ export function findRepeatedSequences(
                 intervalAdjustedSequenceEntropyScore,
               matrixSizeAdjustedEntropyScore,
               numberCount,
-              sheetName
+              sheetName,
             };
             if (repeatedSequence.matrixSizeAdjustedEntropyScore > 2) {
               repeatedSequences.push(repeatedSequence);
@@ -158,8 +159,8 @@ export function findRepeatedSequences(
 
 export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
   const cellsByNumericValue = new Map<number, EnhancedCell[]>();
-  sheet.enhancedMatrix.forEach(row => {
-    row.forEach(cell => {
+  sheet.enhancedMatrix.forEach((row) => {
+    row.forEach((cell) => {
       if (cell.isAnalyzable) {
         const value = cell.value as number;
         const existingCells = cellsByNumericValue.get(value) ?? [];
@@ -169,19 +170,21 @@ export function findDuplicateValues(sheet: Sheet): DuplicateValuesResult {
     });
   });
 
-  const duplicateValues: DuplicateValue[] = [
-    ...cellsByNumericValue.entries()
-  ]
+  const duplicateValues: DuplicateValue[] = [...cellsByNumericValue.entries()]
     .filter(([_value, cells]) => cells.length > 1)
     .map(([value, cells]) => {
       const entropy = calculateNumberEntropy(value);
       return new DuplicateValue(value, entropy, sheet, cells);
     })
-    .filter(duplicateValue => [SuspicionLevel.Low, SuspicionLevel.Medium, SuspicionLevel.High].includes(duplicateValue.suspicionLevel))
+    .filter((duplicateValue) =>
+      [SuspicionLevel.Low, SuspicionLevel.Medium, SuspicionLevel.High].includes(
+        duplicateValue.suspicionLevel,
+      ),
+    )
     .toSorted((a, b) => b.entropyScore - a.entropyScore);
 
   return {
-    duplicateValues
+    duplicateValues,
   };
 }
 
