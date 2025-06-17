@@ -29,6 +29,13 @@ You will categorize every column name into one of two lists: \`unique\` or \`sha
 
 After categorizing the columns, you will provide a brief \`motivation\` for your choices in the same JSON object.
 
+**General Rules & Heuristics**
+
+Apply these rules when categorizing columns:
+
+1.  Geographic coordinates (Latitude, Longitude, etc.) should usually be considered \`shared\` unless you're certain they are unique to each specific row.
+2.  IDs should be considered \`shared\`, as they are not really data.
+
 **Example Scenario:**
 
 -   **Context:** A spreadsheet about house sales.
