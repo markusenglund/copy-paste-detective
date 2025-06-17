@@ -43,7 +43,6 @@ export function loadExcelFileFromFolder(
     excelFileName: selectedFile.name,
     articleName: metadata.name,
     readmeContent,
-    metadata,
     excelDataFolder: datasetFolder
   };
 }
