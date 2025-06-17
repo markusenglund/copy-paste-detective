@@ -30,7 +30,7 @@ export type AllStrategyResults =
   | DuplicateRowsResult;
 
 export interface StrategyDependencies {
-  categorizeColumns?: CategorizeColumnsFunction;
+  categorizeColumnsBySheet?: Map<string, CategorizeColumnsFunction>;
   previousResults?: AllStrategyResults[];
 }
 

@@ -15,11 +15,13 @@ async function runDuplicateRowsStrategy(
 
   const allDuplicateRows = [];
 
-  // Use injected categorizeColumns function or default to Gemini
-  const categorizeColumns =
-    dependencies?.categorizeColumns || categorizeColumnsWithGemini;
-
   for (const sheet of excelFileData.sheets) {
+    // Use sheet-specific categorizeColumns function if available,
+    // otherwise default to Gemini
+    const categorizeColumns =
+      dependencies?.categorizeColumnsBySheet?.get(sheet.name) ||
+      categorizeColumnsWithGemini;
+
     const columnCategorization = await categorizeColumns({
       sheet,
       excelFileData,
