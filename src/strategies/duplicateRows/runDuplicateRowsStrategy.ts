@@ -5,28 +5,23 @@ import {
   StrategyDependencies,
 } from "../../types/strategies";
 import { ExcelFileData } from "../../types/ExcelFileData";
-import { categorizeColumnsWithGemini } from "../../ai/GeminiColumnCategorizer";
 
 async function runDuplicateRowsStrategy(
   excelFileData: ExcelFileData,
-  dependencies?: StrategyDependencies,
+  dependencies: StrategyDependencies,
 ): Promise<DuplicateRowsResult> {
   const startTime = performance.now();
 
   const allDuplicateRows = [];
 
   for (const sheet of excelFileData.sheets) {
-    // Use sheet-specific categorizeColumns function if available,
-    // otherwise default to Gemini
-    const categorizeColumns =
-      dependencies?.categorizeColumnsBySheet?.get(sheet.name) ||
-      categorizeColumnsWithGemini;
-
-    const columnCategorization = await categorizeColumns({
-      sheet,
-      excelFileData,
-    });
-    const { duplicateRows } = findDuplicateRows(sheet, columnCategorization);
+    const categorizedColumns = dependencies.categorizedColumnsBySheet.get(
+      sheet.name,
+    );
+    if (!categorizedColumns) {
+      throw new Error("Categorized columns not found for sheet: " + sheet.name);
+    }
+    const { duplicateRows } = findDuplicateRows(sheet, categorizedColumns);
     allDuplicateRows.push(...duplicateRows);
   }
 

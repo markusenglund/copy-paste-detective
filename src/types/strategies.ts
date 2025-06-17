@@ -3,6 +3,7 @@ import { DuplicateRow } from "../entities/DuplicateRow";
 import { RepeatedSequence } from "./index";
 import { CategorizeColumnsFunction } from "../ai/ColumnCategorizer";
 import { ExcelFileData } from "./ExcelFileData";
+import { ColumnCategorization } from "src/ai/geminiService";
 
 export interface StrategyResult {
   name: string;
@@ -30,7 +31,7 @@ export type AllStrategyResults =
   | DuplicateRowsResult;
 
 export interface StrategyDependencies {
-  categorizeColumnsBySheet?: Map<string, CategorizeColumnsFunction>;
+  categorizedColumnsBySheet: Map<string, ColumnCategorization>;
   previousResults?: AllStrategyResults[];
 }
 

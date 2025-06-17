@@ -1,13 +1,14 @@
-import { StrategyName, StrategyDependencies } from "./types/strategies";
+import { StrategyName } from "./types/strategies";
 import individualNumbersStrategy from "./strategies/individualNumbers/individualNumbers";
 import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequences/repeatedColumnSequences";
 import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
 import { ExcelFileData } from "./types/ExcelFileData";
+import { categorizeColumnsWithGemini } from "./ai/GeminiColumnCategorizer";
+import { ColumnCategorization } from "./ai/geminiService";
 
 export async function runStrategies(
   strategies: StrategyName[],
   excelFileData: ExcelFileData,
-  dependencies?: StrategyDependencies,
 ): Promise<void> {
   console.log("🔍 Running strategies:", strategies.join(", "));
 
@@ -16,15 +17,25 @@ export async function runStrategies(
     `Found ${sheets.length} sheet(s): ${sheets.map((s) => s.name).join(", ")}`,
   );
 
+  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
+  await Promise.all(
+    sheets.map(async (sheet) => {
+      const categorizedColumns = await categorizeColumnsWithGemini({
+        sheet,
+        excelFileData,
+      });
+      categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
+    }),
+  );
+
   let duplicateRowsResult;
 
   // 1. Run duplicateRows first if requested
   if (strategies.includes(StrategyName.DuplicateRows)) {
     console.log(`\n🔍 Running ${StrategyName.DuplicateRows} strategy...`);
-    duplicateRowsResult = await duplicateRowsStrategy.execute(
-      excelFileData,
-      dependencies,
-    );
+    duplicateRowsResult = await duplicateRowsStrategy.execute(excelFileData, {
+      categorizedColumnsBySheet,
+    });
     console.log(
       `✅ ${StrategyName.DuplicateRows} completed in ${duplicateRowsResult.executionTime.toFixed(2)}ms`,
     );
@@ -38,7 +49,7 @@ export async function runStrategies(
     );
     const result = await repeatedColumnSequencesStrategy.execute(
       excelFileData,
-      dependencies,
+      { categorizedColumnsBySheet },
     );
     console.log(
       `✅ ${StrategyName.RepeatedColumnSequences} completed in ${result.executionTime.toFixed(2)}ms`,
@@ -50,7 +61,7 @@ export async function runStrategies(
   if (strategies.includes(StrategyName.IndividualNumbers)) {
     console.log(`\n🔍 Running ${StrategyName.IndividualNumbers} strategy...`);
     const individualNumbersDependencies = {
-      ...dependencies,
+      categorizedColumnsBySheet,
       previousResults: duplicateRowsResult ? [duplicateRowsResult] : [],
     };
     const result = await individualNumbersStrategy.execute(

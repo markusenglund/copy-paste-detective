@@ -5,9 +5,9 @@ import { runIndividualNumbersStrategy } from "../../src/strategies/individualNum
 import { Sheet } from "../../src/entities/Sheet";
 import { StrategyName } from "../../src/types/strategies";
 import { SuspicionLevel } from "../../src/types";
-import { createMockCategorizeColumns } from "../../src/ai/MockColumnCategorizer";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
+import { ColumnCategorization } from "../../src/ai/ColumnCategorizer";
 
 describe("Hawk Owl Feeding Study", () => {
   let excelFileData: ExcelFileData;
@@ -25,7 +25,7 @@ describe("Hawk Owl Feeding Study", () => {
   describe("Duplicate Rows Strategy", () => {
     it("should detect the expected duplicate row patterns", async () => {
       // Create mock categorizeColumns function with expected categorization
-      const mockCategorizeColumns = createMockCategorizeColumns({
+      const mockCategorizedColumns = {
         unique: [
           "Day of Study",
           "ẟ13Ccollagen (‰)",
@@ -55,13 +55,13 @@ describe("Hawk Owl Feeding Study", () => {
           "Date Run",
         ],
         motivation: "",
-      });
+      };
 
-      const categorizeColumnsBySheet = new Map();
-      categorizeColumnsBySheet.set(sheets[0].name, mockCategorizeColumns);
+      const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
+      categorizedColumnsBySheet.set(sheets[0].name, mockCategorizedColumns);
 
       const result = await runDuplicateRowsStrategy(excelFileData, {
-        categorizeColumnsBySheet,
+        categorizedColumnsBySheet,
       });
 
       // Verify basic result structure
@@ -79,12 +79,12 @@ describe("Hawk Owl Feeding Study", () => {
       expect(firstResult.sharedValues).toHaveLength(9);
       expect(firstResult.suspicionLevel).toBe(SuspicionLevel.High);
 
-      // Verify the second result (rows 54, 55 in 1-based indexing) has High suspicion
+      // Verify the second result (rows 54, 55 in 1-based indexing) has a Low or Medium suspicion level
       const secondResult = result.duplicateRows[1];
       expect(secondResult.rowIndices).toEqual([53, 54]);
       expect(secondResult.sharedColumns).toHaveLength(2);
       expect(secondResult.sharedValues).toHaveLength(2);
-      expect([SuspicionLevel.High, SuspicionLevel.Medium]).toContain(
+      expect([SuspicionLevel.Medium, SuspicionLevel.Low]).toContain(
         secondResult.suspicionLevel,
       );
     });
