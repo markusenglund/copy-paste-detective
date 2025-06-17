@@ -19,7 +19,7 @@ function createColumnCategorization(
   unique: string[],
   shared: string[] = [],
 ): ColumnCategorization {
-  return { unique, shared };
+  return { unique, shared, motivation: "" };
 }
 
 describe("findDuplicateRows", () => {

@@ -54,11 +54,12 @@ describe("Hawk Owl Feeding Study", () => {
           "Pre or post digestion",
           "Date Run",
         ],
+        motivation: "",
       });
 
       const categorizeColumnsBySheet = new Map();
       categorizeColumnsBySheet.set(sheets[0].name, mockCategorizeColumns);
-      
+
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizeColumnsBySheet,
       });

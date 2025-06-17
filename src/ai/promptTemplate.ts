@@ -7,7 +7,7 @@ export interface PromptTemplateParams {
 }
 
 export function generateColumnCategorizationPrompt(
-  params: PromptTemplateParams
+  params: PromptTemplateParams,
 ): string {
   const { paperName, excelFileName, readmeContent, columnNames, columnData } =
     params;
@@ -16,7 +16,7 @@ export function generateColumnCategorizationPrompt(
   const columnHeaders = columnNames.join("\t");
 
   // Format sample rows
-  const sampleRows = columnData.map(row => row.join("\t")).join("\n");
+  const sampleRows = columnData.map((row) => row.join("\t")).join("\n");
 
   return `**Your Task:**
 

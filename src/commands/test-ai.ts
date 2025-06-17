@@ -37,10 +37,10 @@ const testCases: TestCase[] = [
             "Coleoptera(#)",
             "Diptera(#)",
             "Hymenoptera(#)",
-            "others(#)"
+            "others(#)",
           ],
-          mustNotBeIncluded: []
-        }
+          mustNotBeIncluded: [],
+        },
       },
       {
         sheetName: "common garden-data",
@@ -60,12 +60,12 @@ const testCases: TestCase[] = [
             "Fine root length(cm)",
             "Coarse root length(cm)",
             "Fine root surface area(cm2)",
-            "Coarse root  surface area(cm2)"
+            "Coarse root  surface area(cm2)",
           ],
-          mustNotBeIncluded: []
-        }
-      }
-    ]
+          mustNotBeIncluded: [],
+        },
+      },
+    ],
   },
   {
     folder: "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418",
@@ -86,10 +86,10 @@ const testCases: TestCase[] = [
             "Coleoptera(#)",
             "Diptera(#)",
             "Hymenoptera(#)",
-            "others(#)"
+            "others(#)",
           ],
-          mustNotBeIncluded: []
-        }
+          mustNotBeIncluded: [],
+        },
       },
       {
         sheetName: "Field survey-data",
@@ -111,7 +111,7 @@ const testCases: TestCase[] = [
             "Fine root length(cm)",
             "Coarse root length(cm)",
             "Fine root surface area(cm2)",
-            "Coarse root  surface area(cm2)"
+            "Coarse root  surface area(cm2)",
           ],
           mustNotBeIncluded: [
             "Latitude",
@@ -134,12 +134,12 @@ const testCases: TestCase[] = [
             "Precipitation of Wettest Quarter（mm）",
             "Precipitation of Driest Quarter（mm）",
             "Precipitation of Warmest Quarter（mm）",
-            "Precipitation of Coldest Quarter（mm）"
-          ]
-        }
-      }
-    ]
-  }
+            "Precipitation of Coldest Quarter（mm）",
+          ],
+        },
+      },
+    ],
+  },
 ];
 
 const program = new Command();
@@ -155,17 +155,17 @@ program
     for (const testCase of testCases) {
       const excelFileData = loadExcelFileFromFolder(
         testCase.folder,
-        testCase.fileIndex
+        testCase.fileIndex,
       );
 
       for (const sheetTestCase of testCase.sheets) {
         const sheet = excelFileData.sheets.find(
-          s => s.name === sheetTestCase.sheetName
+          (s) => s.name === sheetTestCase.sheetName,
         );
 
         if (!sheet) {
           console.error(
-            `Sheet "${sheetTestCase.sheetName}" not found in Excel file`
+            `Sheet "${sheetTestCase.sheetName}" not found in Excel file`,
           );
           continue;
         }
@@ -173,21 +173,21 @@ program
         // Get AI categorization for this specific sheet
         const actualCategorization = await categorizeColumnsWithGemini({
           sheet,
-          excelFileData
+          excelFileData,
         });
         const uniqueColumnSet = new Set(actualCategorization.unique);
         const missingColumns =
           sheetTestCase.expectedCategorization.mustBeIncluded.filter(
-            col => !uniqueColumnSet.has(col)
+            (col) => !uniqueColumnSet.has(col),
           );
 
         const unexpectedColumns =
-          sheetTestCase.expectedCategorization.mustNotBeIncluded.filter(col =>
-            uniqueColumnSet.has(col)
+          sheetTestCase.expectedCategorization.mustNotBeIncluded.filter((col) =>
+            uniqueColumnSet.has(col),
           );
 
         console.log(
-          `${testCase.description} motivation: ${actualCategorization.motivation}`
+          `${testCase.description} motivation: ${actualCategorization.motivation}`,
         );
 
         const isSuccess =
@@ -197,10 +197,10 @@ program
         } else {
           console.log(`[${sheet.name}]: ❌`);
           console.log(
-            `Gemini missed ${missingColumns.length} columns in sheet "${sheet.name}": ${missingColumns.join(", ")}`
+            `Gemini missed ${missingColumns.length} columns in sheet "${sheet.name}": ${missingColumns.join(", ")}`,
           );
           console.log(
-            `Gemini mistakenly included ${unexpectedColumns.length} columns in sheet "${sheet.name}": ${unexpectedColumns.join(", ")}`
+            `Gemini mistakenly included ${unexpectedColumns.length} columns in sheet "${sheet.name}": ${unexpectedColumns.join(", ")}`,
           );
         }
       }

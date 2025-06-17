@@ -70,9 +70,9 @@ export class DuplicateRow {
   get suspicionLevel(): SuspicionLevel {
     if (this.rowEntropyScore > 40) {
       return SuspicionLevel.High;
-    } else if (this.rowEntropyScore > 10) {
+    } else if (this.rowEntropyScore > 20) {
       return SuspicionLevel.Medium;
-    } else if (this.rowEntropyScore > 5) {
+    } else if (this.rowEntropyScore > 10) {
       return SuspicionLevel.Low;
     } else {
       return SuspicionLevel.None;

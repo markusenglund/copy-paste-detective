@@ -13,5 +13,5 @@ export interface ColumnCategorization {
 }
 
 export type CategorizeColumnsFunction = (
-  params: ColumnCategorizationParams
+  params: ColumnCategorizationParams,
 ) => Promise<ColumnCategorization>;

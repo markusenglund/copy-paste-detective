@@ -46,9 +46,12 @@ export function findDuplicateRows(
   // Rows require at least one duplicate value with this much entropy to be considered duplicates.
   const minNumberEntropyScore = 200;
   // Rows require a rowEntropyScore of at least this much to be considered duplicates.
-  const minRowEntropyScore = 2;
+  const minRowEntropyScore = 10;
   // Rows must have at least this many shared column values to be considered duplicates.
   const minSharedColumns = 2;
+  // Bail out if we found >1000 duplicates to avoid performance issues
+
+  const maxDuplicateRows = 1000;
   const duplicateRows: DuplicateRow[] = [];
 
   // Get numeric columns that should be unique
@@ -102,8 +105,7 @@ export function findDuplicateRows(
         const rowArray = Array.from(rowSet);
         for (let i = 0; i < rowArray.length; i++) {
           for (let j = i + 1; j < rowArray.length; j++) {
-            if (duplicateRows.length > 1000) {
-              // Bail out if we found >1000 duplicates to avoid performance issues
+            if (duplicateRows.length > maxDuplicateRows) {
               break;
             }
             const row1Index = rowArray[i];
