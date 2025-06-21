@@ -25,15 +25,21 @@ export class DuplicateValue {
   }
 
   get entropyScore(): number {
-    return this.entropy * Math.log2(this.numOccurences);
+    const occurenceAdjustedEntropy =
+      this.entropy * Math.log2(this.numOccurences);
+    return occurenceAdjustedEntropy;
+  }
+
+  get matrixSizeAdjustedEntropyScore(): number {
+    const matrixSize = this.sheet.numNumericCells;
+    return this.entropyScore / Math.log2(matrixSize);
   }
 
   get suspicionLevel(): SuspicionLevel {
-    const score = this.entropyScore;
-
-    if (score > 20_000_000) {
+    const score = this.matrixSizeAdjustedEntropyScore;
+    if (score > 10_000_000) {
       return SuspicionLevel.High;
-    } else if (score > 200_000) {
+    } else if (score > 100_000) {
       return SuspicionLevel.Medium;
     } else if (score > 2_000) {
       return SuspicionLevel.Low;

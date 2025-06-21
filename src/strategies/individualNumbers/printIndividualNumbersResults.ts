@@ -8,7 +8,7 @@ function formatDuplicatesForDisplay(duplicates: DuplicateValue[]): Array<{
   value: number;
   n: number;
   entropy: number;
-  entropyScore: number;
+  adjEntropyScore: number;
   matrix: number;
 }> {
   return duplicates.map((duplicateValue) => {
@@ -18,7 +18,9 @@ function formatDuplicatesForDisplay(duplicates: DuplicateValue[]): Array<{
       value: duplicateValue.value,
       n: duplicateValue.numOccurences,
       entropy: duplicateValue.entropy,
-      entropyScore: Math.round(duplicateValue.entropyScore),
+      adjEntropyScore: Math.round(
+        duplicateValue.matrixSizeAdjustedEntropyScore,
+      ),
       matrix: duplicateValue.sheet.numNumericCells,
     };
   });

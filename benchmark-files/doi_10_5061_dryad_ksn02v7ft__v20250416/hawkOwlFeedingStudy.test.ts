@@ -12,6 +12,7 @@ import { ColumnCategorization } from "../../src/ai/ColumnCategorizer";
 describe("Hawk Owl Feeding Study", () => {
   let excelFileData: ExcelFileData;
   let sheets: Sheet[];
+  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
 
   beforeAll(() => {
     // Load the actual Dryad dataset
@@ -20,45 +21,44 @@ describe("Hawk Owl Feeding Study", () => {
 
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
     sheets = excelFileData.sheets;
+    const mockCategorizedColumns = {
+      unique: [
+        "Day of Study",
+        "ẟ13Ccollagen (‰)",
+        "Weight %C",
+        "Amp 44",
+        "ẟ15N (‰)",
+        "Weight %N",
+        "Amp 28",
+        "Weight % C:N",
+        "Atomic C:N",
+        "ẟ13Cbioapatite (‰, VPDB)",
+        "ẟ18O (‰, VPDB)",
+        "87Sr/86Sr",
+        "max error from blank",
+        "Sr concentration (measured)",
+        "Sr concentration (accounting for sample mass)",
+        "max blank Sr/sample Sr",
+        "Pellet notes",
+        "Fecal appearance notes",
+        "Other notes",
+      ],
+      shared: [
+        "Individual",
+        "Date collected",
+        "Tissue",
+        "Pre or post digestion",
+        "Date Run",
+      ],
+      motivation: "",
+    };
+
+    categorizedColumnsBySheet.set(sheets[0].name, mockCategorizedColumns);
   });
 
   describe("Duplicate Rows Strategy", () => {
     it("should detect the expected duplicate row patterns", async () => {
       // Create mock categorizeColumns function with expected categorization
-      const mockCategorizedColumns = {
-        unique: [
-          "Day of Study",
-          "ẟ13Ccollagen (‰)",
-          "Weight %C",
-          "Amp 44",
-          "ẟ15N (‰)",
-          "Weight %N",
-          "Amp 28",
-          "Weight % C:N",
-          "Atomic C:N",
-          "ẟ13Cbioapatite (‰, VPDB)",
-          "ẟ18O (‰, VPDB)",
-          "87Sr/86Sr",
-          "max error from blank",
-          "Sr concentration (measured)",
-          "Sr concentration (accounting for sample mass)",
-          "max blank Sr/sample Sr",
-          "Pellet notes",
-          "Fecal appearance notes",
-          "Other notes",
-        ],
-        shared: [
-          "Individual",
-          "Date collected",
-          "Tissue",
-          "Pre or post digestion",
-          "Date Run",
-        ],
-        motivation: "",
-      };
-
-      const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
-      categorizedColumnsBySheet.set(sheets[0].name, mockCategorizedColumns);
 
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
@@ -92,7 +92,9 @@ describe("Hawk Owl Feeding Study", () => {
 
   describe("Repeated Column Sequences Strategy", () => {
     it("should find zero repeated sequences", async () => {
-      const result = await runRepeatedColumnSequencesStrategy(excelFileData);
+      const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
 
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.RepeatedColumnSequences);
@@ -106,7 +108,9 @@ describe("Hawk Owl Feeding Study", () => {
 
   describe("Individual Numbers Strategy", () => {
     it("should NOT report Q103 and Q155 as duplicates", () => {
-      const result = runIndividualNumbersStrategy(excelFileData);
+      const result = runIndividualNumbersStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
       expect(result.executionTime).toBeGreaterThan(0);
@@ -122,7 +126,9 @@ describe("Hawk Owl Feeding Study", () => {
     });
 
     it("should report F54 and F55 as a High suspicion duplicate pair", () => {
-      const result = runIndividualNumbersStrategy(excelFileData);
+      const result = runIndividualNumbersStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
 
       // Find the duplicate value that contains both F54 and F55
       const f54F55Duplicate = result.duplicateValues.find((duplicate) => {

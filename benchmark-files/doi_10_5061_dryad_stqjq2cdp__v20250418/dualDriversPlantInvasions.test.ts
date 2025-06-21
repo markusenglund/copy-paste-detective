@@ -108,7 +108,9 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
 
   describe("Individual Numbers Strategy", () => {
     it("should detect duplicate value 106.9391 in S354, S358 & S242", async () => {
-      const result = runIndividualNumbersStrategy(excelFileData);
+      const result = runIndividualNumbersStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
 
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
@@ -130,7 +132,9 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     });
 
     it("should detect duplicate value 154.5642 in S15 & S353", async () => {
-      const result = runIndividualNumbersStrategy(excelFileData);
+      const result = runIndividualNumbersStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
 
       // Find the duplicate value 154.5642
       const targetValue = 154.5642;
@@ -147,7 +151,9 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     });
 
     it("should detect duplicate value 118.8588 in S85 & S193", async () => {
-      const result = runIndividualNumbersStrategy(excelFileData);
+      const result = runIndividualNumbersStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
 
       // Find the duplicate value 118.8588
       const targetValue = 118.8588;
@@ -160,7 +166,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
       const cellIds = targetDuplicate!.cells.map((cell) => cell.cellId);
       expect(cellIds).toContain("S85");
       expect(cellIds).toContain("S193");
-      expect(targetDuplicate!.suspicionLevel).toBe(SuspicionLevel.Medium);
+      expect(targetDuplicate!.suspicionLevel).toBe(SuspicionLevel.Low);
     });
   });
 });

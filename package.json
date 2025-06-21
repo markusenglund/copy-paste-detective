@@ -7,7 +7,7 @@
     "detect": "tsx -r dotenv/config src/commands/detect",
     "test-ai": "tsx -r dotenv/config src/commands/test-ai",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
-    "lint": "eslint src",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx}\""
   },

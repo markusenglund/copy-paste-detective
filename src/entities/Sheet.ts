@@ -5,6 +5,7 @@ export class Sheet {
   public readonly name: string;
   public readonly enhancedMatrix: EnhancedCell[][];
   public readonly invertedEnhancedMatrix: EnhancedCell[][];
+  public readonly numNumericCells: number;
   private readonly workbookSheet: xlsx.WorkSheet;
 
   constructor(workbookSheet: xlsx.WorkSheet, sheetName: string) {
@@ -17,7 +18,7 @@ export class Sheet {
       this.enhancedMatrix,
     );
 
-    // Calculate properties
+    this.numNumericCells = this.getNumNumericCells();
     this.name = sheetName;
   }
 
@@ -55,7 +56,7 @@ export class Sheet {
     return numericColumns;
   }
 
-  get numNumericCells(): number {
+  getNumNumericCells(): number {
     let numberCount = 0;
     this.enhancedMatrix.forEach((row) =>
       row.forEach((cell) => {
