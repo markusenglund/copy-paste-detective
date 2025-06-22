@@ -27,6 +27,7 @@ export const categorizeColumnsWithGemini: CategorizeColumnsFunction = async ({
 
   console.log(`[${sheet.name}] Unique columns:`, columnCategorization.unique);
   console.log(`[${sheet.name}] Shared columns:`, columnCategorization.shared);
+  console.log(`[${sheet.name}] motivation:`, columnCategorization.motivation);
 
   return columnCategorization;
 };
