@@ -1,5 +1,6 @@
 import xlsx from "xlsx";
 import { EnhancedCell } from "./EnhancedCell";
+import { calculateEntropyScore } from "../utils/entropy";
 
 export class Sheet {
   public readonly name: string;
@@ -54,6 +55,10 @@ export class Sheet {
     }
 
     return numericColumns;
+  }
+
+  get logNumberCountModifier(): number {
+    return Math.max(Math.log10(this.numNumericCells), 3);
   }
 
   getNumNumericCells(): number {

@@ -1,4 +1,7 @@
-import { SuspicionLevel } from "../types/index.js";
+import { SuspicionLevel } from "../types";
+import { Sheet } from "./Sheet";
+import { calculateSequenceEntropyScore } from "../utils/entropy";
+import { calculateSequenceRegularity } from "../utils/sequence";
 
 export type Position = {
   column: number;
@@ -18,27 +21,32 @@ export class RepeatedColumnSequence {
   constructor(data: {
     positions: [Position, Position];
     values: number[];
-    sequenceEntropyScore: number;
-    adjustedSequenceEntropyScore: number;
-    matrixSizeAdjustedEntropyScore: number;
-    numberCount: number;
-    sheetName: string;
+    sheet: Sheet;
   }) {
     this.positions = data.positions;
     this.values = data.values;
-    this.sequenceEntropyScore = data.sequenceEntropyScore;
-    this.adjustedSequenceEntropyScore = data.adjustedSequenceEntropyScore;
-    this.matrixSizeAdjustedEntropyScore = data.matrixSizeAdjustedEntropyScore;
-    this.numberCount = data.numberCount;
-    this.sheetName = data.sheetName;
+    this.sheetName = data.sheet.name;
+    this.numberCount = data.sheet.numNumericCells;
+
+    // Calculate entropy scores
+    this.sequenceEntropyScore = calculateSequenceEntropyScore(data.values);
+
+    const { mostCommonIntervalSizePercentage } = calculateSequenceRegularity(
+      data.values,
+    );
+    this.adjustedSequenceEntropyScore =
+      this.sequenceEntropyScore * (1 - mostCommonIntervalSizePercentage);
+
+    this.matrixSizeAdjustedEntropyScore =
+      this.adjustedSequenceEntropyScore / data.sheet.logNumberCountModifier;
   }
 
   get suspicionLevel(): SuspicionLevel {
-    if (this.matrixSizeAdjustedEntropyScore > 10) {
+    if (this.matrixSizeAdjustedEntropyScore > 16) {
       return SuspicionLevel.High;
-    } else if (this.matrixSizeAdjustedEntropyScore > 5) {
+    } else if (this.matrixSizeAdjustedEntropyScore > 9) {
       return SuspicionLevel.Medium;
-    } else if (this.matrixSizeAdjustedEntropyScore > 4) {
+    } else if (this.matrixSizeAdjustedEntropyScore > 7) {
       return SuspicionLevel.Low;
     } else {
       return SuspicionLevel.None;

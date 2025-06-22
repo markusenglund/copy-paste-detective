@@ -169,7 +169,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
   });
 });
 
-describe("Dual Drivers of Plant Invasionis - Survey results", () => {
+describe("Dual Drivers of Plant Invasions - Survey results", () => {
   let excelFileData: ExcelFileData;
 
   const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();

@@ -7,8 +7,8 @@ function formatSequencesForDisplay(sequences: RepeatedColumnSequence[]): Array<{
   sheetName: string;
   values: string;
   length: number;
-  sizeAdjEntropy: string;
   entropy: string;
+  sizeAdj: string;
   cell1: string;
   cell2: string;
   matrix: number;
@@ -25,8 +25,8 @@ function formatSequencesForDisplay(sequences: RepeatedColumnSequence[]): Array<{
           ? `${sequence.values[0]} -> ${sequence.values.at(-1)}`
           : `${sequence.values[0]}`,
       length: sequence.values.length,
-      sizeAdjEntropy: sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
       entropy: sequence.sequenceEntropyScore.toFixed(1),
+      sizeAdj: sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
       cell1: firstCellID,
       cell2: secondCellId,
       matrix: sequence.numberCount,

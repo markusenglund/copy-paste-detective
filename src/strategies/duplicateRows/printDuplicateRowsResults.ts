@@ -36,12 +36,13 @@ export function printDuplicateRowsResults({
     return {
       level: levelToSymbol[duplicateRow.suspicionLevel],
       sheetName: duplicateRow.sheet.name,
+      sharedValues: sharedValuesDisplay,
+      length: duplicateRow.totalSharedCount,
+      entropy: duplicateRow.rowEntropyScore.toFixed(1),
+      sizeAdj: duplicateRow.matrixSizeAdjustedEntropyScore.toFixed(1),
+      sharedColumns: sharedColumnsDisplay,
       row1: duplicateRow.rowIndices[0] + 1, // Convert to 1-based indexing for display
       row2: duplicateRow.rowIndices[1] + 1,
-      sharedCount: duplicateRow.totalSharedCount,
-      sharedValues: sharedValuesDisplay,
-      sharedColumns: sharedColumnsDisplay,
-      entropyScore: duplicateRow.rowEntropyScore.toFixed(1),
     };
   });
 

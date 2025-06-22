@@ -39,9 +39,9 @@ export function calculateEntropyScore(rawEntropy: number): number {
     return Math.log10(rawEntropy);
   }
   if (rawEntropy < 100_000) {
-    return 10 * Math.log10(rawEntropy) - 20;
+    return 5 * Math.log10(rawEntropy) - 8;
   }
-  return Math.log10(rawEntropy) + 25;
+  return Math.log10(rawEntropy) + 12;
 }
 
 export function calculateSequenceEntropyScore(values: number[]): number {

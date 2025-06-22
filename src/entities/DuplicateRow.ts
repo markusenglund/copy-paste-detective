@@ -4,6 +4,7 @@ import { SuspicionLevel } from "../types";
 import {
   calculateNumberEntropy,
   calculateEntropyScore,
+  calculateSequenceEntropyScore,
 } from "../utils/entropy";
 
 export class DuplicateRow {
@@ -45,34 +46,20 @@ export class DuplicateRow {
     return pairs;
   }
 
-  get rowEntropyScoresSum(): number {
-    if (this.sharedValues.length === 0) {
-      return 0;
-    }
-
-    const sumEntropyScores = this.sharedValues.reduce((acc, value) => {
-      const rawNumberEntropy = calculateNumberEntropy(value);
-      const individualEntropyScore = calculateEntropyScore(rawNumberEntropy);
-      return acc + individualEntropyScore;
-    }, 0);
-
-    return sumEntropyScores;
+  get rowEntropyScore(): number {
+    return calculateSequenceEntropyScore(this.sharedValues);
   }
 
-  get rowEntropyScore(): number {
-    // Adjust the score based on the number of compared columns
-    const rowEntropyScore =
-      this.rowEntropyScoresSum / Math.pow(this.numComparedColumns, 1 / 3);
-
-    return rowEntropyScore;
+  get matrixSizeAdjustedEntropyScore(): number {
+    return this.rowEntropyScore / this.sheet.logNumberCountModifier;
   }
 
   get suspicionLevel(): SuspicionLevel {
-    if (this.rowEntropyScore > 40) {
+    if (this.matrixSizeAdjustedEntropyScore > 16) {
       return SuspicionLevel.High;
-    } else if (this.rowEntropyScore > 20) {
+    } else if (this.matrixSizeAdjustedEntropyScore > 9) {
       return SuspicionLevel.Medium;
-    } else if (this.rowEntropyScore > 10) {
+    } else if (this.matrixSizeAdjustedEntropyScore > 7) {
       return SuspicionLevel.Low;
     } else {
       return SuspicionLevel.None;

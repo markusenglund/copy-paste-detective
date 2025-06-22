@@ -8,10 +8,8 @@ import { Sheet } from "../entities/Sheet";
 import { type EnhancedCell } from "../entities/EnhancedCell";
 import {
   calculateNumberEntropy,
-  calculateEntropyScore,
   calculateSequenceEntropyScore,
 } from "../utils/entropy";
-import { calculateSequenceRegularity } from "../utils/sequence";
 import { ColumnCategorization } from "../ai/geminiService";
 
 export function deduplicateSortedSequences(
@@ -62,9 +60,6 @@ export function findRepeatedSequences(
   }
 
   const matrix = sheet.invertedEnhancedMatrix;
-  const numberCountEntropyScore = calculateEntropyScore(
-    Math.max(sheet.numNumericCells, 500), // Prevent very small excel files from getting too high of an entropy score
-  );
 
   const repeatedSequences: RepeatedColumnSequence[] = [];
   const positionsByValue = new Map<number, Position[]>();
@@ -135,21 +130,10 @@ export function findRepeatedSequences(
               // Skip if the repeated sequences are back-to-back
               continue;
             }
-            const { mostCommonIntervalSizePercentage } =
-              calculateSequenceRegularity(repeatedValues);
-            const intervalAdjustedSequenceEntropyScore =
-              sequenceEntropyScore * (1 - mostCommonIntervalSizePercentage);
-            const matrixSizeAdjustedEntropyScore =
-              intervalAdjustedSequenceEntropyScore / numberCountEntropyScore;
             const repeatedSequence = new RepeatedColumnSequence({
               positions: [position, newPosition],
               values: repeatedValues,
-              sequenceEntropyScore,
-              adjustedSequenceEntropyScore:
-                intervalAdjustedSequenceEntropyScore,
-              matrixSizeAdjustedEntropyScore,
-              numberCount: sheet.numNumericCells,
-              sheetName: sheet.name,
+              sheet,
             });
             if (repeatedSequence.matrixSizeAdjustedEntropyScore > 2) {
               repeatedSequences.push(repeatedSequence);

@@ -46,7 +46,7 @@ export function findDuplicateRows(
   // Rows require at least one duplicate value with this much entropy to be considered duplicates.
   const minNumberEntropyScore = 200;
   // Rows require a rowEntropyScore of at least this much to be considered duplicates.
-  const minRowEntropyScore = 10;
+  const minSizeAdjustedRowEntropyScore = 4;
   // Rows must have at least this many shared column values to be considered duplicates.
   const minSharedColumns = 2;
   // Bail out if we found >1000 duplicates to avoid performance issues
@@ -127,7 +127,8 @@ export function findDuplicateRows(
             );
             alreadyComparedRowPairs.add(pairKey);
             if (
-              duplicateRow.rowEntropyScore > minRowEntropyScore &&
+              duplicateRow.matrixSizeAdjustedEntropyScore >
+                minSizeAdjustedRowEntropyScore &&
               duplicateRow.totalSharedCount >= minSharedColumns
             ) {
               duplicateRows.push(duplicateRow);

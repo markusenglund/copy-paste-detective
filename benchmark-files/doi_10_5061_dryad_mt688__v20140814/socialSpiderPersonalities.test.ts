@@ -4,6 +4,7 @@ import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
 import { SuspicionLevel } from "../../src/types";
+import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
 
 describe("Persistent social interactions in social spiders", () => {
   let excelFileData: ExcelFileData;
@@ -53,7 +54,26 @@ describe("Persistent social interactions in social spiders", () => {
 
       expect(targetDuplicate).toBeDefined();
       expect(targetDuplicate!.sharedColumns).toHaveLength(4);
-      expect(targetDuplicate?.suspicionLevel).toBe(SuspicionLevel.Medium);
+      expect(targetDuplicate?.suspicionLevel).toBe(SuspicionLevel.Low);
+    });
+  });
+
+  describe("Repeated column sequences strategy", () => {
+    it("should find a duplicated sequence of 6 rows starting on G8 and G387", async () => {
+      const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
+      const targetSequence = result.sequences.find(
+        (resultSequence) =>
+          resultSequence.positions[0].cellId === "G8" &&
+          resultSequence.positions[1].cellId === "G387",
+      );
+
+      expect(targetSequence).toBeDefined();
+      expect(targetSequence?.values.length).toBe(6);
+      expect([SuspicionLevel.Medium, SuspicionLevel.High]).toContain(
+        targetSequence!.suspicionLevel,
+      );
     });
   });
 });
