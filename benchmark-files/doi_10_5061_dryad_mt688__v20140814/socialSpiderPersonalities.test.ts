@@ -1,0 +1,59 @@
+import { describe, it, expect, beforeAll } from "@jest/globals";
+import { ColumnCategorization } from "../../src/ai/geminiService";
+import { ExcelFileData } from "../../src/types/ExcelFileData";
+import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
+import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
+import { SuspicionLevel } from "../../src/types";
+
+describe("Persistent social interactions in social spiders", () => {
+  let excelFileData: ExcelFileData;
+  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
+  categorizedColumnsBySheet.set("Sheet5", {
+    unique: ["Prosoma", "Boldness.1", "Boldness.2", "Boldness.3", "Boldness.4"],
+    shared: [
+      "Source",
+      "Weeks.since.disturbance",
+      "Treatment",
+      "Expt.colony",
+      "ID",
+    ],
+    motivation: "",
+  });
+
+  beforeAll(() => {
+    const datasetFolder = "benchmark-files/doi_10_5061_dryad_mt688__v20140814";
+    excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+  });
+
+  describe("Duplicate rows strategy", () => {
+    it("should detect duplicate row pair at rows 57 and 93 with 2 matching columns", async () => {
+      const result = await runDuplicateRowsStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
+      const targetDuplicate = result.duplicateRows.find((duplicateRow) => {
+        const rowIndices = duplicateRow.rowIndices;
+        return rowIndices[0] === 56 && rowIndices[1] === 92;
+      });
+
+      expect(targetDuplicate).toBeDefined();
+      expect(targetDuplicate!.sharedColumns).toHaveLength(2);
+      expect([SuspicionLevel.Low, SuspicionLevel.Medium]).toContain(
+        targetDuplicate?.suspicionLevel,
+      );
+    });
+
+    it("should detect duplicate row pair at rows 264 and 285 with 4 matching columns", async () => {
+      const result = await runDuplicateRowsStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
+      const targetDuplicate = result.duplicateRows.find((duplicateRow) => {
+        const rowIndices = duplicateRow.rowIndices;
+        return rowIndices[0] === 263 && rowIndices[1] === 284;
+      });
+
+      expect(targetDuplicate).toBeDefined();
+      expect(targetDuplicate!.sharedColumns).toHaveLength(4);
+      expect(targetDuplicate?.suspicionLevel).toBe(SuspicionLevel.Medium);
+    });
+  });
+});

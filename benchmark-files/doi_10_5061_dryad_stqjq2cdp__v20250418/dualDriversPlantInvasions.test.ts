@@ -62,9 +62,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
   });
 
-  describe("Duplicate Rows Strategy", () => {
-    beforeAll(() => {});
-
+  describe("Duplicate rows strategy", () => {
     it("should detect duplicate row pair at rows 354 and 358 with 3 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
