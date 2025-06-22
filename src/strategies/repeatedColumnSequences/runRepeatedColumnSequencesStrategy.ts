@@ -8,7 +8,7 @@ import {
   StrategyDependencies,
 } from "../../types/strategies";
 import { ExcelFileData } from "../../types/ExcelFileData";
-import { RepeatedSequence } from "../../types";
+import { RepeatedColumnSequence } from "../../entities/RepeatedColumnSequence";
 
 export async function runRepeatedColumnSequencesStrategy(
   excelFileData: ExcelFileData,
@@ -16,8 +16,7 @@ export async function runRepeatedColumnSequencesStrategy(
 ): Promise<RepeatedColumnSequencesResult> {
   const startTime = performance.now();
 
-  const repeatedColumnSequences: (RepeatedSequence & { sheetName: string })[] =
-    [];
+  const repeatedColumnSequences: RepeatedColumnSequence[] = [];
 
   for (const sheet of excelFileData.sheets) {
     const categorizedColumns = categorizedColumnsBySheet.get(sheet.name);

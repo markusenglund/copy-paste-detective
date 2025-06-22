@@ -1,9 +1,8 @@
+import { type DuplicateValuesResult, SuspicionLevel } from "../types";
 import {
+  RepeatedColumnSequence,
   type Position,
-  type RepeatedSequence,
-  type DuplicateValuesResult,
-  SuspicionLevel,
-} from "../types";
+} from "../entities/RepeatedColumnSequence";
 import { DuplicateValue } from "../entities/DuplicateValue";
 import { Sheet } from "../entities/Sheet";
 import { type EnhancedCell } from "../entities/EnhancedCell";
@@ -16,10 +15,10 @@ import { calculateSequenceRegularity } from "../utils/sequence";
 import { ColumnCategorization } from "../ai/geminiService";
 
 export function deduplicateSortedSequences(
-  repeatedSequences: RepeatedSequence[],
-): RepeatedSequence[] {
-  let previousSequence: RepeatedSequence | null = null;
-  const deduplicatedSortedSequences: RepeatedSequence[] = [];
+  repeatedSequences: RepeatedColumnSequence[],
+): RepeatedColumnSequence[] {
+  let previousSequence: RepeatedColumnSequence | null = null;
+  const deduplicatedSortedSequences: RepeatedColumnSequence[] = [];
   for (const sequence of repeatedSequences) {
     if (previousSequence) {
       const isSameSequence =
@@ -50,7 +49,7 @@ export function deduplicateSortedSequences(
 export function findRepeatedSequences(
   sheet: Sheet,
   categorizedColumns: ColumnCategorization,
-): RepeatedSequence[] {
+): RepeatedColumnSequence[] {
   // Get numeric columns that should be unique
   const uniqueColumnIndices = categorizedColumns.unique
     .map((name) => sheet.getColumnIndex(name))
@@ -67,7 +66,7 @@ export function findRepeatedSequences(
     Math.max(sheet.numNumericCells, 500), // Prevent very small excel files from getting too high of an entropy score
   );
 
-  const repeatedSequences: RepeatedSequence[] = [];
+  const repeatedSequences: RepeatedColumnSequence[] = [];
   const positionsByValue = new Map<number, Position[]>();
   const checkedPositionPairs = new Set<string>();
   for (const columnIndex of uniqueColumnIndices) {
@@ -142,7 +141,7 @@ export function findRepeatedSequences(
               sequenceEntropyScore * (1 - mostCommonIntervalSizePercentage);
             const matrixSizeAdjustedEntropyScore =
               intervalAdjustedSequenceEntropyScore / numberCountEntropyScore;
-            const repeatedSequence: RepeatedSequence = {
+            const repeatedSequence = new RepeatedColumnSequence({
               positions: [position, newPosition],
               values: repeatedValues,
               sequenceEntropyScore,
@@ -151,7 +150,7 @@ export function findRepeatedSequences(
               matrixSizeAdjustedEntropyScore,
               numberCount: sheet.numNumericCells,
               sheetName: sheet.name,
-            };
+            });
             if (repeatedSequence.matrixSizeAdjustedEntropyScore > 2) {
               repeatedSequences.push(repeatedSequence);
             }

@@ -1,8 +1,8 @@
 import { RepeatedColumnSequencesResult } from "../../types/strategies";
-import { SuspicionLevel, type RepeatedSequence } from "../../types";
+import { RepeatedColumnSequence } from "../../entities/RepeatedColumnSequence";
 import { levelToSymbol } from "../../utils/output";
 
-function formatSequencesForDisplay(sequences: RepeatedSequence[]): Array<{
+function formatSequencesForDisplay(sequences: RepeatedColumnSequence[]): Array<{
   level: string;
   sheetName: string;
   values: string;
@@ -17,16 +17,8 @@ function formatSequencesForDisplay(sequences: RepeatedSequence[]): Array<{
   return sequences.map((sequence) => {
     const firstCellID = sequence.positions[0].cellId;
     const secondCellId = sequence.positions[1].cellId;
-    let level = SuspicionLevel.None;
-    if (sequence.matrixSizeAdjustedEntropyScore > 10) {
-      level = SuspicionLevel.High;
-    } else if (sequence.matrixSizeAdjustedEntropyScore > 5) {
-      level = SuspicionLevel.Medium;
-    } else if (sequence.matrixSizeAdjustedEntropyScore > 4) {
-      level = SuspicionLevel.Low;
-    }
     const table = {
-      level: levelToSymbol[level],
+      level: levelToSymbol[sequence.suspicionLevel],
       sheetName: sequence.sheetName,
       values:
         sequence.values.length > 1

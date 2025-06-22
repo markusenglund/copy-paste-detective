@@ -1,6 +1,6 @@
 import { DuplicateValue } from "../entities/DuplicateValue";
 import { DuplicateRow } from "../entities/DuplicateRow";
-import { RepeatedSequence } from "./index";
+import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
 import { ExcelFileData } from "./ExcelFileData";
 import { ColumnCategorization } from "../ai/geminiService";
 
@@ -16,7 +16,7 @@ export interface IndividualNumbersResult extends StrategyResult {
 
 export interface RepeatedColumnSequencesResult extends StrategyResult {
   name: StrategyName.RepeatedColumnSequences;
-  sequences: (RepeatedSequence & { sheetName: string })[];
+  sequences: RepeatedColumnSequence[];
 }
 
 export interface DuplicateRowsResult extends StrategyResult {
