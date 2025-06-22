@@ -75,5 +75,22 @@ describe("Persistent social interactions in social spiders", () => {
         targetSequence!.suspicionLevel,
       );
     });
+    it("should find a triple duplicated sequence of 3 rows starting on I56, I293 and somewhere else", async () => {
+      const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
+      const targetSequence = result.sequences.find(
+        (resultSequence) =>
+          resultSequence.positions[0].cellId === "I56" &&
+          resultSequence.positions[1].cellId === "I293",
+      );
+
+      expect(targetSequence).toBeDefined();
+      expect(targetSequence!.values.length).toBe(3);
+      expect([SuspicionLevel.Medium, SuspicionLevel.High]).toContain(
+        targetSequence!.suspicionLevel,
+      );
+      expect(targetSequence!.positions.length).toBe(3);
+    });
   });
 });
