@@ -1,11 +1,7 @@
 import { Sheet } from "./Sheet";
 import { DuplicateCellPair } from "./DuplicateCellPair";
 import { SuspicionLevel } from "../types";
-import {
-  calculateNumberEntropy,
-  calculateEntropyScore,
-  calculateSequenceEntropyScore,
-} from "../utils/entropy";
+import { calculateSequenceEntropyScore } from "../utils/entropy";
 
 export class DuplicateRow {
   public readonly rowIndices: [number, number];

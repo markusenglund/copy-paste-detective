@@ -1,6 +1,5 @@
 import xlsx from "xlsx";
 import { EnhancedCell } from "./EnhancedCell";
-import { calculateEntropyScore } from "../utils/entropy";
 
 export class Sheet {
   public readonly name: string;
@@ -32,18 +31,61 @@ export class Sheet {
   }
 
   get columnNames(): string[] {
-    return (this.enhancedMatrix[0] || []).map((cell) =>
-      String(cell.value || ""),
+    return this.buildColumnNames();
+  }
+
+  /**
+   * Build column names, potentially combining double header rows
+   */
+  private buildColumnNames(): string[] {
+    if (this.enhancedMatrix.length === 0) {
+      return [];
+    }
+
+    const firstRow = this.enhancedMatrix[0] || [];
+    const secondRow = this.enhancedMatrix[1] || [];
+
+    // Check if we have merged cells in the first row (indicating double headers)
+    const mergedRanges = this.getMergedRanges();
+    const hasFirstRowMergedCells = mergedRanges.some(
+      (range) => range.startRow === 0,
     );
+
+    if (!hasFirstRowMergedCells || secondRow.length === 0) {
+      // No merged cells in first row or no second row - use standard single header
+      return firstRow.map((cell) => String(cell.value || ""));
+    }
+
+    // Build combined column names from double headers
+    const columnNames: string[] = [];
+
+    for (let colIndex = 0; colIndex < firstRow.length; colIndex++) {
+      const mergedRange = this.getMergedRangeForCell(0, colIndex);
+      const secondRowValue = String(secondRow[colIndex]?.value || "");
+
+      if (mergedRange && mergedRange.value) {
+        // This column is part of a merged header - combine the values
+        const combinedName =
+          mergedRange.value + (secondRowValue ? " - " + secondRowValue : "");
+        columnNames.push(combinedName);
+      } else {
+        // This column doesn't have a merged header - use second row or fall back to first row
+        const firstRowValue = String(firstRow[colIndex]?.value || "");
+        columnNames.push(secondRowValue || firstRowValue);
+      }
+    }
+
+    return columnNames;
   }
 
   get numericColumnIndices(): number[] {
     const numericColumns: number[] = [];
-    const sampleRows = Math.min(10, this.numRows);
+    const headerRowCount = this.getHeaderRowCount();
+    const sampleRows = Math.min(10, this.numRows - headerRowCount);
 
     for (let colIndex = 0; colIndex < this.numColumns; colIndex++) {
       const hasNumericData = this.enhancedMatrix
-        .slice(0, sampleRows)
+        .slice(headerRowCount, headerRowCount + sampleRows)
         .some((row) => {
           const cell = row[colIndex];
           return cell?.isNumeric && !cell.isDate;
@@ -63,7 +105,9 @@ export class Sheet {
 
   getNumNumericCells(): number {
     let numberCount = 0;
-    this.enhancedMatrix.forEach((row) =>
+    const headerRowCount = this.getHeaderRowCount();
+
+    this.enhancedMatrix.slice(headerRowCount).forEach((row) =>
       row.forEach((cell) => {
         if (cell.isAnalyzable) {
           numberCount++;
@@ -74,9 +118,26 @@ export class Sheet {
   }
 
   getFirstNRows(n: number): unknown[][] {
+    const headerRowCount = this.getHeaderRowCount();
     return this.enhancedMatrix
-      .slice(1, n + 1)
-      .map((row) => row.map((cell) => cell.value)); // Skip header row, take n data rows
+      .slice(headerRowCount, headerRowCount + n)
+      .map((row) => row.map((cell) => cell.value)); // Skip header rows, take n data rows
+  }
+
+  /**
+   * Get the number of header rows (1 for single header, 2 for double header)
+   */
+  private getHeaderRowCount(): number {
+    if (this.enhancedMatrix.length < 2) {
+      return 1;
+    }
+
+    const mergedRanges = this.getMergedRanges();
+    const hasFirstRowMergedCells = mergedRanges.some(
+      (range) => range.startRow === 0,
+    );
+
+    return hasFirstRowMergedCells ? 2 : 1;
   }
 
   getColumnIndex(columnName: string): number {
@@ -85,6 +146,80 @@ export class Sheet {
 
   isCellDate(row: number, col: number): boolean {
     return this.enhancedMatrix[row]?.[col]?.isDate ?? false;
+  }
+
+  /**
+   * Get merged cell ranges from the worksheet
+   */
+  getMergedRanges(): Array<{
+    startRow: number;
+    endRow: number;
+    startCol: number;
+    endCol: number;
+    value: string;
+  }> {
+    if (!this.workbookSheet["!merges"]) {
+      return [];
+    }
+
+    return this.workbookSheet["!merges"].map((merge) => {
+      const startRow = merge.s.r;
+      const endRow = merge.e.r;
+      const startCol = merge.s.c;
+      const endCol = merge.e.c;
+
+      // Get the value from the top-left cell of the merged range
+      const cellAddress = xlsx.utils.encode_cell({ r: startRow, c: startCol });
+      const cell = this.workbookSheet[cellAddress];
+      const value = cell?.v ? String(cell.v) : "";
+
+      return {
+        startRow,
+        endRow,
+        startCol,
+        endCol,
+        value,
+      };
+    });
+  }
+
+  /**
+   * Check if a specific cell is part of a merged range
+   */
+  isCellMerged(row: number, col: number): boolean {
+    const mergedRanges = this.getMergedRanges();
+    return mergedRanges.some(
+      (range) =>
+        row >= range.startRow &&
+        row <= range.endRow &&
+        col >= range.startCol &&
+        col <= range.endCol,
+    );
+  }
+
+  /**
+   * Get the merged range that contains a specific cell, if any
+   */
+  getMergedRangeForCell(
+    row: number,
+    col: number,
+  ): {
+    startRow: number;
+    endRow: number;
+    startCol: number;
+    endCol: number;
+    value: string;
+  } | null {
+    const mergedRanges = this.getMergedRanges();
+    return (
+      mergedRanges.find(
+        (range) =>
+          row >= range.startRow &&
+          row <= range.endRow &&
+          col >= range.startCol &&
+          col <= range.endCol,
+      ) || null
+    );
   }
 
   private buildEnhancedMatrix(): EnhancedCell[][] {
