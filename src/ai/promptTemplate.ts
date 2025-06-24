@@ -1,3 +1,5 @@
+import { markdownTable } from "markdown-table";
+
 export interface PromptTemplateParams {
   paperName: string;
   excelFileName: string;
@@ -12,11 +14,17 @@ export function generateColumnCategorizationPrompt(
   const { paperName, excelFileName, readmeContent, columnNames, columnData } =
     params;
 
-  // Format column headers
-  const columnHeaders = columnNames.join("\t");
+  const nonEmptyTable: [string[], string[], string[]] = [[], [], []];
+  for (let i = 0; i < columnNames.length; i++) {
+    const columnName = columnNames[i];
+    if (columnName !== "") {
+      nonEmptyTable[0].push(columnName);
+      nonEmptyTable[1].push(columnData[0][i]);
+      nonEmptyTable[2].push(columnData[1][i]);
+    }
+  }
 
-  // Format sample rows
-  const sampleRows = columnData.map((row) => row.join("\t")).join("\n");
+  const markdownFormattedTable = markdownTable(nonEmptyTable);
 
   return `**Your Task:**
 
@@ -24,8 +32,8 @@ You are an expert data scientist analyzing a dataset from a scientific paper. Yo
 
 You will categorize every column name into one of two lists: \`unique\` or \`shared\`.
 
-* **\`unique\`**: Columns where each value is a direct measurement or observation of the specific, individual subject of that row (e.g., a single plant).
-* **\`shared\`**: Columns where the same value is expected to apply to multiple rows because they belong to the same group or location (e.g., site-level weather data).
+* **\`unique\`**: Columns where each value is a direct measurement or observation of the specific, individual subject of that row.
+* **\`shared\`**: Columns where the same value is expected to apply to multiple rows because they belong to the same group or location (e.g., location-level weather data).
 
 After categorizing the columns, you will provide a brief \`motivation\` for your choices in the same JSON object.
 
@@ -62,11 +70,8 @@ ${readmeContent}
 \`\`\`
 
 **4. Column Headers & Sample Data:**
-*Headers:*
-\`${columnHeaders}\`
 
-*Sample Rows:*
-\`${sampleRows}\`
+${markdownFormattedTable}
 
 ---
 
