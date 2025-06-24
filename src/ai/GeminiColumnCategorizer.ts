@@ -9,12 +9,9 @@ export const categorizeColumnsWithGemini: CategorizeColumnsFunction = async ({
   sheet,
   excelFileData,
 }: ColumnCategorizationParams): Promise<ColumnCategorization> => {
-  // Extract column names and sample data for Gemini
-  const columnNames = (sheet.enhancedMatrix[0] || []).map((cell) =>
-    String(cell.value || ""),
-  );
+  const columnNames = sheet.columnNames;
   const sampleData = sheet.enhancedMatrix
-    .slice(1, 3)
+    .slice(sheet.firstDataRowIndex, sheet.firstDataRowIndex + 2)
     .map((row) => row.map((cell) => String(cell.value || "")));
 
   const columnCategorization = await geminiCategorizeColumns({

@@ -70,7 +70,7 @@ describe("Persistent social interactions in social spiders", () => {
       );
 
       expect(targetSequence).toBeDefined();
-      expect(targetSequence?.values.length).toBe(6);
+      expect(targetSequence!.values.length).toBe(6);
       expect([SuspicionLevel.Medium, SuspicionLevel.High]).toContain(
         targetSequence!.suspicionLevel,
       );

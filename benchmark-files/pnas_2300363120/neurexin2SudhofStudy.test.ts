@@ -1,5 +1,9 @@
 import { describe, it, expect } from "@jest/globals";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
+import { ExcelFileData } from "../../src/types/ExcelFileData";
+import { categorizedColumnsBySheet } from "./mockedCategorizedColumnsBySheet";
+import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
+import { SuspicionLevel } from "../../src/types";
 
 describe("Neurexin-2 restricts synapse numbers - handling double headers", () => {
   it("Combines first two rows to create the column names if the first row is merged", () => {
@@ -42,5 +46,29 @@ describe("Neurexin-2 restricts synapse numbers - handling double headers", () =>
       "mIPSC amplitude - ΔCre",
       "mIPSC amplitude - Cre",
     ]);
+  });
+});
+
+describe("Neurexin-2 restricts synapse numbers", () => {
+  let excelFileData: ExcelFileData;
+  beforeAll(() => {
+    const datasetFolder = "benchmark-files/pnas_2300363120";
+    excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+  });
+  describe("Repeated sequence strategy", () => {
+    it("Identifies the egregious 492-length copy-pasted sequence on columns AD and AE", async () => {
+      const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
+      const targetSequence = result.sequences.find(
+        (resultSequence) =>
+          resultSequence.positions[0].cellId === "AD94" &&
+          resultSequence.positions[1].cellId === "AE222",
+      );
+
+      expect(targetSequence).toBeDefined();
+      expect(targetSequence!.values.length).toBe(492);
+      expect(targetSequence!.suspicionLevel).toBe(SuspicionLevel.High);
+    });
   });
 });

@@ -14,7 +14,8 @@ export class Column {
       .map((rowIndex) =>
         this.sheet.getEffectiveValueForCell(rowIndex, this.index),
       )
-      .filter((value) => typeof value === "string");
+      .filter((value) => typeof value === "string")
+      .map((value) => value.trim());
   }
 
   get combinedColumnName(): string {
