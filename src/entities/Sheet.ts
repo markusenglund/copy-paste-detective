@@ -149,8 +149,15 @@ export class Sheet {
     return this.headerRowIndices.at(-1)! + 1;
   }
 
-  getColumnIndex(columnName: string): number {
-    return this.columnNames.indexOf(columnName);
+  // A spreadsheet might in some cases have multiple columns with the same name so we return an array of indices
+  getColumnIndicesOfCombinedColumnName(columnName: string): number[] {
+    const columnIndices: number[] = [];
+    for (let i = 0; i < this.columnNames.length; i++) {
+      if (this.columnNames[i] === columnName) {
+        columnIndices.push(i);
+      }
+    }
+    return columnIndices;
   }
 
   isCellDate(row: number, col: number): boolean {

@@ -56,10 +56,8 @@ export function findDuplicateRows(
 
   // Get numeric columns that should be unique
   const uniqueColumnIndices = columnCategorization.unique
-    .map((name) => sheet.getColumnIndex(name))
-    .filter(
-      (index) => index !== -1 && sheet.numericColumnIndices.includes(index),
-    );
+    .flatMap((name) => sheet.getColumnIndicesOfCombinedColumnName(name))
+    .filter((index) => sheet.numericColumnIndices.includes(index));
 
   if (uniqueColumnIndices.length === 0) {
     return { duplicateRows: [] };

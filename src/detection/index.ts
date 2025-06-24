@@ -50,10 +50,8 @@ export function findRepeatedSequences(
 ): RepeatedColumnSequence[] {
   // Get numeric columns that should be unique
   const uniqueColumnIndices = categorizedColumns.unique
-    .map((name) => sheet.getColumnIndex(name))
-    .filter(
-      (index) => index !== -1 && sheet.numericColumnIndices.includes(index),
-    );
+    .flatMap((name) => sheet.getColumnIndicesOfCombinedColumnName(name))
+    .filter((index) => sheet.numericColumnIndices.includes(index));
 
   if (uniqueColumnIndices.length === 0) {
     return [];
@@ -155,10 +153,8 @@ export function findDuplicateValues(
 ): DuplicateValuesResult {
   // Get numeric columns that should be unique
   const uniqueColumnIndices = categorizedColumns.unique
-    .map((name) => sheet.getColumnIndex(name))
-    .filter(
-      (index) => index !== -1 && sheet.numericColumnIndices.includes(index),
-    );
+    .flatMap((name) => sheet.getColumnIndicesOfCombinedColumnName(name))
+    .filter((index) => sheet.numericColumnIndices.includes(index));
 
   if (uniqueColumnIndices.length === 0) {
     return { duplicateValues: [] };

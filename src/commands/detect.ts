@@ -59,8 +59,6 @@ program
       process.exit(1);
     }
 
-    console.log(excelFileData.sheets[0].columnNames);
-
     console.log(
       `📄 Selected file '${excelFileData.excelFileName}' (index ${fileIndex}) from folder: '${folder}'`,
     );
