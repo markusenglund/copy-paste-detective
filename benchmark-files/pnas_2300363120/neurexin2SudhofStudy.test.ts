@@ -56,12 +56,13 @@ describe("Neurexin-2 restricts synapse numbers", () => {
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
   });
   describe("Repeated sequence strategy", () => {
-    it("Identifies the egregious 492-length copy-pasted sequence on columns AD and AE", async () => {
+    it("Identifies the egregious 492-length copy-pasted sequence on columns AD and AE in sheet 'Fig 2'", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
+          resultSequence.sheetName === "Fig 2" &&
           resultSequence.positions[0].cellId === "AD94" &&
           resultSequence.positions[1].cellId === "AE222",
       );
@@ -71,12 +72,13 @@ describe("Neurexin-2 restricts synapse numbers", () => {
       expect(targetSequence!.suspicionLevel).toBe(SuspicionLevel.High);
     });
 
-    it("Identifies the 4-length copy-pasted sequence on column E", async () => {
+    it("Identifies the 4-length copy-pasted sequence on column E in sheet 'Fig 2'", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
+          resultSequence.sheetName === "Fig 2" &&
           resultSequence.positions[0].cellId === "E3" &&
           resultSequence.positions[1].cellId === "E47",
       );
@@ -84,6 +86,21 @@ describe("Neurexin-2 restricts synapse numbers", () => {
       expect(targetSequence).toBeDefined();
       expect(targetSequence!.values.length).toBe(4);
       expect(targetSequence!.suspicionLevel).toBe(SuspicionLevel.High);
+    });
+
+    it("Identifies a 2-length sequence on columns J and K in sheet 'Fig 3'", async () => {
+      const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
+      const targetSequence = result.sequences.find(
+        (resultSequence) =>
+          resultSequence.sheetName === "Fig 3" &&
+          resultSequence.positions[0].cellId === "J6" &&
+          resultSequence.positions[1].cellId === "K12",
+      );
+
+      expect(targetSequence).toBeDefined();
+      expect(targetSequence!.values.length).toBe(2);
     });
   });
 });
