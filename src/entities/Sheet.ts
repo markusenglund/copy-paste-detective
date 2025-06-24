@@ -149,15 +149,6 @@ export class Sheet {
     return this.headerRowIndices.at(-1)! + 1;
   }
 
-  private getRowsWithMergedCells(): number[] {
-    const startRows = this.mergedRanges.map(
-      (mergedRange) => mergedRange.startRow,
-    );
-    const uniqueRows = [...new Set(startRows)];
-    uniqueRows.sort();
-    return uniqueRows;
-  }
-
   getColumnIndex(columnName: string): number {
     return this.columnNames.indexOf(columnName);
   }
@@ -192,22 +183,6 @@ export class Sheet {
     });
   }
 
-  /**
-   * Check if a specific cell is part of a merged range
-   */
-  isCellMerged(row: number, col: number): boolean {
-    return this.mergedRanges.some(
-      (range) =>
-        row >= range.startRow &&
-        row <= range.endRow &&
-        col >= range.startCol &&
-        col <= range.endCol,
-    );
-  }
-
-  /**
-   * Get the merged range that contains a specific cell, if any
-   */
   getMergedRangeForCell(
     row: number,
     col: number,
