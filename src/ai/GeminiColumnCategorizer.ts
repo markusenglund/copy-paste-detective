@@ -22,9 +22,24 @@ export const categorizeColumnsWithGemini: CategorizeColumnsFunction = async ({
     columnData: sampleData,
   });
 
-  console.log(`[${sheet.name}] Unique columns:`, columnCategorization.unique);
-  console.log(`[${sheet.name}] Shared columns:`, columnCategorization.shared);
-  console.log(`[${sheet.name}] motivation:`, columnCategorization.motivation);
+  // Enforce that each column name is unique, even if the input had multiple columns with the same name
+  const parsedColumnCategorization = {
+    ...columnCategorization,
+    unique: [...new Set(columnCategorization.unique)],
+  };
 
-  return columnCategorization;
+  console.log(
+    `[${sheet.name}] Unique columns:`,
+    parsedColumnCategorization.unique,
+  );
+  console.log(
+    `[${sheet.name}] Shared columns:`,
+    parsedColumnCategorization.shared,
+  );
+  console.log(
+    `[${sheet.name}] motivation:`,
+    parsedColumnCategorization.motivation,
+  );
+
+  return parsedColumnCategorization;
 };
