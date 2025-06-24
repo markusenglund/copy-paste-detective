@@ -9,6 +9,18 @@ export class Column {
     this.index = index;
   }
 
+  get headers(): string[] {
+    return this.sheet.headerRowIndices
+      .map((rowIndex) =>
+        this.sheet.getEffectiveValueForCell(rowIndex, this.index),
+      )
+      .filter((value) => typeof value === "string");
+  }
+
+  get combinedColumnName(): string {
+    return this.headers.join(" - ");
+  }
+
   // Get the column letter(s) as seen in Excel.
   get columnId(): string {
     let result = "";

@@ -1,5 +1,6 @@
 import xlsx from "xlsx";
 import { EnhancedCell } from "./EnhancedCell";
+import { Column } from "./Column";
 
 type MergedRange = {
   startRow: number;
@@ -30,6 +31,9 @@ export class Sheet {
     this.range = xlsx.utils.decode_range(ref);
     // Build enhanced matrix with full cell data
     this.enhancedMatrix = this.buildEnhancedMatrix();
+    if (this.enhancedMatrix.length === 0) {
+      throw new Error(`Sheet is empty!`);
+    }
     this.invertedEnhancedMatrix = Sheet.invertEnhancedMatrix(
       this.enhancedMatrix,
     );
@@ -38,6 +42,15 @@ export class Sheet {
 
     this.numNumericCells = this.getNumNumericCells();
     this.name = sheetName;
+  }
+
+  getColumns(): Column[] {
+    const columns: Column[] = [];
+    for (let i = 0; i < this.numColumns; i++) {
+      columns.push(new Column(this, i));
+    }
+
+    return columns;
   }
 
   get numRows(): number {
@@ -49,66 +62,29 @@ export class Sheet {
   }
 
   get columnNames(): string[] {
-    return this.buildColumnNames();
-  }
-
-  /**
-   * Build column names, potentially combining multiple header rows
-   */
-  private buildColumnNames(): string[] {
-    if (this.enhancedMatrix.length === 0) {
-      return [];
-    }
-
-    const headerRowCount = this.getHeaderRowCount();
-
-    if (headerRowCount === 1) {
-      // Single header
-      return this.enhancedMatrix[0].map((cell) => String(cell.value || ""));
-    }
-
-    // Multi-header - combine values from all header rows
-    const columnNames: string[] = [];
-    const numColumns = this.enhancedMatrix[0]?.length || 0;
-
-    for (let colIndex = 0; colIndex < numColumns; colIndex++) {
-      const headerValues: string[] = [];
-
-      for (let rowIndex = 0; rowIndex < headerRowCount; rowIndex++) {
-        const value = this.getEffectiveValueForCell(rowIndex, colIndex);
-        if (value.trim()) {
-          // Only include non-empty values
-          headerValues.push(value);
-        }
-      }
-
-      columnNames.push(headerValues.join(" - "));
-    }
-
-    return columnNames;
+    return this.getColumns().map((column) => column.combinedColumnName);
   }
 
   /**
    * Get the effective value for a cell, considering merged ranges
    */
-  private getEffectiveValueForCell(rowIndex: number, colIndex: number): string {
+  getEffectiveValueForCell(rowIndex: number, colIndex: number): unknown {
     const mergedRange = this.getMergedRangeForCell(rowIndex, colIndex);
     if (mergedRange?.value) {
       return mergedRange.value;
     }
 
     const cell = this.enhancedMatrix[rowIndex]?.[colIndex];
-    return String(cell?.value || "");
+    return cell?.value ?? null;
   }
 
   get numericColumnIndices(): number[] {
     const numericColumns: number[] = [];
-    const headerRowCount = this.getHeaderRowCount();
-    const sampleRows = Math.min(10, this.numRows - headerRowCount);
+    const numSampleRows = 10;
 
     for (let colIndex = 0; colIndex < this.numColumns; colIndex++) {
       const hasNumericData = this.enhancedMatrix
-        .slice(headerRowCount, headerRowCount + sampleRows)
+        .slice(this.firstDataRowIndex, this.firstDataRowIndex + numSampleRows)
         .some((row) => {
           const cell = row[colIndex];
           return cell?.isNumeric && !cell.isDate;
@@ -128,9 +104,8 @@ export class Sheet {
 
   getNumNumericCells(): number {
     let numberCount = 0;
-    const headerRowCount = this.getHeaderRowCount();
 
-    this.enhancedMatrix.slice(headerRowCount).forEach((row) =>
+    this.enhancedMatrix.slice(this.firstDataRowIndex).forEach((row) =>
       row.forEach((cell) => {
         if (cell.isAnalyzable) {
           numberCount++;
@@ -141,64 +116,17 @@ export class Sheet {
   }
 
   getFirstNRows(n: number): unknown[][] {
-    const headerRowCount = this.getHeaderRowCount();
     return this.enhancedMatrix
-      .slice(headerRowCount, headerRowCount + n)
+      .slice(this.firstDataRowIndex, this.firstDataRowIndex + n)
       .map((row) => row.map((cell) => cell.value)); // Skip header rows, take n data rows
   }
 
-  /**
-   * Get the number of header rows (1 for single, 2 for double, 3 for triple, etc.)
-   */
-  private getHeaderRowCount(): number {
-    if (this.enhancedMatrix.length < 2) {
-      return 1;
-    }
-
-    // Check if first row has merged cells
-    const hasFirstRowMergedCells = this.mergedRanges.some(
-      (range) => range.startRow === 0,
-    );
-
-    if (!hasFirstRowMergedCells) {
-      return 1; // Single header
-    }
-
-    // Find consecutive rows with merged cells starting from row 0
-    let lastMergedRow = -1;
-    for (
-      let rowIndex = 0;
-      rowIndex < Math.min(5, this.enhancedMatrix.length);
-      rowIndex++
-    ) {
-      const hasRowMergedCells = this.mergedRanges.some(
-        (range) => range.startRow === rowIndex,
-      );
-      if (hasRowMergedCells) {
-        lastMergedRow = rowIndex;
-      } else {
-        break; // Found first row without merged cells
-      }
-    }
-
-    // Header count is last merged row + 2 (to include the next row as final header)
-    return Math.min(lastMergedRow + 2, this.enhancedMatrix.length);
-  }
-
   get headerRowIndices(): number[] {
-    // const firstNonEmptyRowIndex = this.enhancedMatrix
-    //   .slice(0, 10)
-    //   .findIndex((row) => row.some((cell) => cell.value !== null));
-    // if (firstNonEmptyRowIndex === -1) {
-    //   throw new Error(
-    //     `Couldn't find any non-empty rows in the first 10 rows of the spreadsheet.`,
-    //   );
-    // }
     const firstNonEmptyRowIndex = this.range.s.r;
     let rowIndex = firstNonEmptyRowIndex;
     const headerRowIndices = [];
     // We assume that a row with only cells that are analyzable is a data row, while rows with non-analyzable cells are header rows
-    while (this.enhancedMatrix[rowIndex].every((cell) => !cell.isAnalyzable)) {
+    while (this.enhancedMatrix[rowIndex]?.every((cell) => !cell.isAnalyzable)) {
       headerRowIndices.push(rowIndex);
       if (headerRowIndices.length > 5) {
         throw new Error(
@@ -211,6 +139,14 @@ export class Sheet {
       throw new Error(`Couldn't find any header rows without numeric values`);
     }
     return headerRowIndices;
+  }
+
+  get headerRows(): EnhancedCell[][] {
+    return this.headerRowIndices.map((index) => this.enhancedMatrix[index]);
+  }
+
+  get firstDataRowIndex(): number {
+    return this.headerRowIndices.at(-1)! + 1;
   }
 
   private getRowsWithMergedCells(): number[] {
@@ -298,7 +234,6 @@ export class Sheet {
 
     // Initialize matrix with proper dimensions
     for (let row = 0; row <= this.range.e.r; row++) {
-      console.log({ row }, this.range.s.r);
       enhancedMatrix[row] = [];
 
       for (let col = 0; col <= this.range.e.c; col++) {
