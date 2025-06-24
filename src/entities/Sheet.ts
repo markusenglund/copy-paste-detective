@@ -1,22 +1,40 @@
 import xlsx from "xlsx";
 import { EnhancedCell } from "./EnhancedCell";
 
+type MergedRange = {
+  startRow: number;
+  endRow: number;
+  startCol: number;
+  endCol: number;
+  value: string;
+};
+
 export class Sheet {
   public readonly name: string;
   public readonly enhancedMatrix: EnhancedCell[][];
   public readonly invertedEnhancedMatrix: EnhancedCell[][];
   public readonly numNumericCells: number;
+  public readonly mergedRanges: MergedRange[];
+  public readonly range: xlsx.Range;
   private readonly workbookSheet: xlsx.WorkSheet;
 
   constructor(workbookSheet: xlsx.WorkSheet, sheetName: string) {
     // Store original worksheet for format access
     this.workbookSheet = workbookSheet;
 
+    const ref = this.workbookSheet["!ref"];
+    if (!ref) {
+      throw new Error(`Sheet is empty!`);
+    }
+
+    this.range = xlsx.utils.decode_range(ref);
     // Build enhanced matrix with full cell data
     this.enhancedMatrix = this.buildEnhancedMatrix();
     this.invertedEnhancedMatrix = Sheet.invertEnhancedMatrix(
       this.enhancedMatrix,
     );
+
+    this.mergedRanges = this.createMergedRanges();
 
     this.numNumericCells = this.getNumNumericCells();
     this.name = sheetName;
@@ -35,47 +53,52 @@ export class Sheet {
   }
 
   /**
-   * Build column names, potentially combining double header rows
+   * Build column names, potentially combining multiple header rows
    */
   private buildColumnNames(): string[] {
     if (this.enhancedMatrix.length === 0) {
       return [];
     }
 
-    const firstRow = this.enhancedMatrix[0] || [];
-    const secondRow = this.enhancedMatrix[1] || [];
+    const headerRowCount = this.getHeaderRowCount();
 
-    // Check if we have merged cells in the first row (indicating double headers)
-    const mergedRanges = this.getMergedRanges();
-    const hasFirstRowMergedCells = mergedRanges.some(
-      (range) => range.startRow === 0,
-    );
-
-    if (!hasFirstRowMergedCells || secondRow.length === 0) {
-      // No merged cells in first row or no second row - use standard single header
-      return firstRow.map((cell) => String(cell.value || ""));
+    if (headerRowCount === 1) {
+      // Single header
+      return this.enhancedMatrix[0].map((cell) => String(cell.value || ""));
     }
 
-    // Build combined column names from double headers
+    // Multi-header - combine values from all header rows
     const columnNames: string[] = [];
+    const numColumns = this.enhancedMatrix[0]?.length || 0;
 
-    for (let colIndex = 0; colIndex < firstRow.length; colIndex++) {
-      const mergedRange = this.getMergedRangeForCell(0, colIndex);
-      const secondRowValue = String(secondRow[colIndex]?.value || "");
+    for (let colIndex = 0; colIndex < numColumns; colIndex++) {
+      const headerValues: string[] = [];
 
-      if (mergedRange && mergedRange.value) {
-        // This column is part of a merged header - combine the values
-        const combinedName =
-          mergedRange.value + (secondRowValue ? " - " + secondRowValue : "");
-        columnNames.push(combinedName);
-      } else {
-        // This column doesn't have a merged header - use second row or fall back to first row
-        const firstRowValue = String(firstRow[colIndex]?.value || "");
-        columnNames.push(secondRowValue || firstRowValue);
+      for (let rowIndex = 0; rowIndex < headerRowCount; rowIndex++) {
+        const value = this.getEffectiveValueForCell(rowIndex, colIndex);
+        if (value.trim()) {
+          // Only include non-empty values
+          headerValues.push(value);
+        }
       }
+
+      columnNames.push(headerValues.join(" - "));
     }
 
     return columnNames;
+  }
+
+  /**
+   * Get the effective value for a cell, considering merged ranges
+   */
+  private getEffectiveValueForCell(rowIndex: number, colIndex: number): string {
+    const mergedRange = this.getMergedRangeForCell(rowIndex, colIndex);
+    if (mergedRange?.value) {
+      return mergedRange.value;
+    }
+
+    const cell = this.enhancedMatrix[rowIndex]?.[colIndex];
+    return String(cell?.value || "");
   }
 
   get numericColumnIndices(): number[] {
@@ -125,19 +148,78 @@ export class Sheet {
   }
 
   /**
-   * Get the number of header rows (1 for single header, 2 for double header)
+   * Get the number of header rows (1 for single, 2 for double, 3 for triple, etc.)
    */
   private getHeaderRowCount(): number {
     if (this.enhancedMatrix.length < 2) {
       return 1;
     }
 
-    const mergedRanges = this.getMergedRanges();
-    const hasFirstRowMergedCells = mergedRanges.some(
+    // Check if first row has merged cells
+    const hasFirstRowMergedCells = this.mergedRanges.some(
       (range) => range.startRow === 0,
     );
 
-    return hasFirstRowMergedCells ? 2 : 1;
+    if (!hasFirstRowMergedCells) {
+      return 1; // Single header
+    }
+
+    // Find consecutive rows with merged cells starting from row 0
+    let lastMergedRow = -1;
+    for (
+      let rowIndex = 0;
+      rowIndex < Math.min(5, this.enhancedMatrix.length);
+      rowIndex++
+    ) {
+      const hasRowMergedCells = this.mergedRanges.some(
+        (range) => range.startRow === rowIndex,
+      );
+      if (hasRowMergedCells) {
+        lastMergedRow = rowIndex;
+      } else {
+        break; // Found first row without merged cells
+      }
+    }
+
+    // Header count is last merged row + 2 (to include the next row as final header)
+    return Math.min(lastMergedRow + 2, this.enhancedMatrix.length);
+  }
+
+  get headerRowIndices(): number[] {
+    // const firstNonEmptyRowIndex = this.enhancedMatrix
+    //   .slice(0, 10)
+    //   .findIndex((row) => row.some((cell) => cell.value !== null));
+    // if (firstNonEmptyRowIndex === -1) {
+    //   throw new Error(
+    //     `Couldn't find any non-empty rows in the first 10 rows of the spreadsheet.`,
+    //   );
+    // }
+    const firstNonEmptyRowIndex = this.range.s.r;
+    let rowIndex = firstNonEmptyRowIndex;
+    const headerRowIndices = [];
+    // We assume that a row with only cells that are analyzable is a data row, while rows with non-analyzable cells are header rows
+    while (this.enhancedMatrix[rowIndex].every((cell) => !cell.isAnalyzable)) {
+      headerRowIndices.push(rowIndex);
+      if (headerRowIndices.length > 5) {
+        throw new Error(
+          `Unexpectedly didn't find any rows in the first five rows with analyzable data`,
+        );
+      }
+      rowIndex++;
+    }
+    if (headerRowIndices.length === 0) {
+      throw new Error(`Couldn't find any header rows without numeric values`);
+    }
+    return headerRowIndices;
+  }
+
+  private getRowsWithMergedCells(): number[] {
+    const startRows = this.mergedRanges.map(
+      (mergedRange) => mergedRange.startRow,
+    );
+    const uniqueRows = [...new Set(startRows)];
+    uniqueRows.sort();
+    return uniqueRows;
   }
 
   getColumnIndex(columnName: string): number {
@@ -148,16 +230,7 @@ export class Sheet {
     return this.enhancedMatrix[row]?.[col]?.isDate ?? false;
   }
 
-  /**
-   * Get merged cell ranges from the worksheet
-   */
-  getMergedRanges(): Array<{
-    startRow: number;
-    endRow: number;
-    startCol: number;
-    endCol: number;
-    value: string;
-  }> {
+  private createMergedRanges(): Array<MergedRange> {
     if (!this.workbookSheet["!merges"]) {
       return [];
     }
@@ -187,8 +260,7 @@ export class Sheet {
    * Check if a specific cell is part of a merged range
    */
   isCellMerged(row: number, col: number): boolean {
-    const mergedRanges = this.getMergedRanges();
-    return mergedRanges.some(
+    return this.mergedRanges.some(
       (range) =>
         row >= range.startRow &&
         row <= range.endRow &&
@@ -210,9 +282,8 @@ export class Sheet {
     endCol: number;
     value: string;
   } | null {
-    const mergedRanges = this.getMergedRanges();
     return (
-      mergedRanges.find(
+      this.mergedRanges.find(
         (range) =>
           row >= range.startRow &&
           row <= range.endRow &&
@@ -223,30 +294,19 @@ export class Sheet {
   }
 
   private buildEnhancedMatrix(): EnhancedCell[][] {
-    // Build enhanced matrix directly from worksheet without sheet_to_json
-    if (!this.workbookSheet["!ref"]) {
-      return []; // Empty worksheet
-    }
-
-    const range = xlsx.utils.decode_range(this.workbookSheet["!ref"]);
     const enhancedMatrix: EnhancedCell[][] = [];
 
     // Initialize matrix with proper dimensions
-    for (let row = range.s.r; row <= range.e.r; row++) {
-      const matrixRowIndex = row - range.s.r;
-      enhancedMatrix[matrixRowIndex] = [];
+    for (let row = 0; row <= this.range.e.r; row++) {
+      console.log({ row }, this.range.s.r);
+      enhancedMatrix[row] = [];
 
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const matrixColIndex = col - range.s.c;
+      for (let col = 0; col <= this.range.e.c; col++) {
         const cellAddress = xlsx.utils.encode_cell({ r: row, c: col });
         const originalCell: xlsx.CellObject | null =
           this.workbookSheet[cellAddress] || null;
 
-        enhancedMatrix[matrixRowIndex][matrixColIndex] = new EnhancedCell(
-          originalCell,
-          row,
-          col,
-        );
+        enhancedMatrix[row][col] = new EnhancedCell(originalCell, row, col);
       }
     }
 

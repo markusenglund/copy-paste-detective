@@ -13,7 +13,7 @@ export class EnhancedCell {
     this.col = col;
 
     // Extract and process the value from the original cell
-    const rawValue = originalCell?.v;
+    const rawValue = originalCell?.v ?? null;
     this.value =
       typeof rawValue === "number"
         ? roundFloatingPointInaccuracies(rawValue)

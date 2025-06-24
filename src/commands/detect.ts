@@ -53,10 +53,14 @@ program
     let excelFileData;
     try {
       excelFileData = loadExcelFileFromFolder(folder, fileIndex);
+      excelFileData.sheets = excelFileData.sheets.slice(3, 4);
     } catch (error) {
       console.error("❌ Failed to load Excel file from folder:", error);
       process.exit(1);
     }
+
+    console.log(excelFileData.sheets[0].columnNames);
+    throw new Error("Quit");
 
     console.log(
       `📄 Selected file '${excelFileData.excelFileName}' (index ${fileIndex}) from folder: '${folder}'`,
