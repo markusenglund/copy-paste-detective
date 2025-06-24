@@ -70,5 +70,20 @@ describe("Neurexin-2 restricts synapse numbers", () => {
       expect(targetSequence!.values.length).toBe(492);
       expect(targetSequence!.suspicionLevel).toBe(SuspicionLevel.High);
     });
+
+    it("Identifies the 4-length copy-pasted sequence on column E", async () => {
+      const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
+        categorizedColumnsBySheet,
+      });
+      const targetSequence = result.sequences.find(
+        (resultSequence) =>
+          resultSequence.positions[0].cellId === "E3" &&
+          resultSequence.positions[1].cellId === "E47",
+      );
+
+      expect(targetSequence).toBeDefined();
+      expect(targetSequence!.values.length).toBe(4);
+      expect(targetSequence!.suspicionLevel).toBe(SuspicionLevel.High);
+    });
   });
 });
