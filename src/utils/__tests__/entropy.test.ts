@@ -31,6 +31,8 @@ describe("calculateNumberEntropy", () => {
     expect(calculateNumberEntropy(4.333333333333333)).toBe(13); // 13 / 3
     expect(calculateNumberEntropy(94.1111111111)).toBe(847); // 847 / 9
     expect(calculateNumberEntropy(1.14285714286)).toBe(8); // 8 / 7
+    expect(calculateNumberEntropy(1.6667)).toBe(5);
+    expect(calculateNumberEntropy(1.667)).toBe(1667); // Not close enough to an exact fraction
   });
 
   it("should handle edge cases", () => {

@@ -6,11 +6,11 @@ export function calculateNumberEntropy(value: number): number {
     return 100;
   }
 
-  const denominators = [2, 3, 7, 9, 11, 13, 17, 19, 23];
+  const denominators = [2, 3, 7, 9, 11];
   const rawBaseNumberEntropy = calculateRawNumberEntropy(value);
   const numeratorEntropies = denominators.map((denominator) => {
     const numerator = value * denominator;
-    const roundedNumerator = roundFloatingPointInaccuracies(numerator, 8, 1e-8);
+    const roundedNumerator = roundFloatingPointInaccuracies(numerator, 8, 1e-4);
     const roundedNumeratorEntropy = calculateRawNumberEntropy(roundedNumerator);
     return roundedNumeratorEntropy;
   });
