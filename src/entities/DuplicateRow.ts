@@ -42,8 +42,12 @@ export class DuplicateRow {
     return pairs;
   }
 
+  get deduplicatedSharedValues(): number[] {
+    return [...new Set(this.sharedValues)];
+  }
+
   get rowEntropyScore(): number {
-    return calculateSequenceEntropyScore(this.sharedValues);
+    return calculateSequenceEntropyScore(this.deduplicatedSharedValues);
   }
 
   get matrixSizeAdjustedEntropyScore(): number {
