@@ -53,7 +53,6 @@ program
     let excelFileData;
     try {
       excelFileData = loadExcelFileFromFolder(folder, fileIndex);
-      excelFileData.sheets = excelFileData.sheets.slice(7, 8);
     } catch (error) {
       console.error("❌ Failed to load Excel file from folder:", error);
       process.exit(1);

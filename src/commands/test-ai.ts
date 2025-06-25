@@ -140,6 +140,118 @@ const testCases: TestCase[] = [
       },
     ],
   },
+  {
+    folder: "benchmark-files/doi_10_5061_dryad_ksn02v7ft__v20250416",
+    fileIndex: 0,
+    description: "Hawk and owl feeding study",
+    sheets: [
+      {
+        sheetName: "Sheet1",
+        expectedCategorization: {
+          mustBeIncluded: [
+            "ẟ13Ccollagen (‰)",
+            "Weight %C",
+            "Amp 44",
+            "ẟ15N (‰)",
+            "Weight %N",
+            "Amp 28",
+            "Weight % C:N",
+            "Atomic C:N",
+          ],
+          mustNotBeIncluded: [],
+        },
+      },
+    ],
+  },
+  {
+    folder: "benchmark-files/doi_10_5061_dryad_mt688__v20140814",
+    fileIndex: 0,
+    description: "Social spider personality measurement",
+    sheets: [
+      {
+        sheetName: "Sheet5",
+        expectedCategorization: {
+          mustBeIncluded: [
+            "Prosoma",
+            "Boldness.1",
+            "Boldness.2",
+            "Boldness.3",
+            "Boldness.4",
+          ],
+          mustNotBeIncluded: [],
+        },
+      },
+    ],
+  },
+  {
+    folder: "benchmark-files/pnas_2300363120",
+    fileIndex: 0,
+    description: "Neurexin-2 study data",
+    sheets: [
+      {
+        sheetName: "Fig 2",
+        expectedCategorization: {
+          mustBeIncluded: [
+            "vGluT1 punta density - ΔCre",
+            "vGluT1 punta density - Cre",
+            "vGluT1 staining intensity - ΔCre",
+            "vGluT1 staining intensity - Cre",
+            "Homer punta density - ΔCre",
+            "Homer punta density - Cre",
+            "Homer staining intensity - ΔCre",
+            "Homer staining intensity - Cre",
+            "vGluT1/Homer colocalization - ΔCre",
+            "vGluT1/Homer colocalization - Cre",
+            "mEPSC frequency - ΔCre",
+            "mEPSC frequency - Cre",
+            "mEPSC amplitude - ΔCre",
+            "mEPSC amplitude - Cre",
+            "mIPSC frequency - ΔCre",
+            "mIPSC frequency - Cre",
+            "mIPSC amplitude - ΔCre",
+            "mIPSC amplitude - Cre",
+          ],
+          mustNotBeIncluded: [],
+        },
+      },
+      {
+        sheetName: "Fig 3",
+        expectedCategorization: {
+          mustBeIncluded: [
+            "AMPAR EPSC rise time - Cre",
+            "AMPAR EPSC decay time - ΔCre",
+          ],
+          mustNotBeIncluded: [],
+        },
+      },
+      {
+        sheetName: "Fig 5",
+        expectedCategorization: {
+          mustBeIncluded: [
+            "vGluT1 Puncta Density - ΔCre",
+            "vGluT1 Puncta Density - Cre",
+            "vGluT1 Puncta Density - SS4-SS5-",
+            "vGluT1 Puncta Density - SS4+SS5-",
+            "vGluT1 Puncta Density - SS4-SS5+",
+            "vGluT1 Puncta Density - SS4+SS5+",
+            "Homer1 Puncta Density - ΔCre",
+            "Homer1 Puncta Density - Cre",
+            "Homer1 Puncta Density - SS4-SS5-",
+            "Homer1 Puncta Density - SS4+SS5-",
+            "Homer1 Puncta Density - SS4-SS5+",
+            "Homer1 Puncta Density - SS4+SS5+",
+            "vGluT1/Homer colocalization - ΔCre",
+            "vGluT1/Homer colocalization - Cre",
+            "vGluT1/Homer colocalization - SS4-SS5-",
+            "vGluT1/Homer colocalization - SS4+SS5-",
+            "vGluT1/Homer colocalization - SS4-SS5+",
+            "vGluT1/Homer colocalization - SS4+SS5+",
+          ],
+          mustNotBeIncluded: [],
+        },
+      },
+    ],
+  },
 ];
 
 const program = new Command();
