@@ -28,10 +28,6 @@ export async function runRepeatedColumnSequencesStrategy(
       categorizedColumns,
     );
 
-    console.log(
-      `[${sheet.name}] ${sheetRepeatedColumnSequences.length} column sequences found.`,
-    );
-
     repeatedColumnSequences.push(...sheetRepeatedColumnSequences);
   }
 

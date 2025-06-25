@@ -1,5 +1,3 @@
-import { roundFloatingPointInaccuracies } from "./roundFloatingPointInaccuracies";
-
 export function calculateNumberEntropy(value: number): number {
   // Values that are common years should receive an entropy score of 100
   if (value >= 1900 && value <= 2030 && Number.isInteger(value)) {
@@ -8,16 +6,31 @@ export function calculateNumberEntropy(value: number): number {
 
   const denominators = [2, 3, 7, 9, 11];
   const rawBaseNumberEntropy = calculateRawNumberEntropy(value);
-  const numeratorEntropies = denominators.map((denominator) => {
-    const numerator = value * denominator;
-    const roundedNumerator = roundFloatingPointInaccuracies(numerator, 8, 1e-4);
-    const roundedNumeratorEntropy = calculateRawNumberEntropy(roundedNumerator);
-    return roundedNumeratorEntropy;
-  });
-  const minNumeratorEntropy = Math.min(...numeratorEntropies);
-  if (minNumeratorEntropy < rawBaseNumberEntropy / 2) {
-    return minNumeratorEntropy;
+  const tolerance = 0.001; // Tolerance for detecting fractions
+
+  const numeratorEntropies = denominators
+    .map((denominator) => {
+      const numerator = Math.abs(value) * denominator;
+      const roundedNumerator = Math.round(numerator);
+
+      // Check if the numerator is close enough to an integer
+      if (Math.abs(numerator - roundedNumerator) < tolerance) {
+        return roundedNumerator;
+      }
+
+      // If not close enough, return a very high entropy to exclude this candidate
+      return Infinity;
+    })
+    .filter((entropy) => entropy !== Infinity);
+
+  if (numeratorEntropies.length > 0) {
+    const minNumeratorEntropy = Math.min(...numeratorEntropies);
+    // Only use the fraction if it gives significantly lower entropy
+    if (minNumeratorEntropy < rawBaseNumberEntropy / 2) {
+      return minNumeratorEntropy;
+    }
   }
+
   return rawBaseNumberEntropy;
 }
 

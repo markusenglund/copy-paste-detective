@@ -40,4 +40,9 @@ describe("calculateNumberEntropy", () => {
     expect(calculateNumberEntropy(1)).toBe(1);
     expect(calculateNumberEntropy(-1.327)).toBe(1327);
   });
+
+  it("Correctly handles regular high entropy numbers", () => {
+    expect(calculateNumberEntropy(-19.15615292022578)).toBe(1915615292022578);
+    expect(calculateNumberEntropy(1915615292022578)).toBe(1915615292022578);
+  });
 });

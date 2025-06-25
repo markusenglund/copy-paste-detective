@@ -55,7 +55,7 @@ export class DuplicateRow {
       return SuspicionLevel.High;
     } else if (this.matrixSizeAdjustedEntropyScore > 9) {
       return SuspicionLevel.Medium;
-    } else if (this.matrixSizeAdjustedEntropyScore > 7) {
+    } else if (this.matrixSizeAdjustedEntropyScore > 6) {
       return SuspicionLevel.Low;
     } else {
       return SuspicionLevel.None;
