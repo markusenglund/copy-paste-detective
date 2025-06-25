@@ -89,12 +89,7 @@ describe("findDuplicateRows", () => {
     test("should handle empty sheets", () => {
       const data = [["ID", "Value"]]; // Only header row
 
-      const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization(["ID"]);
-
-      const result = findDuplicateRows(sheet, columnCategorization);
-
-      expect(result.duplicateRows).toHaveLength(0);
+      expect(() => createMockSheet("TestSheet", data)).toThrow();
     });
 
     test("should return empty result when no unique columns are found", () => {

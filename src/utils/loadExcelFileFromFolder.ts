@@ -23,18 +23,21 @@ export function loadExcelFileFromFolder(
     );
   }
 
-  // Load Excel file
   const selectedFile = metadata.files[fileIndex];
   const excelPath = path.join(datasetFolder, selectedFile.name);
   const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
 
-  // Create Sheet objects
-  const sheets = workbook.SheetNames.map((sheetName) => {
+  const sheets: Sheet[] = [];
+  workbook.SheetNames.forEach((sheetName) => {
     const workbookSheet = workbook.Sheets[sheetName];
-    return new Sheet(workbookSheet, sheetName);
+    try {
+      const sheet = new Sheet(workbookSheet, sheetName);
+      sheets.push(sheet);
+    } catch (err) {
+      console.log(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
+    }
   });
 
-  // Read README content
   const readmePath = path.join(datasetFolder, "README.md");
   const readmeContent = readFileSync(readmePath, "utf-8");
 

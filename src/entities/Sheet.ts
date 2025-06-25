@@ -15,6 +15,7 @@ export class Sheet {
   public readonly enhancedMatrix: EnhancedCell[][];
   public readonly invertedEnhancedMatrix: EnhancedCell[][];
   public readonly numNumericCells: number;
+  public readonly sampleData: string[][];
   public readonly mergedRanges: MergedRange[];
   public readonly range: xlsx.Range;
   private readonly workbookSheet: xlsx.WorkSheet;
@@ -42,6 +43,7 @@ export class Sheet {
 
     this.numNumericCells = this.getNumNumericCells();
     this.name = sheetName;
+    this.sampleData = this.getSampleData(2);
   }
 
   getColumns(): Column[] {
@@ -63,6 +65,16 @@ export class Sheet {
 
   get columnNames(): string[] {
     return this.getColumns().map((column) => column.combinedColumnName);
+  }
+
+  getSampleData(numRows: number): string[][] {
+    const sampleData = this.enhancedMatrix
+      .slice(this.firstDataRowIndex, this.firstDataRowIndex + numRows)
+      .map((row) => row.map((cell) => String(cell.value || "")));
+    if (sampleData.length < numRows) {
+      throw new Error(`Couldn't find at least ${numRows} data rows`);
+    }
+    return sampleData;
   }
 
   /**
@@ -128,9 +140,9 @@ export class Sheet {
     // We assume that a row with only cells that are analyzable is a data row, while rows with non-analyzable cells are header rows
     while (this.enhancedMatrix[rowIndex]?.every((cell) => !cell.isAnalyzable)) {
       headerRowIndices.push(rowIndex);
-      if (headerRowIndices.length > 5) {
+      if (headerRowIndices.length > 10) {
         throw new Error(
-          `Unexpectedly didn't find any rows in the first five rows with analyzable data`,
+          `Unexpectedly didn't find any rows in the first ten rows with analyzable data`,
         );
       }
       rowIndex++;
