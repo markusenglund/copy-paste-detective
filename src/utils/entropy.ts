@@ -46,8 +46,10 @@ function calculateRawNumberEntropy(value: number): number {
 }
 
 export function calculateEntropyScore(rawEntropy: number): number {
+  if (rawEntropy <= 1) {
+    return 0;
+  }
   // Prevent extremely large numbers as well numbers below 100 from having an outsized effect on the entropy score
-
   if (rawEntropy < 100) {
     return Math.log10(rawEntropy);
   }

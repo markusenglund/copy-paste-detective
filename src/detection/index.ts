@@ -60,7 +60,7 @@ export function findRepeatedSequences(
   const matrix = sheet.invertedEnhancedMatrix;
 
   const repeatedSequences: RepeatedColumnSequence[] = [];
-  const positionsByValue = new Map<number, Position[]>();
+  const previouslySeenPositionsByValue = new Map<number, Position[]>();
   const checkedPositionPairs = new Set<string>();
   for (const columnIndex of uniqueColumnIndices) {
     for (let rowIndex = 0; rowIndex < matrix[columnIndex].length; rowIndex++) {
@@ -71,46 +71,64 @@ export function findRepeatedSequences(
       const cellData = matrix[columnIndex]?.[rowIndex];
       if (cellData?.isAnalyzable) {
         const cellValue = cellData.value as number;
-        const positions = positionsByValue.get(cellValue) ?? [];
+        const previouslySeenPositions =
+          previouslySeenPositionsByValue.get(cellValue) ?? [];
         const newPosition: Position = {
           column: columnIndex,
           startRow: rowIndex,
           cellId: cellData.cellId,
         };
-        if (positions.length < 100) {
-          for (const position of positions) {
+
+        if (previouslySeenPositions.length < 100) {
+          for (const previouslySeenPosition of previouslySeenPositions) {
             if (
               checkedPositionPairs.has(
-                `${position.column}-${position.startRow}-${columnIndex}-${rowIndex}`,
+                `${previouslySeenPosition.column}-${previouslySeenPosition.startRow}-${columnIndex}-${rowIndex}`,
               )
             ) {
               continue;
             }
-            // If the values are on the same row, skip since this is often expected to be the case in legitimate data (only in inverted mode, since the same is not true for columns)
-            if (position.startRow === rowIndex) {
+            // If the values are on the same row, skip since this is often expected to be the case in legitimate data
+            if (previouslySeenPosition.startRow === rowIndex) {
               continue;
             }
+
             let length = 1;
             const repeatedValues: number[] = [cellValue];
-            while (
-              matrix[position.column][position.startRow + length]
-                ?.isAnalyzable &&
-              !(
-                position.column === columnIndex &&
-                rowIndex === position.startRow + length
-              ) &&
-              matrix[position.column][position.startRow + length].value ===
-                matrix[columnIndex][rowIndex + length]?.value
-            ) {
+            while (true) {
+              const isPreviouslySeenPositionAnalyzable =
+                matrix[previouslySeenPosition.column][
+                  previouslySeenPosition.startRow + length
+                ]?.isAnalyzable;
+              if (!isPreviouslySeenPositionAnalyzable) {
+                break;
+              }
+
+              const isComparingCellWithItself =
+                previouslySeenPosition.column === columnIndex &&
+                rowIndex === previouslySeenPosition.startRow + length;
+              if (isComparingCellWithItself) {
+                break;
+              }
+              const areValuesIdentical =
+                matrix[previouslySeenPosition.column][
+                  previouslySeenPosition.startRow + length
+                ].value === matrix[columnIndex][rowIndex + length]?.value;
+              if (!areValuesIdentical) {
+                break;
+              }
+
               repeatedValues.push(
-                matrix[position.column][position.startRow + length]
-                  .value as number,
+                matrix[previouslySeenPosition.column][
+                  previouslySeenPosition.startRow + length
+                ].value as number,
               );
               checkedPositionPairs.add(
-                `${position.column}-${position.startRow + length}-${columnIndex}-${rowIndex + length}`,
+                `${previouslySeenPosition.column}-${previouslySeenPosition.startRow + length}-${columnIndex}-${rowIndex + length}`,
               );
               length++;
             }
+
             const minSequenceLength = 2;
             if (repeatedValues.length < minSequenceLength) {
               continue;
@@ -118,18 +136,19 @@ export function findRepeatedSequences(
             const minSequenceEntropyScore = 10;
             const sequenceEntropyScore =
               calculateSequenceEntropyScore(repeatedValues);
+
             if (sequenceEntropyScore <= minSequenceEntropyScore) {
               continue;
             }
             if (
-              position.column === newPosition.column &&
-              position.startRow + length === newPosition.startRow
+              previouslySeenPosition.column === newPosition.column &&
+              previouslySeenPosition.startRow + length === newPosition.startRow
             ) {
               // Skip if the repeated sequences are back-to-back
               continue;
             }
             const repeatedSequence = new RepeatedColumnSequence({
-              positions: [position, newPosition],
+              positions: [previouslySeenPosition, newPosition],
               values: repeatedValues,
               sheet,
             });
@@ -138,8 +157,8 @@ export function findRepeatedSequences(
             }
           }
         }
-        positions.push(newPosition);
-        positionsByValue.set(cellValue, positions);
+        previouslySeenPositions.push(newPosition);
+        previouslySeenPositionsByValue.set(cellValue, previouslySeenPositions);
       }
     }
   }

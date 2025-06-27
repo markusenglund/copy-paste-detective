@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { calculateNumberEntropy } from "../entropy";
+import { calculateEntropyScore, calculateNumberEntropy } from "../entropy";
 
 describe("calculateNumberEntropy", () => {
   it("should return 100 for years between 1900-2030", () => {
@@ -44,5 +44,11 @@ describe("calculateNumberEntropy", () => {
   it("Correctly handles regular high entropy numbers", () => {
     expect(calculateNumberEntropy(-19.15615292022578)).toBe(1915615292022578);
     expect(calculateNumberEntropy(1915615292022578)).toBe(1915615292022578);
+  });
+});
+
+describe("calculateEntropyScore", () => {
+  it("Deals correctly with 0", () => {
+    expect(calculateEntropyScore(0)).toBe(0);
   });
 });
