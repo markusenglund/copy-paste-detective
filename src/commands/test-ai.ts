@@ -252,6 +252,36 @@ const testCases: TestCase[] = [
       },
     ],
   },
+  {
+    folder: "benchmark-files/doi_10_5061_dryad_5tb2rbpfh__v20250418",
+    fileIndex: 0,
+    description: "Drought decreases carbon flux in bamboo",
+    sheets: [
+      {
+        sheetName: "Leaves to Soil",
+        expectedCategorization: {
+          mustBeIncluded: [
+            "Leave 13C‰",
+            "Branches 13C‰",
+            "Roots 13C‰",
+            "0-15 Soil 13C‰",
+            "15-30 Soil 13C‰",
+            "Leave 13C atom%",
+            "Branches 13C atom%",
+            "Roots 13C atom%",
+            "0-15 Soil13C atom%",
+            "10-30 Soil 13C atom%",
+            "Leave 13C amount",
+            "Branches 13C amount",
+            "Roots 13C amount",
+            "0-15 Soil13C amount",
+            "10-30 Soil 13C amount",
+          ],
+          mustNotBeIncluded: ["sample time(d)"],
+        },
+      },
+    ],
+  },
 ];
 
 const program = new Command();
