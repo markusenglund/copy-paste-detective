@@ -4,7 +4,7 @@ export function calculateNumberEntropy(value: number): number {
     return 100;
   }
 
-  const denominators = [2, 3, 7, 9, 11];
+  const denominators = [2, 3, 7, 9, 11, 30, 300];
   const rawBaseNumberEntropy = calculateRawNumberEntropy(value);
   const tolerance = 0.001; // Tolerance for detecting fractions
 
