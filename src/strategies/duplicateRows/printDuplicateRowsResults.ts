@@ -1,3 +1,4 @@
+import { calculateNumberEntropy } from "src/utils/entropy";
 import { DuplicateRowsResult } from "../../types/strategies";
 import { levelToSymbol } from "../../utils/output";
 
@@ -15,18 +16,20 @@ export function printDuplicateRowsResults({
 
   const tableData = sortedDuplicateRows.map((duplicateRow) => {
     // Format shared values for display (show first few if many)
+    const sortedSharedValues = duplicateRow.sharedValues.toSorted((a, b) => {
+      const entropyA = calculateNumberEntropy(a);
+      const entropyB = calculateNumberEntropy(b);
+      return entropyB - entropyA;
+    });
     const sharedValuesDisplay =
-      duplicateRow.sharedValues.length > 3
-        ? `${duplicateRow.sharedValues.slice(0, 3).join(", ")} (+${duplicateRow.sharedValues.length - 3})`
-        : duplicateRow.sharedValues.join(", ");
+      sortedSharedValues.length > 3
+        ? `${sortedSharedValues.slice(0, 3).join(", ")} (+${sortedSharedValues.length - 3})`
+        : sortedSharedValues.join(", ");
 
-    // Format shared columns with both names and letters
-    const columnNames = duplicateRow.sheet.columnNames;
     let sharedColumnsDisplay = duplicateRow.sharedColumns
       .map((colIndex: number) => {
-        const columnName = columnNames[colIndex] || `Col${colIndex}`;
         const columnLetter = getColumnLetter(colIndex);
-        return `${columnName}(${columnLetter})`;
+        return columnLetter;
       })
       .join(", ");
     if (sharedColumnsDisplay.length > 30) {
