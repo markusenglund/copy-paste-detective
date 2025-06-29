@@ -74,7 +74,10 @@ export function runIndividualNumbersStrategy(
   }
 
   // Sort all duplicate values by entropy score (already sorted per sheet, but need to merge)
-  allDuplicateValues.sort((a, b) => b.entropyScore - a.entropyScore);
+  allDuplicateValues.sort(
+    (a, b) =>
+      b.matrixSizeAdjustedEntropyScore - a.matrixSizeAdjustedEntropyScore,
+  );
 
   const executionTime = performance.now() - startTime;
 

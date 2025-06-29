@@ -194,16 +194,16 @@ export function findDuplicateValues(
 
   const duplicateValues: DuplicateValue[] = [...cellsByNumericValue.entries()]
     .filter(([_value, cells]) => cells.length > 1)
-    .map(([value, cells]) => {
-      const entropy = calculateNumberEntropy(value);
-      return new DuplicateValue(value, entropy, sheet, cells);
-    })
+    .map(([value, cells]) => new DuplicateValue(value, sheet, cells))
     .filter((duplicateValue) =>
       [SuspicionLevel.Low, SuspicionLevel.Medium, SuspicionLevel.High].includes(
         duplicateValue.suspicionLevel,
       ),
     )
-    .toSorted((a, b) => b.entropyScore - a.entropyScore);
+    .toSorted(
+      (a, b) =>
+        b.occurenceAdjustedEntropyScore - a.occurenceAdjustedEntropyScore,
+    );
 
   return {
     duplicateValues,

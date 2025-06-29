@@ -145,7 +145,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
       const cellIds = targetDuplicate!.cells.map((cell) => cell.cellId);
       expect(cellIds).toContain("S15");
       expect(cellIds).toContain("S353");
-      expect(targetDuplicate!.suspicionLevel).toBe(SuspicionLevel.Medium);
+      expect(targetDuplicate!.suspicionLevel).toBe(SuspicionLevel.Low);
     });
 
     it("should detect duplicate value 118.8588 in S85 & S193", async () => {

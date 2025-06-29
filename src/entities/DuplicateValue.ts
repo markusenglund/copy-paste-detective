@@ -1,6 +1,10 @@
 import { Sheet } from "./Sheet";
 import { EnhancedCell } from "./EnhancedCell";
 import { SuspicionLevel } from "../types";
+import {
+  calculateEntropyScore,
+  calculateNumberEntropy,
+} from "../utils/entropy";
 
 export class DuplicateValue {
   public readonly value: number;
@@ -8,40 +12,41 @@ export class DuplicateValue {
   public readonly sheet: Sheet;
   public readonly cells: EnhancedCell[];
 
-  constructor(
-    value: number,
-    entropy: number,
-    sheet: Sheet,
-    cells: EnhancedCell[],
-  ) {
+  constructor(value: number, sheet: Sheet, cells: EnhancedCell[]) {
     this.value = value;
-    this.entropy = entropy;
     this.sheet = sheet;
     this.cells = cells;
+    this.entropy = calculateNumberEntropy(value);
   }
 
   get numOccurences(): number {
     return this.cells.length;
   }
 
-  get entropyScore(): number {
+  get numberEntropyScore(): number {
+    return calculateEntropyScore(this.entropy);
+  }
+
+  get occurenceAdjustedEntropyScore(): number {
+    // Properly balance entropyscore and occurences by giving entropy score slightly higher impact
     const occurenceAdjustedEntropy =
-      this.entropy * Math.log2(this.numOccurences);
+      Math.pow(this.numberEntropyScore, 1.5) * Math.log2(this.numOccurences);
     return occurenceAdjustedEntropy;
   }
 
   get matrixSizeAdjustedEntropyScore(): number {
-    const matrixSize = this.sheet.numNumericCells;
-    return this.entropyScore / Math.log2(matrixSize);
+    return (
+      this.occurenceAdjustedEntropyScore / this.sheet.logNumberCountModifier
+    );
   }
 
   get suspicionLevel(): SuspicionLevel {
     const score = this.matrixSizeAdjustedEntropyScore;
-    if (score > 10_000_000) {
+    if (score > 40) {
       return SuspicionLevel.High;
-    } else if (score > 100_000) {
+    } else if (score > 22) {
       return SuspicionLevel.Medium;
-    } else if (score > 2_000) {
+    } else if (score > 15) {
       return SuspicionLevel.Low;
     } else {
       return SuspicionLevel.None;
