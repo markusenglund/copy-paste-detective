@@ -39,7 +39,11 @@ export function calculateNumberEntropy(value: number): number {
     // Round to two decimals so it can deal with square root values of decimal numbers
     const roundedSquaredValue = Math.round(100 * squaredValue) / 100;
     if (Math.abs(squaredValue - roundedSquaredValue) < tolerance / 100) {
-      return calculateRawNumberEntropy(roundedSquaredValue);
+      const roundedSquaredEntropy =
+        calculateRawNumberEntropy(roundedSquaredValue);
+      if (roundedSquaredEntropy < rawBaseNumberEntropy) {
+        return calculateRawNumberEntropy(roundedSquaredValue);
+      }
     }
   }
 

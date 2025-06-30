@@ -227,10 +227,11 @@ export class Sheet {
     const enhancedMatrix: EnhancedCell[][] = [];
 
     // Initialize matrix with proper dimensions
+    const maxColumns = 100;
+    const topColumnIndex = Math.min(this.range.e.c, maxColumns);
     for (let row = 0; row <= this.range.e.r; row++) {
       enhancedMatrix[row] = [];
-
-      for (let col = 0; col <= this.range.e.c; col++) {
+      for (let col = 0; col <= topColumnIndex; col++) {
         const cellAddress = xlsx.utils.encode_cell({ r: row, c: col });
         const originalCell: xlsx.CellObject | null =
           this.workbookSheet[cellAddress] || null;
