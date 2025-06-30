@@ -24,7 +24,12 @@ export class DuplicateValue {
   }
 
   get numberEntropyScore(): number {
-    return calculateEntropyScore(this.entropy);
+    const minEntropy = 1000;
+    if (this.entropy < minEntropy) {
+      return 0;
+    }
+    const rawEntropyScore = calculateEntropyScore(this.entropy);
+    return rawEntropyScore;
   }
 
   get occurenceAdjustedEntropyScore(): number {
