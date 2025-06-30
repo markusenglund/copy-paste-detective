@@ -3,12 +3,26 @@ export function calculateNumberEntropy(value: number): number {
   if (value >= 1900 && value <= 2030 && Number.isInteger(value)) {
     return 100;
   }
-
-  const denominators = [2, 3, 7, 9, 11, 30, 300];
   const rawBaseNumberEntropy = calculateRawNumberEntropy(value);
-  const tolerance = 0.001; // Tolerance for detecting fractions
 
-  const numeratorEntropies = denominators
+  const tolerance = 0.001; // Tolerance for detecting fractions
+  if (rawBaseNumberEntropy > 100000 && value > 0.1) {
+    const squaredValue = Math.pow(value, 2);
+    // Round to two decimals so it can deal with square root values of decimal numbers
+    const roundedSquaredValue = Math.round(100 * squaredValue) / 100;
+    if (Math.abs(squaredValue - roundedSquaredValue) < tolerance / 100) {
+      const roundedSquaredEntropy =
+        calculateRawNumberEntropy(roundedSquaredValue);
+      if (roundedSquaredEntropy < rawBaseNumberEntropy) {
+        return calculateRawNumberEntropy(roundedSquaredValue);
+      }
+    }
+  }
+
+  const repeatingDecimalDenominators = [3, 7, 9, 11, 30, 90, 300];
+  const terminatingDecimalDenominators = [2, 4, 8];
+
+  const repeatingDecimalNumeratorEntropies = repeatingDecimalDenominators
     .map((denominator) => {
       const numerator = Math.abs(value) * denominator;
       const roundedNumerator = Math.round(numerator);
@@ -26,25 +40,20 @@ export function calculateNumberEntropy(value: number): number {
     })
     .filter((entropy) => entropy !== Infinity);
 
-  if (numeratorEntropies.length > 0) {
-    const minNumeratorEntropy = Math.min(...numeratorEntropies);
-    // Only use the fraction if it gives significantly lower entropy
-    if (minNumeratorEntropy < rawBaseNumberEntropy / 2) {
-      return minNumeratorEntropy;
-    }
-  }
+  const terminatingDecimalNumeratorEntropies =
+    terminatingDecimalDenominators.map((denominator) =>
+      calculateRawNumberEntropy(value * denominator),
+    );
 
-  if (rawBaseNumberEntropy > 100000 && value > 0.1) {
-    const squaredValue = Math.pow(value, 2);
-    // Round to two decimals so it can deal with square root values of decimal numbers
-    const roundedSquaredValue = Math.round(100 * squaredValue) / 100;
-    if (Math.abs(squaredValue - roundedSquaredValue) < tolerance / 100) {
-      const roundedSquaredEntropy =
-        calculateRawNumberEntropy(roundedSquaredValue);
-      if (roundedSquaredEntropy < rawBaseNumberEntropy) {
-        return calculateRawNumberEntropy(roundedSquaredValue);
-      }
-    }
+  const decimalNumeratorEntropies = [
+    ...repeatingDecimalNumeratorEntropies,
+    ...terminatingDecimalNumeratorEntropies,
+  ];
+
+  const minNumeratorEntropy = Math.min(...decimalNumeratorEntropies);
+  // Only use the fraction if it gives significantly lower entropy
+  if (minNumeratorEntropy < rawBaseNumberEntropy / 2) {
+    return minNumeratorEntropy;
   }
 
   return rawBaseNumberEntropy;
