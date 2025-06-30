@@ -55,7 +55,7 @@ describe("Drought decreases carbon flux in bamboo", () => {
 
       expect(targetDuplicate).toBeDefined();
       expect(targetDuplicate!.sharedColumns).toHaveLength(7);
-      expect(targetDuplicate?.suspicionLevel).toBe(SuspicionLevel.Medium);
+      expect(targetDuplicate!.suspicionLevel).toBe(SuspicionLevel.High);
     });
 
     it("should detect duplicate row pair at rows 138 and 147 with 2 matching columns", async () => {

@@ -13,8 +13,11 @@ export function calculateNumberEntropy(value: number): number {
       const numerator = Math.abs(value) * denominator;
       const roundedNumerator = Math.round(numerator);
 
-      // Check if the numerator is close enough to an integer
-      if (Math.abs(numerator - roundedNumerator) < tolerance) {
+      // Check if the numerator is close enough to a non-zero integer
+      if (
+        Math.abs(numerator - roundedNumerator) < tolerance &&
+        roundedNumerator !== 0
+      ) {
         return roundedNumerator;
       }
 
@@ -28,6 +31,15 @@ export function calculateNumberEntropy(value: number): number {
     // Only use the fraction if it gives significantly lower entropy
     if (minNumeratorEntropy < rawBaseNumberEntropy / 2) {
       return minNumeratorEntropy;
+    }
+  }
+
+  if (rawBaseNumberEntropy > 100000 && value > 0.1) {
+    const squaredValue = Math.pow(value, 2);
+    // Round to two decimals so it can deal with square root values of decimal numbers
+    const roundedSquaredValue = Math.round(100 * squaredValue) / 100;
+    if (Math.abs(squaredValue - roundedSquaredValue) < tolerance / 100) {
+      return calculateRawNumberEntropy(roundedSquaredValue);
     }
   }
 

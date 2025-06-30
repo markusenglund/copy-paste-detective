@@ -36,6 +36,15 @@ describe("calculateNumberEntropy", () => {
     expect(calculateNumberEntropy(9.20666666666667)).toBe(2762);
   });
 
+  it("should handle values created by square root", () => {
+    expect(calculateNumberEntropy(0.547722557505166)).toBe(3); // Sqrt(0.3)
+    expect(calculateNumberEntropy(1.58113883008419)).toBe(25); // Sqrt(2.5)
+  });
+  // Very small numbers will look close to the integer zero, but this does not mean that they are the result of a square root operation
+  it("should handle values very close to zero", () => {
+    expect(calculateNumberEntropy(0.000175420065225951)).toBe(175420065225951);
+    expect(calculateNumberEntropy(-0.000386341501576126)).toBe(386341501576126);
+  });
   it("should handle edge cases", () => {
     expect(calculateNumberEntropy(0)).toBe(0);
     expect(calculateNumberEntropy(1)).toBe(1);
