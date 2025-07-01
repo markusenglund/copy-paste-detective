@@ -91,6 +91,7 @@ const DatasetSchema = z.object({
   title: z.string(),
   authors: z.array(AuthorSchema),
   abstract: z.string(),
+  usageNotes: z.string().optional(),
   funders: z.array(FunderSchema).optional(),
   keywords: z.array(z.string()).optional(),
   locations: z.array(LocationSchema).optional(),
