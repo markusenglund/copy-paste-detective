@@ -46,9 +46,9 @@ const LocationSchema = z.object({
 
 // Related work schema
 const RelatedWorkSchema = z.object({
-  relationship: z.string().optional(),
-  identifierType: z.string().optional(),
-  identifier: z.string().optional(),
+  relationship: z.string(),
+  identifierType: z.string(),
+  identifier: z.string(),
 });
 
 // License schema - it's just a string
@@ -90,19 +90,19 @@ const DatasetSchema = z.object({
   storageSize: z.number(),
   title: z.string(),
   authors: z.array(AuthorSchema),
-  abstract: z.string().optional(),
+  abstract: z.string(),
   funders: z.array(FunderSchema).optional(),
   keywords: z.array(z.string()).optional(),
   locations: z.array(LocationSchema).optional(),
-  relatedWorks: z.array(RelatedWorkSchema).optional(),
-  relatedPublicationISSN: z.string().optional(),
+  relatedWorks: z.array(RelatedWorkSchema),
+  relatedPublicationISSN: z.string(),
   license: LicenseSchema.optional(),
   versionNumber: z.number().optional(),
   versionStatus: z.string().optional(),
   versionChanges: z.string().optional(),
   curationStatus: z.string().optional(),
-  publicationDate: z.string().optional(),
-  lastModificationDate: z.string().optional(),
+  publicationDate: z.string(),
+  lastModificationDate: z.string(),
   visibility: z.string().optional(),
   sharingLink: z.string().optional(),
   _links: LinksSchema,
@@ -168,8 +168,8 @@ const FileSchema = z.object({
   size: z.number(),
   mimeType: z.string(),
   status: z.string(),
-  digest: z.string(),
-  digestType: z.string(),
+  digest: z.string().optional(),
+  digestType: z.string().optional(),
 });
 
 export const FilesResponseSchema = z.object({
