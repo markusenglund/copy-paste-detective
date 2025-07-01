@@ -1,5 +1,5 @@
-import { calculateNumberEntropy } from "src/utils/entropy";
 import { DuplicateRowsResult } from "../../types/strategies";
+import { calculateNumberEntropy } from "../../utils/entropy";
 import { levelToSymbol } from "../../utils/output";
 
 export function printDuplicateRowsResults({

@@ -49,7 +49,7 @@ program
     );
     let currentPage = db.data.lastPageIndexed ? db.data.lastPageIndexed + 1 : 1;
     console.log(`Starting indexing from page ${currentPage}`);
-    while (currentPage < 3) {
+    while (currentPage < 13) {
       console.log(`Fetching page ${currentPage}`);
       const data = await listDatasets({ page: currentPage, perPage: 20 });
       const extDryadDatasets = data._embedded["stash:datasets"];
@@ -99,7 +99,7 @@ program
           abstract: extDataset.abstract,
           usageNotes: extDataset.usageNotes,
           primaryArticleLink:
-            extDataset.relatedWorks.find(
+            extDataset.relatedWorks?.find(
               (work) => work.relationship === "primary_article",
             )?.identifier || undefined,
           journalIssn: extDataset.relatedPublicationISSN,
@@ -125,6 +125,9 @@ program
       }
       db.data.lastPageIndexed = currentPage;
       await db.write();
+      console.log(
+        `Finished indexing page ${currentPage} out of ${Math.ceil(data.total / data.count)}`,
+      );
       currentPage++;
     }
   });

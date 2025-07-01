@@ -1,8 +1,7 @@
 import { createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
+import { fetchToken } from "./fetchToken";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 
@@ -18,6 +17,7 @@ export async function downloadFile({
   datasetId,
 }: Params): Promise<string> {
   const url = `${DRYAD_BASE_API_URL}/files/${fileId}/download`;
+  const accessToken = await fetchToken();
 
   // Create downloads directory structure: downloads/dataset_{datasetId}/filename
   const downloadDir = join(process.cwd(), "downloads", `dataset_${datasetId}`);
@@ -27,7 +27,11 @@ export async function downloadFile({
   await mkdir(dirname(filePath), { recursive: true });
 
   // Download the file
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error(

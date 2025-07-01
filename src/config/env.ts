@@ -8,6 +8,10 @@ const envSchema = z.object({
   GEMINI_API_KEY: z
     .string()
     .min(1, "GEMINI_API_KEY must be a non-empty string"),
+  DRYAD_ACCOUNT_ID: z
+    .string()
+    .min(1, "DRYAD_ACCOUNT_ID must be a non-empty string"),
+  DRYAD_SECRET: z.string().min(1, "DRYAD_SECRET must be a non-empty string"),
 });
 
 type EnvSchema = z.infer<typeof envSchema>;
@@ -33,4 +37,6 @@ const env = validateEnv();
 
 export const config = {
   geminiApiKey: env.GEMINI_API_KEY,
+  dryadAccountId: env.DRYAD_ACCOUNT_ID,
+  dryadSecret: env.DRYAD_SECRET,
 } as const;
