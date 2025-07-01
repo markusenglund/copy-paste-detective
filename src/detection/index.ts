@@ -6,10 +6,7 @@ import {
 import { DuplicateValue } from "../entities/DuplicateValue";
 import { Sheet } from "../entities/Sheet";
 import { type EnhancedCell } from "../entities/EnhancedCell";
-import {
-  calculateNumberEntropy,
-  calculateSequenceEntropyScore,
-} from "../utils/entropy";
+import { calculateSequenceEntropyScore } from "../utils/entropy";
 import { ColumnCategorization } from "../ai/geminiService";
 
 export function deduplicateSortedSequences(
