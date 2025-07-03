@@ -16,7 +16,6 @@ let accessToken: string | null = null;
 export async function fetchToken(): Promise<string> {
   // Check if the token is already cached
   if (accessToken) {
-    console.log("Using memory cached token");
     return accessToken;
   }
   const db = await JSONFilePreset<TokenResponse | null>(

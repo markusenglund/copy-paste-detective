@@ -87,7 +87,7 @@ const LinksSchema = z.object({
 const DatasetSchema = z.object({
   id: z.number(),
   identifier: z.string(),
-  storageSize: z.number(),
+  storageSize: z.number().optional(),
   title: z.string(),
   authors: z.array(AuthorSchema),
   abstract: z.string(),
@@ -96,7 +96,7 @@ const DatasetSchema = z.object({
   keywords: z.array(z.string()).optional(),
   locations: z.array(LocationSchema).optional(),
   relatedWorks: z.array(RelatedWorkSchema).optional(),
-  relatedPublicationISSN: z.string(),
+  relatedPublicationISSN: z.string().optional(),
   license: LicenseSchema.optional(),
   versionNumber: z.number().optional(),
   versionStatus: z.string().optional(),

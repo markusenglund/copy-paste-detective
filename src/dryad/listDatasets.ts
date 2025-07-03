@@ -30,7 +30,9 @@ export async function listDatasets({
   }
 
   const rawData = await response.json();
-  const validatedData = DatasetResponseSchema.parse(rawData);
-
-  return validatedData;
+  const zodResult = DatasetResponseSchema.safeParse(rawData);
+  if (!zodResult.success) {
+    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+  }
+  return zodResult.data;
 }

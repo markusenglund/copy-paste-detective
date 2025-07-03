@@ -22,7 +22,9 @@ export async function listFiles({ version }: Params): Promise<FilesResponse> {
   }
 
   const rawData = await response.json();
-  const validatedData = FilesResponseSchema.parse(rawData);
-
-  return validatedData;
+  const zodResult = FilesResponseSchema.safeParse(rawData);
+  if (!zodResult.success) {
+    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+  }
+  return zodResult.data;
 }
