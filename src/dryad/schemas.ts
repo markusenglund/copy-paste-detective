@@ -162,9 +162,11 @@ const FileSchema = z.object({
     "stash:version": z.object({
       href: z.string(),
     }),
-    "stash:download": z.object({
-      href: z.string(),
-    }),
+    "stash:download": z
+      .object({
+        href: z.string(),
+      })
+      .optional(),
     curies: z.array(
       z.object({
         name: z.string(),

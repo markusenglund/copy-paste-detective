@@ -11,7 +11,9 @@ export async function indexDatasetPage(
   currentPage: number,
   alreadyIndexedDatasetIds: Set<number>,
 ): Promise<void> {
-  const data = await listDatasetsMutex.withLock(() => listDatasets({ page: currentPage, perPage: 20 }));
+  const data = await listDatasetsMutex.withLock(() =>
+    listDatasets({ page: currentPage, perPage: 20 }),
+  );
   const extDryadDatasets = data._embedded["stash:datasets"].filter(
     (dataset: Dataset | ForbiddenDataset): dataset is Dataset =>
       !(
@@ -33,9 +35,19 @@ export async function indexDatasetPage(
     const filesResponse = await listFiles({ version: latestVersionId });
     const extDryadFiles = filesResponse._embedded["stash:files"];
 
-    const extDryadExcelFiles = extDryadFiles.filter(
-      (file) => file.path.endsWith(".xlsx") || file.path.endsWith(".xls"),
-    );
+    const extDryadExcelFiles = extDryadFiles
+      .filter(
+        (file) => file.path.endsWith(".xlsx") || file.path.endsWith(".xls"),
+      )
+      .filter((file) => {
+        if (!file._links["stash:download"]) {
+          console.warn(
+            `File ${file.path} from dataset ${extDataset.id} has no download link, skipping...`,
+          );
+          return false;
+        }
+        return true;
+      });
     if (extDryadExcelFiles.length === 0) {
       continue;
     }
@@ -43,7 +55,7 @@ export async function indexDatasetPage(
     const extDryadReadmeFile = extDryadFiles.find((file) =>
       /readme\.(txt|md)/i.test(file.path),
     );
-    const readmeFile = extDryadReadmeFile
+    const readmeFile = extDryadReadmeFile?._links["stash:download"]
       ? {
           filename: extDryadReadmeFile.path,
           size: extDryadReadmeFile.size,
@@ -71,7 +83,7 @@ export async function indexDatasetPage(
       excelFiles: extDryadExcelFiles.map((file) => ({
         filename: file.path,
         size: file.size,
-        fileId: Number(file._links["stash:download"].href.split("/").at(-2)),
+        fileId: Number(file._links["stash:download"]!.href.split("/").at(-2)),
       })),
       readmeFile,
       indexedTimestamp: new Date().toISOString(),
