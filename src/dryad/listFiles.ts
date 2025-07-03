@@ -6,7 +6,17 @@ const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 type Params = {
   version: number;
 };
-export async function listFiles({ version }: Params): Promise<FilesResponse> {
+
+type ErrorResponse = {
+  error: {
+    message: string;
+    status: number;
+  };
+};
+
+export async function listFiles({
+  version,
+}: Params): Promise<FilesResponse | ErrorResponse> {
   const accessToken = await fetchToken();
 
   const url = `${DRYAD_BASE_API_URL}/versions/${version}/files`;
@@ -19,9 +29,18 @@ export async function listFiles({ version }: Params): Promise<FilesResponse> {
       });
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to fetch file list: ${response.status} ${response.statusText}`,
+        console.warn(
+          `Failed to fetch file list at ${url} - ${response.status} ${response.statusText}`,
         );
+        if (response.status === 404) {
+          return {
+            error: {
+              message: response.statusText,
+              status: response.status,
+            },
+          };
+        }
+        throw new Error(`${response.status} ${response.statusText}`);
       }
       const data = await response.json();
       return data;
@@ -33,6 +52,14 @@ export async function listFiles({ version }: Params): Promise<FilesResponse> {
       },
     },
   );
+
+  if (
+    typeof responseData === "object" &&
+    responseData !== null &&
+    "error" in responseData
+  ) {
+    return responseData as ErrorResponse;
+  }
 
   const zodResult = FilesResponseSchema.safeParse(responseData);
   if (!zodResult.success) {

@@ -33,6 +33,10 @@ export async function indexDatasetPage(
     const versionUrlPath = extDataset._links["stash:version"].href;
     const latestVersionId = Number(versionUrlPath.split("/").at(-1));
     const filesResponse = await listFiles({ version: latestVersionId });
+    if ("error" in filesResponse) {
+      continue;
+    }
+
     const extDryadFiles = filesResponse._embedded["stash:files"];
 
     const extDryadExcelFiles = extDryadFiles

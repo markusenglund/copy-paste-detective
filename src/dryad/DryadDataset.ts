@@ -9,7 +9,7 @@ export type DryadDataset = {
   dryadDoi: string;
   originalFileSize?: number;
   title: string;
-  abstract: string;
+  abstract?: string;
   usageNotes?: string;
   primaryArticleLink?: string;
   journalIssn?: string;

@@ -47,7 +47,7 @@ const LocationSchema = z.object({
 // Related work schema
 const RelatedWorkSchema = z.object({
   relationship: z.string(),
-  identifierType: z.string(),
+  identifierType: z.string().optional(),
   identifier: z.string(),
 });
 
@@ -90,7 +90,7 @@ const DatasetSchema = z.object({
   storageSize: z.number().optional(),
   title: z.string(),
   authors: z.array(AuthorSchema),
-  abstract: z.string(),
+  abstract: z.string().optional(),
   usageNotes: z.string().optional(),
   funders: z.array(FunderSchema).optional(),
   keywords: z.array(z.string()).optional(),
