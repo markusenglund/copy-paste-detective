@@ -109,6 +109,14 @@ const DatasetSchema = z.object({
   _links: LinksSchema,
 });
 
+const ForbiddenDatasetSchema = z.object({
+  identifier: z.string(),
+  id: z.number(),
+  message: z.literal(
+    "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements.",
+  ),
+});
+
 // Pagination links schema
 const PaginationLinksSchema = z.object({
   self: z.object({
@@ -142,7 +150,7 @@ export const DatasetResponseSchema = z.object({
   count: z.number(),
   total: z.number(),
   _embedded: z.object({
-    "stash:datasets": z.array(DatasetSchema),
+    "stash:datasets": z.array(z.union([DatasetSchema, ForbiddenDatasetSchema])),
   }),
 });
 
@@ -185,5 +193,6 @@ export const FilesResponseSchema = z.object({
 // Export the inferred type
 export type DatasetResponse = z.infer<typeof DatasetResponseSchema>;
 export type Dataset = z.infer<typeof DatasetSchema>;
+export type ForbiddenDataset = z.infer<typeof ForbiddenDatasetSchema>;
 export type FilesResponse = z.infer<typeof FilesResponseSchema>;
 export type File = z.infer<typeof FileSchema>;

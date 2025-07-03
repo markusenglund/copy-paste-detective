@@ -31,11 +31,17 @@ program
     await pMap(
       pagesToIndex,
       async (page) => {
+        const startTime = Date.now();
         await indexDatasetPage(page, alreadyIndexedDatasetIds);
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 25000) {
+          console.log(`Page ${page} indexed too fast, waiting to avoid 429...`);
+          await new Promise((resolve) => setTimeout(resolve, 25000 - elapsed));
+        }
         db.data.lastPageIndexed = page;
         await db.write();
       },
-      { concurrency: 3 },
+      { concurrency: 2 },
     );
     console.log(
       `Finished indexing ${pagesToIndex.length} pages, last indexed page: ${db.data.lastPageIndexed}`,

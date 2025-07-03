@@ -2,16 +2,26 @@ import { listDatasets } from "../dryad/listDatasets";
 import { listFiles } from "../dryad/listFiles";
 import { DryadDataset } from "./DryadDataset";
 import { db } from "./datasetsDb";
+import { Dataset, ForbiddenDataset } from "./schemas";
+import Mutex from "p-mutex";
+
+const listDatasetsMutex = new Mutex();
 
 export async function indexDatasetPage(
   currentPage: number,
   alreadyIndexedDatasetIds: Set<number>,
 ): Promise<void> {
-  console.log(`Fetching page ${currentPage}`);
-  const data = await listDatasets({ page: currentPage, perPage: 20 });
-  const extDryadDatasets = data._embedded["stash:datasets"];
+  const data = await listDatasetsMutex.withLock(() => listDatasets({ page: currentPage, perPage: 20 }));
+  const extDryadDatasets = data._embedded["stash:datasets"].filter(
+    (dataset: Dataset | ForbiddenDataset): dataset is Dataset =>
+      !(
+        "message" in dataset &&
+        dataset.message ===
+          "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
+      ),
+  );
   console.log(`Fetched ${extDryadDatasets.length} datasets`);
-
+  let numDatasetsWithExcelFiles = 0;
   for (const extDataset of extDryadDatasets) {
     if (alreadyIndexedDatasetIds.has(extDataset.id)) {
       console.log(`Dataset ${extDataset.id} already indexed, skipping...`);
@@ -27,9 +37,6 @@ export async function indexDatasetPage(
       (file) => file.path.endsWith(".xlsx") || file.path.endsWith(".xls"),
     );
     if (extDryadExcelFiles.length === 0) {
-      console.log(
-        `Dataset ${extDataset.id} doesn't have any Excel files, skipping...`,
-      );
       continue;
     }
 
@@ -70,6 +77,7 @@ export async function indexDatasetPage(
       indexedTimestamp: new Date().toISOString(),
       updatedTimestamp: new Date().toISOString(),
     };
+    numDatasetsWithExcelFiles++;
     console.log(
       `Inserting dataset ${dataset.extId} with ${dataset.excelFiles.length} Excel files: ${dataset.excelFiles.map((file) => file.filename).join(", ")} Title: '${dataset.title}'`,
     );
@@ -78,6 +86,6 @@ export async function indexDatasetPage(
   }
 
   console.log(
-    `Finished indexing page ${currentPage} out of ${Math.ceil(data.total / data.count)}`,
+    `Finished indexing page ${currentPage} out of ${Math.ceil(data.total / data.count)}. ${numDatasetsWithExcelFiles} datasets with Excel files found out of ${data.count}.`,
   );
 }
