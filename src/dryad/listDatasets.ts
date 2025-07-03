@@ -32,7 +32,9 @@ export async function listDatasets({
   const rawData = await response.json();
   const zodResult = DatasetResponseSchema.safeParse(rawData);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+    console.warn(`Zod validation failed for ${url}`);
+    console.warn(JSON.stringify(rawData, null, 2));
+    throw zodResult.error;
   }
   return zodResult.data;
 }

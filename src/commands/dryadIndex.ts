@@ -23,7 +23,7 @@ program
     const pagesToIndex = Array.from(
       { length: totalPages - (db.data.lastPageIndexed ?? 0) },
       (_, i) => (db.data.lastPageIndexed ?? 0) + 1 + i,
-    ).slice(0, 20);
+    );
     const firstPageToIndex = db.data.lastPageIndexed
       ? db.data.lastPageIndexed + 1
       : 1;
@@ -35,7 +35,7 @@ program
         db.data.lastPageIndexed = page;
         await db.write();
       },
-      { concurrency: 5 },
+      { concurrency: 3 },
     );
     console.log(
       `Finished indexing ${pagesToIndex.length} pages, last indexed page: ${db.data.lastPageIndexed}`,
