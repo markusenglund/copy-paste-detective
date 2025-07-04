@@ -17,7 +17,7 @@ export const categorizeColumnsWithGemini: CategorizeColumnsFunction = async ({
   const columnCategorization = await geminiCategorizeColumns({
     paperName: excelFileData.articleName,
     excelFileName: excelFileData.excelFileName,
-    readmeContent: excelFileData.readmeContent,
+    readmeContent: excelFileData.dataDescription,
     columnNames,
     columnData: sampleData,
   });

@@ -1,6 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import { runStrategies } from "../runStrategies";
 import { StrategyName } from "../types/strategies";
+import { ExcelFileData } from "../types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
 
 function parseIntArgument(value: string): number {
@@ -50,7 +51,7 @@ program
   .action(async (folder, fileIndex, options) => {
     console.time("Total execution time");
 
-    let excelFileData;
+    let excelFileData: ExcelFileData;
     try {
       excelFileData = loadExcelFileFromFolder(folder, fileIndex);
     } catch (error) {

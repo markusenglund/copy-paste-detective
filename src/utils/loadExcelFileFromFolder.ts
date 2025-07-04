@@ -45,7 +45,6 @@ export function loadExcelFileFromFolder(
     sheets,
     excelFileName: selectedFile.name,
     articleName: metadata.name,
-    readmeContent,
-    excelDataFolder: datasetFolder,
+    dataDescription: readmeContent,
   };
 }
