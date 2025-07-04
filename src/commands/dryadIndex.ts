@@ -49,24 +49,3 @@ program
   });
 
 program.parse();
-
-// .filter((file) => {
-//   if (file.size < 100_000_000) {
-//     return true;
-//   }
-//   console.warn(
-//     `File ${file.path} (${formatSize(file.size)}) from dataset ${dataset.id} skipped due to exceeding size limit`,
-//   );
-//   return false;
-// });
-
-// for (const excelFile of excelFiles) {
-//   const fileId = Number(
-//     excelFile._links["stash:download"].href.split("/").at(-2),
-//   );
-//   await downloadFile({
-//     fileId,
-//     filename: excelFile.path,
-//     datasetId: dataset.id,
-//   });
-// }

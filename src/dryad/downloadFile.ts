@@ -19,13 +19,13 @@ export async function downloadFile({
   const url = `${DRYAD_BASE_API_URL}/files/${fileId}/download`;
   const accessToken = await fetchToken();
 
-  // Create downloads directory structure: downloads/dataset_{datasetId}/filename
-  const downloadDir = join(process.cwd(), "downloads", `dataset_${datasetId}`);
+  const downloadDir = join(process.cwd(), `data/dryad/files/${datasetId}`);
   const filePath = join(downloadDir, filename);
 
   // Ensure the directory exists
   await mkdir(dirname(filePath), { recursive: true });
 
+  console.log(`Downloading file: ${filename} from ${url}`);
   // Download the file
   const response = await fetch(url, {
     headers: {
