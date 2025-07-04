@@ -102,7 +102,7 @@ const DatasetSchema = z.object({
   versionStatus: z.string().optional(),
   versionChanges: z.string().optional(),
   curationStatus: z.string().optional(),
-  publicationDate: z.string(),
+  publicationDate: z.string().optional(),
   lastModificationDate: z.string(),
   visibility: z.string().optional(),
   sharingLink: z.string().optional(),

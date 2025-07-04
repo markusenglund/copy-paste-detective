@@ -70,6 +70,7 @@ export async function indexDatasetPage(
       : undefined;
 
     const dataset: DryadDataset = {
+      status: "indexed",
       extId: extDataset.id,
       dryadDoi: extDataset.identifier,
       originalFileSize: extDataset.storageSize,
@@ -81,7 +82,8 @@ export async function indexDatasetPage(
           (work) => work.relationship === "primary_article",
         )?.identifier || undefined,
       journalIssn: extDataset.relatedPublicationISSN,
-      dryadPublicationDate: extDataset.publicationDate,
+      dryadPublicationDate:
+        extDataset.publicationDate ?? extDataset.lastModificationDate,
       dryadLastModifiedDate: extDataset.lastModificationDate,
       latestVersionId,
       excelFiles: extDryadExcelFiles.map((file) => ({
