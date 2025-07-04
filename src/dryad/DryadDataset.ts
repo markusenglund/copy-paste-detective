@@ -2,6 +2,7 @@ export type DryadFile = {
   filename: string;
   size: number;
   fileId: number;
+  status?: "downloaded";
 };
 
 export type DryadDataset = {

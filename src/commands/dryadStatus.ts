@@ -43,6 +43,20 @@ program
     console.log(
       `Found ${datasetsWithReadmeOrUsageNotes.length} datasets with a README file or usage notes.`,
     );
+
+    const excelFilesThatFitCriteria = datasetsWithReadmeOrUsageNotes.flatMap(
+      (dataset) => {
+        if (dataset.excelFiles.length > 4) {
+          return [];
+        }
+        return dataset.excelFiles.filter(
+          (file) => file.size < 10_000_000 && file.size > 0,
+        );
+      },
+    );
+    console.log(
+      `A total of ${excelFilesThatFitCriteria.length} Excel files fit the criteria (max 4 files per dataset, size < 10MB).`,
+    );
   });
 
 program.parse();

@@ -67,6 +67,5 @@ export async function downloadFile({
     writeStream.on("error", reject);
   });
 
-  console.log(`Downloaded: ${filename} -> ${filePath}`);
   return filePath;
 }
