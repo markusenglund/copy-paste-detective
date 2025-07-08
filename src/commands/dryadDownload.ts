@@ -55,13 +55,14 @@ program
         `${dataset.excelFiles.length} Excel files found:\n ${dataset.excelFiles.map((file) => file.filename).join("\n")}`,
       );
       for (const excelFile of dataset.excelFiles) {
-        if (excelFile.size < maxFileSize)
+        if (excelFile.size < maxFileSize) {
           await downloadFile({
             fileId: excelFile.fileId,
             filename: excelFile.filename,
             datasetId: dataset.extId,
           });
-        excelFile.status = "downloaded";
+          excelFile.status = "downloaded";
+        }
       }
       if (dataset.readmeFile) {
         await downloadFile({

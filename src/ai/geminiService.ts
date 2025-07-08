@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
+import pThrottle from "p-throttle";
 import { config } from "../config/env";
 import type { PromptTemplateParams } from "./promptTemplate";
 import { generateColumnCategorizationPrompt } from "./promptTemplate";
@@ -13,14 +14,21 @@ const columnCategorizationSchema = z.object({
 export type ColumnCategorization = z.infer<typeof columnCategorizationSchema>;
 const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
-export async function categorizeColumns(
+// The limit is officially 15 requests per minute but we have to give it some buffer
+const throttle = pThrottle({
+  limit: 10,
+  interval: 60000, // 1 minute
+  strict: true,
+});
+
+async function categorizeColumnsInternal(
   params: PromptTemplateParams,
 ): Promise<ColumnCategorization> {
   const prompt = generateColumnCategorizationPrompt(params);
 
   try {
     const response = await geminiClient.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         temperature: 0,
@@ -65,3 +73,5 @@ export async function categorizeColumns(
     );
   }
 }
+
+export const categorizeColumns = throttle(categorizeColumnsInternal);

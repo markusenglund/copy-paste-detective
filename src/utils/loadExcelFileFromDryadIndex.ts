@@ -21,15 +21,18 @@ export function loadExcelFileFromDryadIndex(
   const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
 
   const sheets: Sheet[] = [];
-  workbook.SheetNames.forEach((sheetName) => {
-    const workbookSheet = workbook.Sheets[sheetName];
-    try {
-      const sheet = new Sheet(workbookSheet, sheetName);
-      sheets.push(sheet);
-    } catch (err) {
-      console.log(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
-    }
-  });
+  workbook.SheetNames.slice(0, 10) // Limit to first 10 sheets
+    .forEach((sheetName) => {
+      const workbookSheet = workbook.Sheets[sheetName];
+      try {
+        const sheet = new Sheet(workbookSheet, sheetName);
+        sheets.push(sheet);
+      } catch (err) {
+        console.log(
+          `Skipping sheet '${sheetName}' due to error: ${err.message}`,
+        );
+      }
+    });
   let dataDescription: string | undefined;
   if (dataset.readmeFile) {
     const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
