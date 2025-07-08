@@ -3,30 +3,7 @@ import { runStrategies } from "../runStrategies";
 import { StrategyName } from "../types/strategies";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
-
-function parseIntArgument(value: string): number {
-  const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) {
-    throw new Error(`Must be a valid integer, got: ${value}`);
-  }
-  return parsed;
-}
-
-function parseStrategies(value: string): string {
-  const allStrategies = Object.values(StrategyName);
-  const requestedStrategies = value.split(",").map((s) => s.trim());
-  const invalidStrategies = requestedStrategies.filter(
-    (s) => !allStrategies.includes(s as StrategyName),
-  );
-
-  if (invalidStrategies.length > 0) {
-    throw new Error(
-      `Invalid strategies: ${invalidStrategies.join(", ")}. Available: ${allStrategies.join(", ")}`,
-    );
-  }
-
-  return value;
-}
+import { parseIntArgument, parseStrategies } from "../utils/command";
 
 const program = new Command();
 
@@ -46,7 +23,7 @@ program
     "--strategies <strategies>",
     "Comma-separated list of strategies to run",
     parseStrategies,
-    Object.values(StrategyName).join(","),
+    Object.values(StrategyName),
   )
   .action(async (folder, fileIndex, options) => {
     console.time("Total execution time");
@@ -63,11 +40,7 @@ program
       `📄 Selected file '${excelFileData.excelFileName}' (index ${fileIndex}) from folder: '${folder}'`,
     );
 
-    const strategies: StrategyName[] = options.strategies
-      .split(",")
-      .map((s: string) => s.trim()) as StrategyName[];
-
-    await runStrategies(strategies, excelFileData);
+    await runStrategies(options.strategies, excelFileData);
     console.timeEnd("Total execution time");
   });
 

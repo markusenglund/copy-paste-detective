@@ -3,7 +3,6 @@ import {
   IndividualNumbersResult,
   RepeatedColumnSequencesResult,
   StrategyName,
-  StrategyResult,
 } from "./types/strategies";
 import individualNumbersStrategy from "./strategies/individualNumbers/individualNumbers";
 import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequences/repeatedColumnSequences";
