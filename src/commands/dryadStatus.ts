@@ -6,10 +6,8 @@ import { formatSize } from "../utils/formatSize";
 const program = new Command();
 
 program
-  .name("dryad-download")
-  .description(
-    "Download excel files from Dryad that were previously indexed in the database.",
-  )
+  .name("dryad-status")
+  .description("Log status of imported Dryad datasets.")
   .version("0.1.0")
   .action(async () => {
     const datasets = db.data.datasets;
