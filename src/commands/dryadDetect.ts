@@ -9,7 +9,7 @@ import { parseIntArgument, parseStrategies } from "../utils/command";
 const program = new Command();
 
 program
-  .name("dryad-analyze")
+  .name("dryad-detect")
   .description("Analyze an excel file from a downloaded Dryad dataset.")
   .argument("<datasetExtId>", "Dryad dataset external ID", parseIntArgument)
   .argument(

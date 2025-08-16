@@ -9,7 +9,7 @@ import { AnalysisResults } from "../dryad/analysisResultsDb";
 const program = new Command();
 
 program
-  .name("dryad-analyze-all")
+  .name("dryad-detect-all")
   .description("Analyze excel files from downloaded Dryad datasets.")
   .version("0.1.0")
   .action(async () => {
