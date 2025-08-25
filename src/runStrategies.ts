@@ -10,6 +10,7 @@ import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
 import { ExcelFileData } from "./types/ExcelFileData";
 import { categorizeColumnsWithGemini } from "./ai/GeminiColumnCategorizer";
 import { ColumnCategorization } from "./ai/geminiService";
+import calcChainStrategy from "./strategies/calcChain/calcChain";
 
 type StrategyResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -29,15 +30,15 @@ export async function runStrategies(
 
   const results: StrategyResults = {};
   const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
-  await Promise.all(
-    sheets.map(async (sheet) => {
-      const categorizedColumns = await categorizeColumnsWithGemini({
-        sheet,
-        excelFileData,
-      });
-      categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
-    }),
-  );
+  // await Promise.all(
+  //   sheets.map(async (sheet) => {
+  //     const categorizedColumns = await categorizeColumnsWithGemini({
+  //       sheet,
+  //       excelFileData,
+  //     });
+  //     categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
+  //   }),
+  // );
 
   let duplicateRowsResult;
 
@@ -86,6 +87,11 @@ export async function runStrategies(
     );
     individualNumbersStrategy.printResults(result);
     results[StrategyName.IndividualNumbers] = result;
+  }
+
+  if (strategies.includes(StrategyName.CalcChain)) {
+    console.log(`\n🔍 Running ${StrategyName.CalcChain} strategy...`);
+    calcChainStrategy.execute(excelFileData);
   }
 
   return results;

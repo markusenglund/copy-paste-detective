@@ -47,4 +47,5 @@ export enum StrategyName {
   IndividualNumbers = "individualNumbers",
   RepeatedColumnSequences = "repeatedColumnSequences",
   DuplicateRows = "duplicateRows",
+  CalcChain = "calcChain",
 }

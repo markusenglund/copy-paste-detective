@@ -44,6 +44,8 @@
     "commander": "^13.1.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.41.0",
+    "fast-xml-parser": "^5.2.5",
+    "jszip": "^3.10.1",
     "lodash-es": "^4.17.21",
     "lowdb": "^7.0.1",
     "markdown-table": "^3.0.4",

@@ -1,18 +1,18 @@
-import { readFileSync } from "fs";
 import path from "path";
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { MetadataSchema } from "../types/metadata";
 import { ExcelFileData } from "../types/ExcelFileData";
+import { readFile } from "node:fs/promises";
 
-export function loadExcelFileFromFolder(
+export async function loadExcelFileFromFolder(
   datasetFolder: string,
   fileIndex: number = 0,
-): ExcelFileData {
+): Promise<ExcelFileData> {
   const metadataPath = path.join(datasetFolder, "metadata.json");
 
   // Read and validate metadata
-  const metadataContent = readFileSync(metadataPath, "utf-8");
+  const metadataContent = await readFile(metadataPath, "utf-8");
   const metadataJson = JSON.parse(metadataContent);
   const metadata = MetadataSchema.parse(metadataJson);
 
@@ -25,7 +25,8 @@ export function loadExcelFileFromFolder(
 
   const selectedFile = metadata.files[fileIndex];
   const excelPath = path.join(datasetFolder, selectedFile.name);
-  const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
+  const buffer = await readFile(excelPath);
+  const workbook = xlsx.read(buffer, { sheetRows: 5000 });
 
   const sheets: Sheet[] = [];
   workbook.SheetNames.forEach((sheetName) => {
@@ -39,12 +40,13 @@ export function loadExcelFileFromFolder(
   });
 
   const readmePath = path.join(datasetFolder, "README.md");
-  const readmeContent = readFileSync(readmePath, "utf-8");
+  const readmeContent = await readFile(readmePath, "utf-8");
 
   return {
     sheets,
     excelFileName: selectedFile.name,
     articleName: metadata.name,
     dataDescription: readmeContent,
+    buffer: buffer,
   };
 }

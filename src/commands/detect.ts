@@ -30,7 +30,7 @@ program
 
     let excelFileData: ExcelFileData;
     try {
-      excelFileData = loadExcelFileFromFolder(folder, fileIndex);
+      excelFileData = await loadExcelFileFromFolder(folder, fileIndex);
     } catch (error) {
       console.error("❌ Failed to load Excel file from folder:", error);
       process.exit(1);

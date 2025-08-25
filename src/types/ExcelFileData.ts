@@ -5,4 +5,5 @@ export interface ExcelFileData {
   excelFileName: string;
   articleName: string;
   dataDescription: string;
+  buffer: Buffer;
 }
