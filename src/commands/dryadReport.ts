@@ -1,5 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
-import { db } from "../dryad/analysisResultsDb";
+import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
+import { db as datasetsDb } from "../dryad/datasetsDb";
 
 const program = new Command();
 
@@ -8,8 +9,16 @@ program
   .description("Print a list of analyzed datasets ranked by suspicion level.")
   .version("0.1.0")
   .action(async () => {
-    const analysisResults = db.data.results;
+    const analyzedDatasets = datasetsDb.data.datasets.filter(
+      ({ status }) => status === "analyzed",
+    );
+    const analyzedExtIds = new Set(
+      analyzedDatasets.map((dataset) => dataset.extId),
+    );
+
+    const analysisResults = analysisResultsDb.data.results;
     const datasets = Object.entries(analysisResults)
+      .filter(([extId]) => analyzedExtIds.has(Number(extId)))
       .map(([extId, datasetResult]) => {
         const files = Object.entries(datasetResult).map(
           ([fileName, fileResult]) => ({
