@@ -4,3 +4,4 @@ node_modules
 files/non-fraud
 files/false-positives
 data
+.~lock.*#
