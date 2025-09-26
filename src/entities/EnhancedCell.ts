@@ -28,7 +28,7 @@ export class EnhancedCell {
     return this.originalCell?.w || String(this.value || "");
   }
 
-  get isDate(): boolean {
+  private get isDate(): boolean {
     if (!this.originalCell) return false;
 
     // Check if cell type is explicitly date
@@ -46,11 +46,11 @@ export class EnhancedCell {
     return false;
   }
 
-  get isNumeric(): boolean {
+  private get isNumeric(): boolean {
     return typeof this.value === "number" && !this.isDate;
   }
 
-  get isFormula(): boolean {
+  private get isFormula(): boolean {
     return this.originalCell?.f !== undefined;
   }
 

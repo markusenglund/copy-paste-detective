@@ -99,7 +99,7 @@ export class Sheet {
         .slice(this.firstDataRowIndex, this.firstDataRowIndex + numSampleRows)
         .some((row) => {
           const cell = row[colIndex];
-          return cell?.isNumeric && !cell.isDate;
+          return cell?.isAnalyzable;
         });
 
       if (hasNumericData) {
@@ -170,10 +170,6 @@ export class Sheet {
       }
     }
     return columnIndices;
-  }
-
-  isCellDate(row: number, col: number): boolean {
-    return this.enhancedMatrix[row]?.[col]?.isDate ?? false;
   }
 
   private createMergedRanges(): Array<MergedRange> {
