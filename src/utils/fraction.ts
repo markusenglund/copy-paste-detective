@@ -17,7 +17,9 @@ export function detectRepeatingFraction(
   }
 
   const tolerance = 0.0001;
-  const repeatingDecimalDenominators = [3, 7, 9, 11, 30, 90, 300];
+  const repeatingDecimalDenominators = [
+    3, 7, 9, 11, 13, 17, 19, 23, 30, 90, 300,
+  ];
 
   for (const denominator of repeatingDecimalDenominators) {
     const numerator = Math.abs(value) * denominator;
