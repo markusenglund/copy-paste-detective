@@ -21,30 +21,30 @@ describe("Cooperative breeding in birds increases the within-year fecundity mean
 
   it("correctly categorizes columns with repeating fractions and square roots", () => {
     const columnCategorization = categorizeColumns(sheet);
-    const isRepeatingFractionByColumnName = Object.fromEntries(
+    const columnAttributesByName = Object.fromEntries(
       columnCategorization.map((cat) => [
         cat.column.combinedColumnName,
-        cat.attributes.isRepeatingFraction,
+        cat.attributes,
       ]),
     );
-    const expectedIsRepeatingFractionByColumnName = {
-      Species: false,
-      Latitude: false,
-      Longitude: false,
-      "Research years": false,
-      BSCooMean: true,
-      BSCooSD: false,
-      CooCombinedSD: false,
-      BSCoon: false,
-      BSNonCooMean: true,
-      BSNonCooSD: false,
-      NonCooCombinedSD: false,
-      BSNonCoon: false,
-      Data_Validity: false,
-      References: false,
+
+    const expectedColumnAttributesByName = {
+      Species: { isRepeatingFraction: false, isSquareRoot: false },
+      Latitude: { isRepeatingFraction: false, isSquareRoot: false },
+      Longitude: { isRepeatingFraction: false, isSquareRoot: false },
+      "Research years": { isRepeatingFraction: false, isSquareRoot: false },
+      BSCooMean: { isRepeatingFraction: true, isSquareRoot: false },
+      BSCooSD: { isRepeatingFraction: false, isSquareRoot: true },
+      CooCombinedSD: { isRepeatingFraction: false, isSquareRoot: false },
+      BSCoon: { isRepeatingFraction: false, isSquareRoot: false },
+      BSNonCooMean: { isRepeatingFraction: true, isSquareRoot: false },
+      BSNonCooSD: { isRepeatingFraction: false, isSquareRoot: true },
+      NonCooCombinedSD: { isRepeatingFraction: false, isSquareRoot: false },
+      BSNonCoon: { isRepeatingFraction: false, isSquareRoot: false },
+      Data_Validity: { isRepeatingFraction: false, isSquareRoot: false },
+      References: { isRepeatingFraction: false, isSquareRoot: false },
     };
-    expect(isRepeatingFractionByColumnName).toEqual(
-      expectedIsRepeatingFractionByColumnName,
-    );
+
+    expect(columnAttributesByName).toEqual(expectedColumnAttributesByName);
   });
 });

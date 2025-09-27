@@ -8,6 +8,7 @@ export interface RepeatingFractionMatch {
 
 export function detectRepeatingFraction(
   value: number,
+  { tolerance = 0.0001 } = {},
 ): RepeatingFractionMatch | null {
   if (!Number.isFinite(value)) {
     return null;
@@ -18,7 +19,6 @@ export function detectRepeatingFraction(
     return null;
   }
 
-  const tolerance = 0.0001;
   const repeatingDecimalDenominators = [
     3, 7, 9, 11, 13, 17, 19, 23, 30, 90, 300,
   ];

@@ -1,6 +1,15 @@
 import { Sheet } from "../entities/Sheet";
 import { Column } from "../entities/Column";
-import { detectRepeatingFraction } from "../utils/fraction";
+import {
+  detectRepeatingFraction,
+  RepeatingFractionMatch,
+} from "../utils/fraction";
+import {
+  detectSquareRoot,
+  SquareRootMatch,
+  detectSquareRootOfFraction,
+  SquareRootOfFractionMatch,
+} from "../utils/squareRoot";
 
 type ColumnAttributes = {
   isRepeatingFraction: boolean;
@@ -23,25 +32,43 @@ export const categorizeColumns = (sheet: Sheet): Response => {
   const responses: Response = [];
   for (let i = 0; i < columns.length; i++) {
     const column = columns[i];
-    let fractionCount = 0;
-
+    const repeatingFractionMatches: RepeatingFractionMatch[] = [];
+    const squareRootMatches: SquareRootMatch[] = [];
+    const squareRootOfFractionMatches: SquareRootOfFractionMatch[] = [];
     for (let j = 0; j < sampleData.length; j++) {
       const cell = sampleData[j][i];
       if (cell.isAnalyzable) {
         const value = cell.value as number;
-        const repeatingFraction = detectRepeatingFraction(value);
-        if (repeatingFraction) {
+        const repeatingFractionMatch = detectRepeatingFraction(value);
+        if (repeatingFractionMatch) {
           console.log(
-            `Repeating fraction: ${cell.cellId}  - ${value}=${repeatingFraction.numerator}/${repeatingFraction.denominator} (${column.combinedColumnName})`,
+            `Repeating fraction: ${cell.cellId}  - ${value}=${repeatingFractionMatch.numerator}/${repeatingFractionMatch.denominator} (${column.combinedColumnName})`,
           );
-          fractionCount++;
+          repeatingFractionMatches.push(repeatingFractionMatch);
+          continue;
+        }
+        const squareRootMatch = detectSquareRoot(value);
+        if (squareRootMatch) {
+          console.log(
+            `Square root: ${cell.cellId}  - ${value}=√${squareRootMatch.radicand} (${column.combinedColumnName})`,
+          );
+          squareRootMatches.push(squareRootMatch);
+          continue;
+        }
+        const squareRootOfFractionMatch = detectSquareRootOfFraction(value);
+        if (squareRootOfFractionMatch) {
+          console.log(
+            `Square root of fraction: ${cell.cellId}  - ${value}=√(${squareRootOfFractionMatch.numerator}/${squareRootOfFractionMatch.denominator}) (${column.combinedColumnName})`,
+          );
+          squareRootOfFractionMatches.push(squareRootOfFractionMatch);
+          continue;
         }
       }
     }
-
     const attributes: ColumnAttributes = {
-      isRepeatingFraction: fractionCount > 0,
-      isSquareRoot: false,
+      isRepeatingFraction: repeatingFractionMatches.length > 0,
+      isSquareRoot:
+        squareRootMatches.length > 0 || squareRootOfFractionMatches.length > 0,
     };
 
     responses.push({ column, attributes });

@@ -18,33 +18,43 @@ describe("Plant responses to light competition", () => {
 
   it("correctly categorizes columns with repeating fractions", () => {
     const columnCategorization = categorizeColumns(sheet);
-    const isRepeatingFractionByColumnName = Object.fromEntries(
+    const columnAttributesByName = Object.fromEntries(
       columnCategorization.map((cat) => [
         cat.column.combinedColumnName,
-        cat.attributes.isRepeatingFraction,
+        cat.attributes,
       ]),
     );
     const expectedIsRepeatingFractionByColumnName = {
-      "Plant ID": false,
-      Block: false,
-      Population: false,
-      "Annual precipitation": false,
-      "Neighbor height": false,
-      "Neighbor density": false,
-      "height:diameter ratio": true,
-      "Leaf angle": true,
-      "Branching intensity": true,
-      "Stem-base diameter": false,
-      "Internode length": false,
-      SLA: false,
-      "Leaf area": false,
-      Amax: false,
-      Aqe: false,
-      LCP: false,
-      "Shoot mass": false,
-      "inflorescence number": false,
+      "Plant ID": { isRepeatingFraction: false, isSquareRoot: false },
+      Block: { isRepeatingFraction: false, isSquareRoot: false },
+      Population: { isRepeatingFraction: false, isSquareRoot: false },
+      "Annual precipitation": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+      },
+      "Neighbor height": { isRepeatingFraction: false, isSquareRoot: false },
+      "Neighbor density": { isRepeatingFraction: false, isSquareRoot: false },
+      "height:diameter ratio": {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+      },
+      "Leaf angle": { isRepeatingFraction: true, isSquareRoot: false },
+      "Branching intensity": { isRepeatingFraction: true, isSquareRoot: false },
+      "Stem-base diameter": { isRepeatingFraction: false, isSquareRoot: false },
+      "Internode length": { isRepeatingFraction: false, isSquareRoot: false },
+      SLA: { isRepeatingFraction: false, isSquareRoot: false },
+      "Leaf area": { isRepeatingFraction: false, isSquareRoot: false },
+      Amax: { isRepeatingFraction: false, isSquareRoot: false },
+      Aqe: { isRepeatingFraction: false, isSquareRoot: false },
+      LCP: { isRepeatingFraction: false, isSquareRoot: false },
+      "Shoot mass": { isRepeatingFraction: false, isSquareRoot: false },
+      "inflorescence number": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+      },
     };
-    expect(isRepeatingFractionByColumnName).toEqual(
+
+    expect(columnAttributesByName).toEqual(
       expectedIsRepeatingFractionByColumnName,
     );
   });
