@@ -10,7 +10,7 @@ describe("Plant responses to light competition", () => {
   let sheet: Sheet;
 
   beforeAll(() => {
-    const datasetFolder = "benchmark-files/162720";
+    const datasetFolder = "benchmark-files/158552";
     const excelFileData: ExcelFileData = loadExcelFileFromFolder(datasetFolder);
     sheet = excelFileData.sheets[0];
   });
@@ -19,109 +19,114 @@ describe("Plant responses to light competition", () => {
     const columnCategorization = categorizeColumns(sheet);
     const columnAttributesByName = Object.fromEntries(
       columnCategorization
-        .slice(0, 20) // Only get the first 20 columns for brevity
+        .slice(31) // Only get columns after 30 since those are the interesting ones
         .map((cat) => [cat.column.combinedColumnName, cat.attributes]),
     );
     const expectedIsRepeatingFractionByColumnName = {
-      SampleID: {
+      "relative.beg.fed.chick.no.zero": {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "mean.beg.brood.no.zero": {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "mean.beg.brood.with.zero": {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "max.beg.brood": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      Treat: {
+      "total.brood.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      Block: {
+      "number.chicks.begging.higher": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      Lev: {
+      "relative.beg.fed.chick.with.zero": {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "fed.chick.beg.rank": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      ZLev1: {
+      "fed.chick.weight.rank": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      ZLev: {
+      "fed.chick.relative.weight": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      PH: {
-        isRepeatingFraction: false,
+      "film.brood.mean.weight": {
+        isRepeatingFraction: true,
         isSquareRoot: false,
-        isLnArgument: true,
+        isLnArgument: false,
       },
-      SM: {
-        isRepeatingFraction: false,
-        isSquareRoot: false,
-        isLnArgument: true,
-      },
-      TIN: {
-        isRepeatingFraction: false,
-        isSquareRoot: false,
-        isLnArgument: true,
-      },
-      SOC: {
+      "film.brood.sd.weight": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      TSN: {
+      "sd.brood.beg.with.zero": {
         isRepeatingFraction: false,
-        isSquareRoot: false,
-        isLnArgument: true,
+        isSquareRoot: true,
+        isLnArgument: false,
       },
-      TSP: {
+      "sd.brood.beg.no.zero": {
+        isRepeatingFraction: false,
+        isSquareRoot: true,
+        isLnArgument: false,
+      },
+      "unknown.id.chickx1.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      CTN: {
+      "unknown.id.chickx2.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      CTP: {
+      "unknown.id.chickx3.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      NTP: {
+      "unknown.id.chickx4.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
         isLnArgument: false,
       },
-      Plant_Rich: {
+      "unknown.id.chickx5.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
-        isLnArgument: true,
+        isLnArgument: false,
       },
-      AB_Rich: {
+      "unknown.id.chickx6.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
-        isLnArgument: true,
+        isLnArgument: false,
       },
-      PB_Rich: {
+      "unknown.id.chickx7.beg": {
         isRepeatingFraction: false,
         isSquareRoot: false,
-        isLnArgument: true,
-      },
-      PF_Rich: {
-        isRepeatingFraction: false,
-        isSquareRoot: false,
-        isLnArgument: true,
-      },
-      PR_Rich: {
-        isRepeatingFraction: false,
-        isSquareRoot: false,
-        isLnArgument: true,
+        isLnArgument: false,
       },
     };
 
