@@ -1,9 +1,11 @@
+import { round } from "lodash-es";
 import { getNumDecimals } from "./getNumDecimals";
 
 export interface LogarithmMatch {
   base: number;
   argument: number;
   argumentRoundingOffset: number;
+  tolerance: number;
 }
 
 export function detectNaturalLogarithm(
@@ -15,20 +17,27 @@ export function detectNaturalLogarithm(
     return null;
   }
 
-  const tolerance = Math.min(minTolerance, Math.pow(10, -numDecimals + 2));
+  const maxDecimalPlacesToTry = 4;
 
-  const argument = Math.exp(logarithm);
-  const roundedArgument = Math.round(argument);
-  const argumentRoundingOffset = Math.abs(argument - roundedArgument);
+  for (let k = 0; k <= maxDecimalPlacesToTry; k++) {
+    const tolerance = Math.min(
+      minTolerance * Math.pow(10, -k),
+      Math.pow(10, -numDecimals + 2),
+    );
 
-  if (argumentRoundingOffset < tolerance && roundedArgument !== 0) {
-    const naturalLogarithmMatch = {
-      base: Math.E,
-      argument: roundedArgument,
-      argumentRoundingOffset,
-    };
-    console.log({ naturalLogarithmMatch });
-    return naturalLogarithmMatch;
+    const argument = Math.exp(logarithm);
+    const roundedArgument = round(argument, k);
+    const argumentRoundingOffset = Math.abs(argument - roundedArgument);
+
+    if (argumentRoundingOffset < tolerance && roundedArgument !== 0) {
+      const naturalLogarithmMatch = {
+        base: Math.E,
+        argument: roundedArgument,
+        argumentRoundingOffset,
+        tolerance,
+      };
+      return naturalLogarithmMatch;
+    }
   }
 
   return null;
