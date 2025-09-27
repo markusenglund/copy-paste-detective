@@ -1,5 +1,6 @@
 export interface RepeatingFractionMatch {
   numerator: number;
+  numeratorRoundingOffset: number;
   denominator: number;
 }
 
@@ -15,19 +16,19 @@ export function detectRepeatingFraction(
     return null;
   }
 
-  const tolerance = 0.001;
+  const tolerance = 0.0001;
   const repeatingDecimalDenominators = [3, 7, 9, 11, 30, 90, 300];
 
   for (const denominator of repeatingDecimalDenominators) {
     const numerator = Math.abs(value) * denominator;
     const roundedNumerator = Math.round(numerator);
 
-    if (
-      Math.abs(numerator - roundedNumerator) < tolerance &&
-      roundedNumerator !== 0
-    ) {
+    const numeratorRoundingOffset = Math.abs(numerator - roundedNumerator);
+
+    if (numeratorRoundingOffset < tolerance && roundedNumerator !== 0) {
       return {
         numerator: roundedNumerator,
+        numeratorRoundingOffset,
         denominator,
       };
     }

@@ -29,8 +29,11 @@ export const categorizeColumns = (sheet: Sheet): Response => {
       const cell = sampleData[j][i];
       if (cell.isAnalyzable) {
         const value = cell.value as number;
-        const isRepeatingFraction = !!detectRepeatingFraction(value);
-        if (isRepeatingFraction) {
+        const repeatingFraction = detectRepeatingFraction(value);
+        if (repeatingFraction) {
+          console.log(
+            `Repeating fraction: ${cell.cellId}  - ${value}=${repeatingFraction.numerator}/${repeatingFraction.denominator} (${column.combinedColumnName})`,
+          );
           fractionCount++;
         }
       }
