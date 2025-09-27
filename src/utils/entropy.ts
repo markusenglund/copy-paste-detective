@@ -1,4 +1,5 @@
 import { detectRepeatingFraction } from "./fraction";
+import { detectSquareRoot } from "./squareRoot";
 
 export function calculateNumberEntropy(value: number): number {
   // Values that are common years should receive an entropy score of 100
@@ -7,17 +8,11 @@ export function calculateNumberEntropy(value: number): number {
   }
   const rawBaseNumberEntropy = calculateRawNumberEntropy(value);
 
-  const tolerance = 0.001; // Tolerance for detecting fractions
-  if (rawBaseNumberEntropy > 100000 && value > 0.1) {
-    const squaredValue = Math.pow(value, 2);
-    // Round to two decimals so it can deal with square root values of decimal numbers
-    const roundedSquaredValue = Math.round(100 * squaredValue) / 100;
-    if (Math.abs(squaredValue - roundedSquaredValue) < tolerance / 100) {
-      const roundedSquaredEntropy =
-        calculateRawNumberEntropy(roundedSquaredValue);
-      if (roundedSquaredEntropy < rawBaseNumberEntropy) {
-        return calculateRawNumberEntropy(roundedSquaredValue);
-      }
+  const squareRootMatch = detectSquareRoot(value);
+  if (squareRootMatch) {
+    const radicandEntropy = calculateRawNumberEntropy(squareRootMatch.radicand);
+    if (radicandEntropy < rawBaseNumberEntropy) {
+      return radicandEntropy;
     }
   }
 

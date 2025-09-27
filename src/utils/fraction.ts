@@ -1,3 +1,5 @@
+import { getNumDecimals } from "./getNumDecimals";
+
 export interface RepeatingFractionMatch {
   numerator: number;
   numeratorRoundingOffset: number;
@@ -11,7 +13,7 @@ export function detectRepeatingFraction(
     return null;
   }
 
-  const numDecimals = value.toString().split(".")[1]?.length || 0;
+  const numDecimals = getNumDecimals(value);
   if (numDecimals < 4) {
     return null;
   }
