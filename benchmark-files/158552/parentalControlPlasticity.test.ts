@@ -6,7 +6,7 @@ import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { Sheet } from "../../src/entities/Sheet";
 import { categorizeColumns } from "../../src/columnCategorization/columnCategorization";
 
-describe("Plant responses to light competition", () => {
+describe("Parental control plasticity", () => {
   let sheet: Sheet;
 
   beforeAll(() => {
