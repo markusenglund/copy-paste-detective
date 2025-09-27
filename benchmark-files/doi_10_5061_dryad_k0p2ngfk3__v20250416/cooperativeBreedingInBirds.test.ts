@@ -29,20 +29,76 @@ describe("Cooperative breeding in birds increases the within-year fecundity mean
     );
 
     const expectedColumnAttributesByName = {
-      Species: { isRepeatingFraction: false, isSquareRoot: false },
-      Latitude: { isRepeatingFraction: false, isSquareRoot: false },
-      Longitude: { isRepeatingFraction: false, isSquareRoot: false },
-      "Research years": { isRepeatingFraction: false, isSquareRoot: false },
-      BSCooMean: { isRepeatingFraction: true, isSquareRoot: false },
-      BSCooSD: { isRepeatingFraction: false, isSquareRoot: true },
-      CooCombinedSD: { isRepeatingFraction: false, isSquareRoot: false },
-      BSCoon: { isRepeatingFraction: false, isSquareRoot: false },
-      BSNonCooMean: { isRepeatingFraction: true, isSquareRoot: false },
-      BSNonCooSD: { isRepeatingFraction: false, isSquareRoot: true },
-      NonCooCombinedSD: { isRepeatingFraction: false, isSquareRoot: false },
-      BSNonCoon: { isRepeatingFraction: false, isSquareRoot: false },
-      Data_Validity: { isRepeatingFraction: false, isSquareRoot: false },
-      References: { isRepeatingFraction: false, isSquareRoot: false },
+      Species: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      Latitude: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      Longitude: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "Research years": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      BSCooMean: {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      BSCooSD: {
+        isRepeatingFraction: false,
+        isSquareRoot: true,
+        isLnArgument: false,
+      },
+      CooCombinedSD: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      BSCoon: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      BSNonCooMean: {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      BSNonCooSD: {
+        isRepeatingFraction: false,
+        isSquareRoot: true,
+        isLnArgument: false,
+      },
+      NonCooCombinedSD: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      BSNonCoon: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      Data_Validity: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      References: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
     };
 
     expect(columnAttributesByName).toEqual(expectedColumnAttributesByName);

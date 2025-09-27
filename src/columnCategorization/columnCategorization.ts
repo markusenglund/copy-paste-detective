@@ -44,25 +44,25 @@ export const categorizeColumns = (sheet: Sheet): Response => {
         const value = cell.value as number;
         const repeatingFractionMatch = detectRepeatingFraction(value);
         if (repeatingFractionMatch) {
-          console.log(
-            `Repeating fraction: ${cell.cellId}  - ${value}=${repeatingFractionMatch.numerator}/${repeatingFractionMatch.denominator} (${column.combinedColumnName})`,
-          );
+          // console.log(
+          //   `Repeating fraction: ${cell.cellId}  - ${value}=${repeatingFractionMatch.numerator}/${repeatingFractionMatch.denominator} (${column.combinedColumnName})`,
+          // );
           repeatingFractionMatches.push(repeatingFractionMatch);
           continue;
         }
         const squareRootMatch = detectSquareRoot(value);
         if (squareRootMatch) {
-          console.log(
-            `Square root: ${cell.cellId}  - ${value}=√${squareRootMatch.radicand} (${column.combinedColumnName})`,
-          );
+          // console.log(
+          //   `Square root: ${cell.cellId}  - ${value}=√${squareRootMatch.radicand} (${column.combinedColumnName})`,
+          // );
           squareRootMatches.push(squareRootMatch);
           continue;
         }
         const squareRootOfFractionMatch = detectSquareRootOfFraction(value);
         if (squareRootOfFractionMatch) {
-          console.log(
-            `Square root of fraction: ${cell.cellId}  - ${value}=√(${squareRootOfFractionMatch.numerator}/${squareRootOfFractionMatch.denominator}) (${column.combinedColumnName})`,
-          );
+          // console.log(
+          //   `Square root of fraction: ${cell.cellId}  - ${value}=√(${squareRootOfFractionMatch.numerator}/${squareRootOfFractionMatch.denominator}) (${column.combinedColumnName})`,
+          // );
           squareRootOfFractionMatches.push(squareRootOfFractionMatch);
           continue;
         }

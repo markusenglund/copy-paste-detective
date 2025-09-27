@@ -17,6 +17,10 @@ export function detectNaturalLogarithm(
     return null;
   }
 
+  if (logarithm > 10) {
+    return null; // This algorithm is not designed to handle large logarithm values
+  }
+
   const maxDecimalPlacesToTry = 4;
 
   for (let k = 0; k <= maxDecimalPlacesToTry; k++) {

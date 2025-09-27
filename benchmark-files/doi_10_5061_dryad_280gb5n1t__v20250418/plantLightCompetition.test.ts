@@ -24,33 +24,97 @@ describe("Plant responses to light competition", () => {
         cat.attributes,
       ]),
     );
+
     const expectedIsRepeatingFractionByColumnName = {
-      "Plant ID": { isRepeatingFraction: false, isSquareRoot: false },
-      Block: { isRepeatingFraction: false, isSquareRoot: false },
-      Population: { isRepeatingFraction: false, isSquareRoot: false },
+      "Plant ID": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      Block: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      Population: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
       "Annual precipitation": {
         isRepeatingFraction: false,
         isSquareRoot: false,
+        isLnArgument: false,
       },
-      "Neighbor height": { isRepeatingFraction: false, isSquareRoot: false },
-      "Neighbor density": { isRepeatingFraction: false, isSquareRoot: false },
+      "Neighbor height": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "Neighbor density": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
       "height:diameter ratio": {
         isRepeatingFraction: true,
         isSquareRoot: false,
+        isLnArgument: false,
       },
-      "Leaf angle": { isRepeatingFraction: true, isSquareRoot: false },
-      "Branching intensity": { isRepeatingFraction: true, isSquareRoot: false },
-      "Stem-base diameter": { isRepeatingFraction: false, isSquareRoot: false },
-      "Internode length": { isRepeatingFraction: false, isSquareRoot: false },
-      SLA: { isRepeatingFraction: false, isSquareRoot: false },
-      "Leaf area": { isRepeatingFraction: false, isSquareRoot: false },
-      Amax: { isRepeatingFraction: false, isSquareRoot: false },
-      Aqe: { isRepeatingFraction: false, isSquareRoot: false },
-      LCP: { isRepeatingFraction: false, isSquareRoot: false },
-      "Shoot mass": { isRepeatingFraction: false, isSquareRoot: false },
+      "Leaf angle": {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "Branching intensity": {
+        isRepeatingFraction: true,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "Stem-base diameter": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "Internode length": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      SLA: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "Leaf area": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      Amax: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      Aqe: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      LCP: {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
+      "Shoot mass": {
+        isRepeatingFraction: false,
+        isSquareRoot: false,
+        isLnArgument: false,
+      },
       "inflorescence number": {
         isRepeatingFraction: false,
         isSquareRoot: false,
+        isLnArgument: false,
       },
     };
 
