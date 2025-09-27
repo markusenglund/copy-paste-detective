@@ -1,3 +1,5 @@
+import { detectRepeatingFraction } from "./fraction";
+
 export function calculateNumberEntropy(value: number): number {
   // Values that are common years should receive an entropy score of 100
   if (value >= 1900 && value <= 2030 && Number.isInteger(value)) {
@@ -19,38 +21,18 @@ export function calculateNumberEntropy(value: number): number {
     }
   }
 
-  const repeatingDecimalDenominators = [3, 7, 9, 11, 30, 90, 300];
+  const repeatingFraction = detectRepeatingFraction(value);
+  if (repeatingFraction) {
+    return repeatingFraction.numerator;
+  }
+
   const terminatingDecimalDenominators = [2, 4, 8];
-
-  const repeatingDecimalNumeratorEntropies = repeatingDecimalDenominators
-    .map((denominator) => {
-      const numerator = Math.abs(value) * denominator;
-      const roundedNumerator = Math.round(numerator);
-
-      // Check if the numerator is close enough to a non-zero integer
-      if (
-        Math.abs(numerator - roundedNumerator) < tolerance &&
-        roundedNumerator !== 0
-      ) {
-        return roundedNumerator;
-      }
-
-      // If not close enough, return a very high entropy to exclude this candidate
-      return Infinity;
-    })
-    .filter((entropy) => entropy !== Infinity);
-
   const terminatingDecimalNumeratorEntropies =
     terminatingDecimalDenominators.map((denominator) =>
       calculateRawNumberEntropy(value * denominator),
     );
 
-  const decimalNumeratorEntropies = [
-    ...repeatingDecimalNumeratorEntropies,
-    ...terminatingDecimalNumeratorEntropies,
-  ];
-
-  const minNumeratorEntropy = Math.min(...decimalNumeratorEntropies);
+  const minNumeratorEntropy = Math.min(...terminatingDecimalNumeratorEntropies);
   // Only use the fraction if it gives significantly lower entropy
   if (minNumeratorEntropy < rawBaseNumberEntropy / 2) {
     return minNumeratorEntropy;

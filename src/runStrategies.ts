@@ -10,6 +10,7 @@ import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
 import { ExcelFileData } from "./types/ExcelFileData";
 import { categorizeColumnsWithGemini } from "./ai/GeminiColumnCategorizer";
 import { ColumnCategorization } from "./ai/geminiService";
+import { categorizeColumns } from "./columnCategorization/columnCategorization";
 
 type StrategyResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -35,6 +36,13 @@ export async function runStrategies(
         sheet,
         excelFileData,
       });
+      const otherColumnCategorization = categorizeColumns(sheet);
+      console.log(
+        otherColumnCategorization.map((c) => ({
+          name: c.column.combinedColumnName,
+          attributes: c.attributes,
+        })),
+      );
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
     }),
   );
