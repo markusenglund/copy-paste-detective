@@ -1,46 +1,65 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
-import { ScreenColumnsResponse } from "../../src/ai/geminiService";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
 import { SuspicionLevel } from "../../src/types";
 import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
+import {
+  categorizeColumns,
+  CategorizedColumn,
+} from "../../src/columnCategorization/columnCategorization";
 
 describe("Drought decreases carbon flux in bamboo", () => {
   let excelFileData: ExcelFileData;
-  const categorizedColumnsBySheet = new Map<string, ScreenColumnsResponse>();
-  categorizedColumnsBySheet.set("Leaves to Soil", {
-    unique: [
-      "Leave 13C‰",
-      "Branches 13C‰",
-      "Roots 13C‰",
-      "0-15 Soil 13C‰",
-      "15-30 Soil 13C‰",
-      "Leave 13C atom%",
-      "Branches 13C atom%",
-      "Roots 13C atom%",
-      "0-15 Soil13C atom%",
-      "10-30 Soil 13C atom%",
-      "Leave 13C amount",
-      "Branches 13C amount",
-      "Roots 13C amount",
-      "0-15 Soil13C amount",
-      "10-30 Soil 13C amount",
-    ],
-    shared: ["Ramets", "sample time(d)", "Treatments"],
-    motivation: "",
-  });
 
-  categorizedColumnsBySheet.set("Soil CO2", {
-    unique: ["Soil CO2 13C‰", "Soil CO2 atom%", "Soil CO2 amount"],
-    shared: ["Ramet", "sample time(d)", "Treatments"],
-    motivation: "",
-  });
+  const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
 
-  beforeAll(() => {
+  beforeAll(async () => {
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_5tb2rbpfh__v20250418";
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+
+    const uniqueColumnsBySheet = new Map<string, Set<string>>();
+    uniqueColumnsBySheet.set(
+      "Leaves to Soil",
+      new Set([
+        "Leave 13C‰",
+        "Branches 13C‰",
+        "Roots 13C‰",
+        "0-15 Soil 13C‰",
+        "15-30 Soil 13C‰",
+        "Leave 13C atom%",
+        "Branches 13C atom%",
+        "Roots 13C atom%",
+        "0-15 Soil13C atom%",
+        "10-30 Soil 13C atom%",
+        "Leave 13C amount",
+        "Branches 13C amount",
+        "Roots 13C amount",
+        "0-15 Soil13C amount",
+        "10-30 Soil 13C amount",
+      ]),
+    );
+    uniqueColumnsBySheet.set(
+      "Soil CO2",
+      new Set(["Soil CO2 13C‰", "Soil CO2 atom%", "Soil CO2 amount"]),
+    );
+
+    for (const sheet of excelFileData.sheets) {
+      const uniqueColumns = uniqueColumnsBySheet.get(sheet.name);
+      if (!uniqueColumns) {
+        throw new Error(`Unique columns not defined for sheet: ${sheet.name}`);
+      }
+      const columns: CategorizedColumn[] = (
+        await categorizeColumns(sheet, excelFileData, {
+          excludeAiProfile: true,
+        })
+      ).map((column) => ({
+        ...column,
+        isIncludedInAnalysis: uniqueColumns.has(column.name) || false,
+      }));
+      categorizedColumnsBySheet.set(sheet.name, columns);
+    }
   });
 
   describe("Duplicate rows strategy", () => {

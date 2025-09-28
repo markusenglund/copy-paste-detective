@@ -5,23 +5,27 @@ import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { Sheet } from "../../src/entities/Sheet";
 import { categorizeColumns } from "../../src/columnCategorization/columnCategorization";
+import { pick } from "lodash-es";
 
 describe("Plant responses to light competition", () => {
   let sheet: Sheet;
+  let excelFileData: ExcelFileData;
 
   beforeAll(() => {
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_280gb5n1t__v20250418";
-    const excelFileData: ExcelFileData = loadExcelFileFromFolder(datasetFolder);
+    excelFileData = loadExcelFileFromFolder(datasetFolder);
     sheet = excelFileData.sheets[0];
   });
 
-  it("correctly categorizes columns with repeating fractions", () => {
-    const columnCategorization = categorizeColumns(sheet);
+  it("correctly categorizes columns with repeating fractions", async () => {
+    const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
+      excludeAiProfile: true,
+    });
     const columnAttributesByName = Object.fromEntries(
-      columnCategorization.map((cat) => [
-        cat.column.combinedColumnName,
-        cat.attributes,
+      categorizedColumns.map((column) => [
+        column.name,
+        pick(column, ["isRepeatingFraction", "isSquareRoot", "isLnArgument"]),
       ]),
     );
 
