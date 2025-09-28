@@ -1,7 +1,8 @@
 import { SuspicionLevel } from "../types";
 import { Sheet } from "./Sheet";
-import { calculateSequenceEntropyScore } from "../utils/entropy";
+import { calculateColumnSequenceEntropyScore } from "../utils/entropy";
 import { calculateSequenceRegularity } from "../utils/sequence";
+import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
 export type Position = {
   column: number;
@@ -22,6 +23,7 @@ export class RepeatedColumnSequence {
     positions: [Position, Position];
     values: number[];
     sheet: Sheet;
+    categorizedColumn: CategorizedColumn;
   }) {
     this.positions = data.positions;
     this.values = data.values;
@@ -29,7 +31,10 @@ export class RepeatedColumnSequence {
     this.numberCount = data.sheet.numNumericCells;
 
     // Calculate entropy scores
-    this.sequenceEntropyScore = calculateSequenceEntropyScore(data.values);
+    this.sequenceEntropyScore = calculateColumnSequenceEntropyScore(
+      data.values,
+      data.categorizedColumn,
+    );
 
     const { mostCommonIntervalSizePercentage } = calculateSequenceRegularity(
       data.values,

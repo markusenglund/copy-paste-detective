@@ -1,5 +1,5 @@
 import { DuplicateRowsResult } from "../../types/strategies";
-import { calculateNumberEntropy } from "../../utils/entropy";
+import { calculateBaseNumberEntropy } from "../../utils/entropy";
 import { levelToSymbol } from "../../utils/output";
 
 export function printDuplicateRowsResults({
@@ -17,8 +17,8 @@ export function printDuplicateRowsResults({
   const tableData = sortedDuplicateRows.map((duplicateRow) => {
     // Format shared values for display (show first few if many)
     const sortedSharedValues = duplicateRow.sharedValues.toSorted((a, b) => {
-      const entropyA = calculateNumberEntropy(a);
-      const entropyB = calculateNumberEntropy(b);
+      const entropyA = calculateBaseNumberEntropy(a);
+      const entropyB = calculateBaseNumberEntropy(b);
       return entropyB - entropyA;
     });
     const sharedValuesDisplay =

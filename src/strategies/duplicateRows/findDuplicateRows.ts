@@ -10,6 +10,7 @@ function compareRows(
   row2: EnhancedCell[],
   colIndices: number[],
   sheet: Sheet,
+  categorizedColumns: CategorizedColumn[],
 ): DuplicateRow {
   const sharedValues: number[] = [];
   const sharedColumns: number[] = [];
@@ -34,6 +35,7 @@ function compareRows(
     totalSharedCount,
     sheet,
     colIndices.length,
+    categorizedColumns,
   );
 
   return rowData;
@@ -81,7 +83,8 @@ export function findDuplicateRows(
       const cell = sheet.enhancedMatrix[rowIndex]?.[colIndex];
       if (cell?.isAnalyzable) {
         const value = cell.value as number;
-        const entropy = calculateNumberEntropy(value);
+        const categorizedColumn = categorizedColumns[colIndex];
+        const entropy = calculateNumberEntropy(value, categorizedColumn);
         if (entropy < minNumberEntropyScore) {
           // Skip low entropy values to improve performance
           continue;
@@ -123,6 +126,7 @@ export function findDuplicateRows(
               sheet.enhancedMatrix[row2Index],
               uniqueColumnIndices,
               sheet,
+              categorizedColumns,
             );
             alreadyComparedRowPairs.add(pairKey);
             if (

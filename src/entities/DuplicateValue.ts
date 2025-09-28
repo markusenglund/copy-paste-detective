@@ -5,6 +5,7 @@ import {
   calculateEntropyScore,
   calculateNumberEntropy,
 } from "../utils/entropy";
+import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
 export class DuplicateValue {
   public readonly value: number;
@@ -12,11 +13,16 @@ export class DuplicateValue {
   public readonly sheet: Sheet;
   public readonly cells: EnhancedCell[];
 
-  constructor(value: number, sheet: Sheet, cells: EnhancedCell[]) {
+  constructor(
+    value: number,
+    sheet: Sheet,
+    cells: EnhancedCell[],
+    categorizedColumn: CategorizedColumn,
+  ) {
     this.value = value;
     this.sheet = sheet;
     this.cells = cells;
-    this.entropy = calculateNumberEntropy(value);
+    this.entropy = calculateNumberEntropy(value, categorizedColumn);
   }
 
   get numOccurences(): number {

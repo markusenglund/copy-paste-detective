@@ -1,7 +1,8 @@
 import { Sheet } from "./Sheet";
 import { DuplicateCellPair } from "./DuplicateCellPair";
 import { SuspicionLevel } from "../types";
-import { calculateSequenceEntropyScore } from "../utils/entropy";
+import { calculateRowEntropyScore } from "../utils/entropy";
+import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
 export class DuplicateRow {
   public readonly rowIndices: [number, number];
@@ -10,6 +11,7 @@ export class DuplicateRow {
   public readonly totalSharedCount: number;
   public readonly sheet: Sheet;
   public readonly numComparedColumns: number;
+  private readonly categorizedColumns: CategorizedColumn[];
 
   constructor(
     rowIndices: [number, number],
@@ -18,6 +20,7 @@ export class DuplicateRow {
     totalSharedCount: number,
     sheet: Sheet,
     numComparedColumns: number,
+    categorizedColumns: CategorizedColumn[],
   ) {
     this.rowIndices = rowIndices.toSorted((a, b) => a - b) as [number, number];
     this.sharedValues = sharedValues;
@@ -25,6 +28,7 @@ export class DuplicateRow {
     this.totalSharedCount = totalSharedCount;
     this.sheet = sheet;
     this.numComparedColumns = numComparedColumns;
+    this.categorizedColumns = categorizedColumns;
   }
 
   get duplicateCellPairs(): DuplicateCellPair[] {
@@ -47,7 +51,20 @@ export class DuplicateRow {
   }
 
   get rowEntropyScore(): number {
-    return calculateSequenceEntropyScore(this.deduplicatedSharedValues);
+    const categorizedColumns: CategorizedColumn[] = [];
+    const sharedValues: number[] = [];
+    const seenSharedValues = new Set<number>();
+    for (let i = 0; i < this.sharedValues.length; i++) {
+      const value = this.sharedValues[i];
+      if (!seenSharedValues.has(value)) {
+        seenSharedValues.add(value);
+        sharedValues.push(value);
+        const colIndex = this.sharedColumns[i];
+        const categorizedColumn = this.categorizedColumns[colIndex];
+        categorizedColumns.push(categorizedColumn);
+      }
+    }
+    return calculateRowEntropyScore(sharedValues, categorizedColumns);
   }
 
   get matrixSizeAdjustedEntropyScore(): number {

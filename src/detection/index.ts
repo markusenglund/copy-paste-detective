@@ -6,7 +6,7 @@ import {
 import { DuplicateValue } from "../entities/DuplicateValue";
 import { Sheet } from "../entities/Sheet";
 import { type EnhancedCell } from "../entities/EnhancedCell";
-import { calculateSequenceEntropyScore } from "../utils/entropy";
+import { calculateColumnSequenceEntropyScore } from "../utils/entropy";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
 export function deduplicateSortedSequences(
@@ -132,8 +132,11 @@ export function findRepeatedSequences(
               continue;
             }
             const minSequenceEntropyScore = 10;
-            const sequenceEntropyScore =
-              calculateSequenceEntropyScore(repeatedValues);
+            const categorizedColumn = categorizedColumns[columnIndex];
+            const sequenceEntropyScore = calculateColumnSequenceEntropyScore(
+              repeatedValues,
+              categorizedColumn,
+            );
 
             if (sequenceEntropyScore <= minSequenceEntropyScore) {
               continue;
@@ -149,6 +152,7 @@ export function findRepeatedSequences(
               positions: [previouslySeenPosition, newPosition],
               values: repeatedValues,
               sheet,
+              categorizedColumn,
             });
             if (repeatedSequence.matrixSizeAdjustedEntropyScore > 2) {
               repeatedSequences.push(repeatedSequence);
@@ -193,7 +197,15 @@ export function findDuplicateValues(
 
   const duplicateValues: DuplicateValue[] = [...cellsByNumericValue.entries()]
     .filter(([_value, cells]) => cells.length > 1)
-    .map(([value, cells]) => new DuplicateValue(value, sheet, cells))
+    .map(
+      ([value, cells]) =>
+        new DuplicateValue(
+          value,
+          sheet,
+          cells,
+          categorizedColumns[cells[0].col],
+        ),
+    )
     .filter((duplicateValue) =>
       [SuspicionLevel.Low, SuspicionLevel.Medium, SuspicionLevel.High].includes(
         duplicateValue.suspicionLevel,

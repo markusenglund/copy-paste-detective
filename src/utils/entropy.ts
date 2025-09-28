@@ -1,11 +1,28 @@
+import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 import { detectRepeatingFraction } from "./fraction";
 import { detectSquareRoot } from "./squareRoot";
 
-export function calculateNumberEntropy(value: number): number {
+export function calculateNumberEntropy(
+  value: number,
+  categorizedColumn: CategorizedColumn,
+): number {
+  const baseNumberEntropy = calculateBaseNumberEntropy(value);
+  if (
+    categorizedColumn.isLnArgument ||
+    categorizedColumn.isSquareRoot ||
+    categorizedColumn.isRepeatingFraction
+  ) {
+    return Math.min(baseNumberEntropy, 100);
+  }
+  return baseNumberEntropy;
+}
+
+export function calculateBaseNumberEntropy(value: number): number {
   // Values that are common years should receive an entropy score of 100
   if (value >= 1900 && value <= 2030 && Number.isInteger(value)) {
     return 100;
   }
+
   const rawBaseNumberEntropy = calculateRawNumberEntropy(value);
 
   const squareRootMatch = detectSquareRoot(value);
@@ -61,9 +78,25 @@ export function calculateEntropyScore(rawEntropy: number): number {
   return Math.log10(rawEntropy) + 12;
 }
 
-export function calculateSequenceEntropyScore(values: number[]): number {
+export function calculateColumnSequenceEntropyScore(
+  values: number[],
+  categorizedColumn: CategorizedColumn,
+): number {
   const sum = values.reduce((acc, value) => {
-    const rawNumberEntropy = calculateNumberEntropy(value);
+    const rawNumberEntropy = calculateNumberEntropy(value, categorizedColumn);
+    const individualEntropyScore = calculateEntropyScore(rawNumberEntropy);
+    return acc + individualEntropyScore;
+  }, 0);
+  return sum;
+}
+
+export function calculateRowEntropyScore(
+  values: number[],
+  categorizedColumns: CategorizedColumn[],
+): number {
+  const sum = values.reduce((acc, value, index) => {
+    const categorizedColumn = categorizedColumns[index];
+    const rawNumberEntropy = calculateNumberEntropy(value, categorizedColumn);
     const individualEntropyScore = calculateEntropyScore(rawNumberEntropy);
     return acc + individualEntropyScore;
   }, 0);
