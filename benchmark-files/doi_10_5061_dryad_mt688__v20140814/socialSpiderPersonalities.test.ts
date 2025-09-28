@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
-import { ColumnCategorization } from "../../src/ai/geminiService";
+import { ScreenColumnsResponse } from "../../src/ai/geminiService";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
@@ -8,7 +8,7 @@ import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeate
 
 describe("Persistent social interactions in social spiders", () => {
   let excelFileData: ExcelFileData;
-  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
+  const categorizedColumnsBySheet = new Map<string, ScreenColumnsResponse>();
   categorizedColumnsBySheet.set("Sheet5", {
     unique: ["Prosoma", "Boldness.1", "Boldness.2", "Boldness.3", "Boldness.4"],
     shared: [

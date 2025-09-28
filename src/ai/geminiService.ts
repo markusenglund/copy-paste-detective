@@ -5,13 +5,13 @@ import { config } from "../config/env";
 import type { PromptTemplateParams } from "./promptTemplate";
 import { generateColumnCategorizationPrompt } from "./promptTemplate";
 
-const columnCategorizationSchema = z.object({
+const screenColumnsResponseSchema = z.object({
   motivation: z.string(),
   unique: z.array(z.string()),
   shared: z.array(z.string()),
 });
 
-export type ColumnCategorization = z.infer<typeof columnCategorizationSchema>;
+export type ScreenColumnsResponse = z.infer<typeof screenColumnsResponseSchema>;
 const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
 // The limit is officially 15 requests per minute but we have to give it some buffer
@@ -21,9 +21,9 @@ const throttle = pThrottle({
   strict: true,
 });
 
-async function categorizeColumnsInternal(
+async function screenColumnsGeminiInternal(
   params: PromptTemplateParams,
-): Promise<ColumnCategorization> {
+): Promise<ScreenColumnsResponse> {
   const prompt = generateColumnCategorizationPrompt(params);
 
   try {
@@ -64,7 +64,7 @@ async function categorizeColumnsInternal(
 
     // Parse and validate the structured JSON response
     const parsed = JSON.parse(response.text);
-    const result = columnCategorizationSchema.parse(parsed);
+    const result = screenColumnsResponseSchema.parse(parsed);
     return result;
   } catch (error) {
     console.error("Error calling Gemini API:", error);
@@ -74,4 +74,4 @@ async function categorizeColumnsInternal(
   }
 }
 
-export const categorizeColumns = throttle(categorizeColumnsInternal);
+export const screenColumnsGemini = throttle(screenColumnsGeminiInternal);

@@ -3,7 +3,7 @@ import { DuplicateRow } from "../../entities/DuplicateRow";
 import { Sheet } from "../../entities/Sheet";
 import { type EnhancedCell } from "../../entities/EnhancedCell";
 import { calculateNumberEntropy } from "../../utils/entropy";
-import { type ColumnCategorization } from "../../ai/ColumnCategorizer";
+import { CategorizedColumn } from "../../columnCategorization/columnCategorization";
 
 function compareRows(
   row1: EnhancedCell[],
@@ -41,7 +41,7 @@ function compareRows(
 
 export function findDuplicateRows(
   sheet: Sheet,
-  columnCategorization: ColumnCategorization,
+  categorizedColumns: CategorizedColumn[],
 ): DuplicateRowsResult {
   // Rows require at least one duplicate value with this much entropy to be considered duplicates.
   const minNumberEntropyScore = 200;
@@ -55,8 +55,9 @@ export function findDuplicateRows(
   const duplicateRows: DuplicateRow[] = [];
 
   // Get numeric columns that should be unique
-  const uniqueColumnIndices = columnCategorization.unique
-    .flatMap((name) => sheet.getColumnIndicesOfCombinedColumnName(name))
+  const uniqueColumnIndices = categorizedColumns
+    .filter((col) => col.isIncludedInAnalysis)
+    .map((col) => col.index)
     .filter((index) => sheet.numericColumnIndices.includes(index));
 
   if (uniqueColumnIndices.length === 0) {

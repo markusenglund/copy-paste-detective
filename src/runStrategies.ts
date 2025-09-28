@@ -8,9 +8,10 @@ import individualNumbersStrategy from "./strategies/individualNumbers/individual
 import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequences/repeatedColumnSequences";
 import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
 import { ExcelFileData } from "./types/ExcelFileData";
-import { categorizeColumnsWithGemini } from "./ai/GeminiColumnCategorizer";
-import { ColumnCategorization } from "./ai/geminiService";
-import { categorizeColumns } from "./columnCategorization/columnCategorization";
+import {
+  categorizeColumns,
+  CategorizedColumn,
+} from "./columnCategorization/columnCategorization";
 
 type StrategyResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -29,20 +30,12 @@ export async function runStrategies(
   );
 
   const results: StrategyResults = {};
-  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
+  const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
   await Promise.all(
     sheets.map(async (sheet) => {
-      const categorizedColumns = await categorizeColumnsWithGemini({
-        sheet,
-        excelFileData,
-      });
-      const otherColumnCategorization = categorizeColumns(sheet);
-      console.log(
-        otherColumnCategorization.map((c) => ({
-          name: c.column.combinedColumnName,
-          attributes: c.attributes,
-        })),
-      );
+      const categorizedColumns = await categorizeColumns(sheet, excelFileData);
+      console.log(categorizedColumns);
+
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
     }),
   );

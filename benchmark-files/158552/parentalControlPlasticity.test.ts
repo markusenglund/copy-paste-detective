@@ -5,22 +5,29 @@ import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { Sheet } from "../../src/entities/Sheet";
 import { categorizeColumns } from "../../src/columnCategorization/columnCategorization";
+import { pick } from "lodash-es";
 
 describe("Parental control plasticity", () => {
   let sheet: Sheet;
+  let excelFileData: ExcelFileData;
 
   beforeAll(() => {
     const datasetFolder = "benchmark-files/158552";
-    const excelFileData: ExcelFileData = loadExcelFileFromFolder(datasetFolder);
+    excelFileData = loadExcelFileFromFolder(datasetFolder);
     sheet = excelFileData.sheets[0];
   });
 
-  it("correctly categorizes columns", () => {
-    const columnCategorization = categorizeColumns(sheet);
+  it("correctly categorizes columns", async () => {
+    const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
+      excludeAiProfile: true,
+    });
     const columnAttributesByName = Object.fromEntries(
-      columnCategorization
+      categorizedColumns
         .slice(31) // Only get columns after 30 since those are the interesting ones
-        .map((cat) => [cat.column.combinedColumnName, cat.attributes]),
+        .map((col) => [
+          col.name,
+          pick(col, ["isRepeatingFraction", "isSquareRoot", "isLnArgument"]),
+        ]),
     );
     const expectedIsRepeatingFractionByColumnName = {
       "relative.beg.fed.chick.no.zero": {

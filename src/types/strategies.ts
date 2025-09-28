@@ -2,7 +2,7 @@ import { DuplicateValue } from "../entities/DuplicateValue";
 import { DuplicateRow } from "../entities/DuplicateRow";
 import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
 import { ExcelFileData } from "./ExcelFileData";
-import { ColumnCategorization } from "../ai/geminiService";
+import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
 export interface StrategyResult {
   name: string;
@@ -30,7 +30,7 @@ export type AllStrategyResults =
   | DuplicateRowsResult;
 
 export interface StrategyDependencies {
-  categorizedColumnsBySheet: Map<string, ColumnCategorization>;
+  categorizedColumnsBySheet: Map<string, CategorizedColumn[]>;
   previousResults?: AllStrategyResults[];
 }
 

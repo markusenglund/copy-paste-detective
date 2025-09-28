@@ -7,7 +7,7 @@ import { DuplicateValue } from "../entities/DuplicateValue";
 import { Sheet } from "../entities/Sheet";
 import { type EnhancedCell } from "../entities/EnhancedCell";
 import { calculateSequenceEntropyScore } from "../utils/entropy";
-import { ColumnCategorization } from "../ai/geminiService";
+import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
 export function deduplicateSortedSequences(
   repeatedSequences: RepeatedColumnSequence[],
@@ -43,11 +43,12 @@ export function deduplicateSortedSequences(
 
 export function findRepeatedSequences(
   sheet: Sheet,
-  categorizedColumns: ColumnCategorization,
+  categorizedColumns: CategorizedColumn[],
 ): RepeatedColumnSequence[] {
   // Get numeric columns that should be unique
-  const uniqueColumnIndices = categorizedColumns.unique
-    .flatMap((name) => sheet.getColumnIndicesOfCombinedColumnName(name))
+  const uniqueColumnIndices = categorizedColumns
+    .filter((col) => col.isIncludedInAnalysis)
+    .map((col) => col.index)
     .filter((index) => sheet.numericColumnIndices.includes(index));
 
   if (uniqueColumnIndices.length === 0) {
@@ -165,11 +166,12 @@ export function findRepeatedSequences(
 
 export function findDuplicateValues(
   sheet: Sheet,
-  categorizedColumns: ColumnCategorization,
+  categorizedColumns: CategorizedColumn[],
 ): DuplicateValuesResult {
   // Get numeric columns that should be unique
-  const uniqueColumnIndices = categorizedColumns.unique
-    .flatMap((name) => sheet.getColumnIndicesOfCombinedColumnName(name))
+  const uniqueColumnIndices = categorizedColumns
+    .filter((col) => col.isIncludedInAnalysis)
+    .map((col) => col.index)
     .filter((index) => sheet.numericColumnIndices.includes(index));
 
   if (uniqueColumnIndices.length === 0) {

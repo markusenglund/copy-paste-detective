@@ -64,7 +64,7 @@ export class Sheet {
   }
 
   get columnNames(): string[] {
-    return this.getColumns().map((column) => column.combinedColumnName);
+    return this.getColumns().map((column) => column.name);
   }
 
   getSampleData(numRows: number): string[][] {

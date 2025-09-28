@@ -1,8 +1,8 @@
-import { ColumnCategorization } from "../../src/ai/geminiService";
+import { ScreenColumnsResponse } from "../../src/ai/geminiService";
 
 export const categorizedColumnsBySheet = new Map<
   string,
-  ColumnCategorization
+  ScreenColumnsResponse
 >();
 
 categorizedColumnsBySheet.set("Fig 1", {

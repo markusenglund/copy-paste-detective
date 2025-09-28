@@ -2,28 +2,28 @@ import { Sheet } from "./Sheet";
 
 export class Column {
   public readonly index: number;
-  public readonly sheet: Sheet;
-
+  private readonly sheet: Sheet;
+  public readonly name: string;
+  public readonly id: string;
   constructor(sheet: Sheet, index: number) {
     this.sheet = sheet;
     this.index = index;
+    this.name = this.createCombinedColumnName();
+    this.id = this.createColumnId();
   }
 
-  get headers(): string[] {
-    return this.sheet.headerRowIndices
+  private createCombinedColumnName(): string {
+    const headers = this.sheet.headerRowIndices
       .map((rowIndex) =>
         this.sheet.getEffectiveValueForCell(rowIndex, this.index),
       )
       .filter((value) => typeof value === "string")
       .map((value) => value.trim());
-  }
-
-  get combinedColumnName(): string {
-    return this.headers.join(" - ");
+    return headers.join(" - ");
   }
 
   // Get the column letter(s) as seen in Excel.
-  get columnId(): string {
+  private createColumnId(): string {
     let result = "";
     let i = this.index;
 
