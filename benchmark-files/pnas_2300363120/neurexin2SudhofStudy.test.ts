@@ -1,9 +1,10 @@
 import { describe, it, expect } from "@jest/globals";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
-import { categorizedColumnsBySheet } from "./mockedCategorizedColumnsBySheet";
 import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
 import { SuspicionLevel } from "../../src/types";
+import { CategorizedColumn } from "../../src/columnCategorization/columnCategorization";
+import { loadMockedCategorizedColumnsBySheet } from "./mockedCategorizedColumnsBySheet";
 
 describe("Neurexin-2 restricts synapse numbers - handling double headers", () => {
   it("Combines first two rows to create the column names if the first row is merged", () => {
@@ -51,9 +52,12 @@ describe("Neurexin-2 restricts synapse numbers - handling double headers", () =>
 
 describe("Neurexin-2 restricts synapse numbers", () => {
   let excelFileData: ExcelFileData;
-  beforeAll(() => {
+  let categorizedColumnsBySheet: Map<string, CategorizedColumn[]>;
+  beforeAll(async () => {
     const datasetFolder = "benchmark-files/pnas_2300363120";
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+    categorizedColumnsBySheet =
+      await loadMockedCategorizedColumnsBySheet(excelFileData);
   });
   describe("Repeated sequence strategy", () => {
     it("Identifies the egregious 492-length copy-pasted sequence on columns AD and AE in sheet 'Fig 2'", async () => {

@@ -7,53 +7,55 @@ import { StrategyName } from "../../src/types/strategies";
 import { SuspicionLevel } from "../../src/types";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
-import { ColumnCategorization } from "../../src/ai/ColumnCategorizer";
+import {
+  categorizeColumns,
+  CategorizedColumn,
+} from "../../src/columnCategorization/columnCategorization";
 
 describe("Hawk Owl Feeding Study", () => {
   let excelFileData: ExcelFileData;
   let sheets: Sheet[];
-  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
+  const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // Load the actual Dryad dataset
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_ksn02v7ft__v20250416";
 
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
     sheets = excelFileData.sheets;
-    const mockCategorizedColumns = {
-      unique: [
-        "Day of Study",
-        "ẟ13Ccollagen (‰)",
-        "Weight %C",
-        "Amp 44",
-        "ẟ15N (‰)",
-        "Weight %N",
-        "Amp 28",
-        "Weight % C:N",
-        "Atomic C:N",
-        "ẟ13Cbioapatite (‰, VPDB)",
-        "ẟ18O (‰, VPDB)",
-        "87Sr/86Sr",
-        "max error from blank",
-        "Sr concentration (measured)",
-        "Sr concentration (accounting for sample mass)",
-        "max blank Sr/sample Sr",
-        "Pellet notes",
-        "Fecal appearance notes",
-        "Other notes",
-      ],
-      shared: [
-        "Individual",
-        "Date collected",
-        "Tissue",
-        "Pre or post digestion",
-        "Date Run",
-      ],
-      motivation: "",
-    };
 
-    categorizedColumnsBySheet.set(sheets[0].name, mockCategorizedColumns);
+    const uniqueColumns = new Set([
+      "Day of Study",
+      "ẟ13Ccollagen (‰)",
+      "Weight %C",
+      "Amp 44",
+      "ẟ15N (‰)",
+      "Weight %N",
+      "Amp 28",
+      "Weight % C:N",
+      "Atomic C:N",
+      "ẟ13Cbioapatite (‰, VPDB)",
+      "ẟ18O (‰, VPDB)",
+      "87Sr/86Sr",
+      "max error from blank",
+      "Sr concentration (measured)",
+      "Sr concentration (accounting for sample mass)",
+      "max blank Sr/sample Sr",
+      "Pellet notes",
+      "Fecal appearance notes",
+      "Other notes",
+    ]);
+
+    const columns: CategorizedColumn[] = (
+      await categorizeColumns(sheets[0], excelFileData, {
+        excludeAiProfile: true,
+      })
+    ).map((column) => ({
+      ...column,
+      isIncludedInAnalysis: uniqueColumns.has(column.name) || false,
+    }));
+    categorizedColumnsBySheet.set(sheets[0].name, columns);
   });
 
   describe("Duplicate Rows Strategy", () => {

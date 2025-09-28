@@ -5,61 +5,79 @@ import { StrategyName } from "../../src/types/strategies";
 import { SuspicionLevel } from "../../src/types";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
-import { ColumnCategorization } from "../../src/ai/ColumnCategorizer";
+import {
+  categorizeColumns,
+  CategorizedColumn,
+} from "../../src/columnCategorization/columnCategorization";
 
 describe("Dual Drivers of Plant Invasions - Common garden", () => {
   let excelFileData: ExcelFileData;
-  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
-  categorizedColumnsBySheet.set("common garden-data", {
-    unique: [
-      "Plot",
-      "Species",
-      "Treatment",
-      "Coarse root soluble sugar concentrations(mg/g)",
-      "Fine root soluble sugar concentrations(mg/g)",
-      "AMF colonization rate(%)",
-      "Damage(%)",
-      "Aboveground mass(g)",
-      "Belowground mass(g)",
-      "Root length(cm)",
-      "Root surface area(cm2)",
-      "Root average diameter(mm)",
-      "Root volume(cm3)",
-      "Root tissue density(g/cm3)",
-      "Fine root length(cm)",
-      "Coarse root length(cm)",
-      "Fine root surface area(cm2)",
-      "Coarse root  surface area(cm2)",
-    ],
-    shared: ["Time", "Name", "Origin"],
-    motivation: "",
-  });
-  // Mock categorizer for "common garden-Herbiory" sheet
-  categorizedColumnsBySheet.set("common garden-Herbiory", {
-    unique: [
-      "Plot",
-      "Species",
-      "Insects(#)",
-      "no-Hemiptera(#)",
-      "Neuroptera(#)",
-      "Hemiptera(#)",
-      "Orthoptera(#)",
-      "Lepidoptera(#)",
-      "Araneida(#)",
-      "Coleoptera(#)",
-      "Diptera(#)",
-      "Hymenoptera(#)",
-      "others(#)",
-    ],
-    shared: ["Time", "Name", "Origin", "Treatment"],
-    motivation: "",
-  });
-  beforeAll(() => {
+  const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
+
+  beforeAll(async () => {
     // Load the actual Dryad dataset
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418";
 
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+
+    const uniqueColumnsBySheet = new Map<string, Set<string>>();
+    uniqueColumnsBySheet.set(
+      "common garden-data",
+      new Set([
+        "Plot",
+        "Species",
+        "Treatment",
+        "Coarse root soluble sugar concentrations(mg/g)",
+        "Fine root soluble sugar concentrations(mg/g)",
+        "AMF colonization rate(%)",
+        "Damage(%)",
+        "Aboveground mass(g)",
+        "Belowground mass(g)",
+        "Root length(cm)",
+        "Root surface area(cm2)",
+        "Root average diameter(mm)",
+        "Root volume(cm3)",
+        "Root tissue density(g/cm3)",
+        "Fine root length(cm)",
+        "Coarse root length(cm)",
+        "Fine root surface area(cm2)",
+        "Coarse root  surface area(cm2)",
+      ]),
+    );
+    uniqueColumnsBySheet.set(
+      "common garden-Herbiory",
+      new Set([
+        "Plot",
+        "Species",
+        "Insects(#)",
+        "no-Hemiptera(#)",
+        "Neuroptera(#)",
+        "Hemiptera(#)",
+        "Orthoptera(#)",
+        "Lepidoptera(#)",
+        "Araneida(#)",
+        "Coleoptera(#)",
+        "Diptera(#)",
+        "Hymenoptera(#)",
+        "others(#)",
+      ]),
+    );
+    for (const sheet of excelFileData.sheets) {
+      const uniqueColumns = uniqueColumnsBySheet.get(sheet.name);
+      if (!uniqueColumns) {
+        throw new Error(`Unique columns not defined for sheet: ${sheet.name}`);
+      }
+      const columns: CategorizedColumn[] = (
+        await categorizeColumns(sheet, excelFileData, {
+          excludeAiProfile: true,
+        })
+      ).map((column) => ({
+        ...column,
+        isIncludedInAnalysis: uniqueColumns.has(column.name) || false,
+      }));
+      categorizedColumnsBySheet.set(sheet.name, columns);
+    }
   });
 
   describe("Duplicate rows strategy", () => {
@@ -172,97 +190,70 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
 describe("Dual Drivers of Plant Invasions - Survey results", () => {
   let excelFileData: ExcelFileData;
 
-  const categorizedColumnsBySheet = new Map<string, ColumnCategorization>();
-  categorizedColumnsBySheet.set("Field survey-Herbiory", {
-    unique: [
-      "Insects(#)",
-      "no-Hemiptera(#)",
-      "Neuroptera(#)",
-      "Hemiptera(#)",
-      "Orthoptera(#)",
-      "Lepidoptera(#)",
-      "Araneida(#)",
-      "Coleoptera(#)",
-      "Diptera(#)",
-      "Hymenoptera(#)",
-      "others(#)",
-    ],
-    shared: [
-      "Latitudes",
-      "Region",
-      "Latitude",
-      "Longitude",
-      "Site",
-      "Combine",
-      "Plot",
-      "Pair",
-      "Code",
-      "Name",
-      "Origin",
-    ],
-    motivation: "",
-  });
+  const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
 
-  categorizedColumnsBySheet.set("Field survey-data", {
-    unique: [
-      "Soil ph",
-      "Soil water content（%）",
-      "Coarse root soluble sugar concentrations(mg/g)",
-      "Fine root soluble sugar concentrations(mg/g)",
-      "AMF colonization rate(%)",
-      "Damage(%)",
-      "Aboveground mass(g)",
-      "Belowground mass(g)",
-      "Root length(cm)",
-      "Root surface area(cm2)",
-      "Root average diameter(mm)",
-      "Root volume(cm3)",
-      "Root tissue density(g/cm3)",
-      "Fine root length(cm)",
-      "Coarse root length(cm)",
-      "Fine root surface area(cm2)",
-      "Coarse root  surface area(cm2)",
-    ],
-    shared: [
-      "Latitudes",
-      "Region",
-      "Latitude",
-      "Longitude",
-      "Site",
-      "Combine",
-      "Plot",
-      "Pair",
-      "Code",
-      "Name",
-      "Origin",
-      "Annual Mean Temperature（℃）",
-      "Mean Diurnal Range（℃）",
-      "Isothermality",
-      "Temperature Seasonality",
-      "Max Temperature of Warmest Month（℃）",
-      "Min Temperature of Coldest Month（℃）",
-      "Temperature Annual Range（℃）",
-      "Mean Temperature of Wettest Quarter（℃）",
-      "Mean Temperature of Driest Quarter（℃）",
-      "Mean Temperature of Warmest Quarter（℃）",
-      "Mean Temperature of Coldest Quarter（℃）",
-      "Annual Precipitation（mm）",
-      "Precipitation of Wettest Month（mm）",
-      "Precipitation of Driest Month（mm）",
-      "Precipitation Seasonality（mm）",
-      "Precipitation of Wettest Quarter（mm）",
-      "Precipitation of Driest Quarter（mm）",
-      "Precipitation of Warmest Quarter（mm）",
-      "Precipitation of Coldest Quarter（mm）",
-    ],
-    motivation: "",
-  });
-  beforeAll(() => {
+  beforeAll(async () => {
     // Load the actual Dryad dataset
     const datasetFolder =
       "benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418";
 
     excelFileData = loadExcelFileFromFolder(datasetFolder, 1);
+
+    const uniqueColumnsBySheet = new Map<string, Set<string>>();
+    uniqueColumnsBySheet.set(
+      "Field survey-Herbiory",
+      new Set([
+        "Insects(#)",
+        "no-Hemiptera(#)",
+        "Neuroptera(#)",
+        "Hemiptera(#)",
+        "Orthoptera(#)",
+        "Lepidoptera(#)",
+        "Araneida(#)",
+        "Coleoptera(#)",
+        "Diptera(#)",
+        "Hymenoptera(#)",
+        "others(#)",
+      ]),
+    );
+    uniqueColumnsBySheet.set(
+      "Field survey-data",
+      new Set([
+        "Soil ph",
+        "Soil water content（%）",
+        "Coarse root soluble sugar concentrations(mg/g)",
+        "Fine root soluble sugar concentrations(mg/g)",
+        "AMF colonization rate(%)",
+        "Damage(%)",
+        "Aboveground mass(g)",
+        "Belowground mass(g)",
+        "Root length(cm)",
+        "Root surface area(cm2)",
+        "Root average diameter(mm)",
+        "Root volume(cm3)",
+        "Root tissue density(g/cm3)",
+        "Fine root length(cm)",
+        "Coarse root length(cm)",
+        "Fine root surface area(cm2)",
+        "Coarse root  surface area(cm2)",
+      ]),
+    );
+
+    for (const sheet of excelFileData.sheets) {
+      const uniqueColumns = uniqueColumnsBySheet.get(sheet.name);
+      if (!uniqueColumns) {
+        throw new Error(`Unique columns not defined for sheet: ${sheet.name}`);
+      }
+      const columns: CategorizedColumn[] = (
+        await categorizeColumns(sheet, excelFileData, {
+          excludeAiProfile: true,
+        })
+      ).map((column) => ({
+        ...column,
+        isIncludedInAnalysis: uniqueColumns.has(column.name) || false,
+      }));
+      categorizedColumnsBySheet.set(sheet.name, columns);
+    }
   });
 
   describe("Duplicate Rows Strategy", () => {

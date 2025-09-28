@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
-import { categorizeColumnsWithGemini } from "../ai/GeminiColumnCategorizer";
+import { screenColumnsGemini } from "../ai/geminiService";
 
 interface SheetTestCase {
   sheetName: string;
@@ -311,11 +311,17 @@ program
           );
           continue;
         }
+        const sampleData = sheet.enhancedMatrix
+          .slice(sheet.firstDataRowIndex, sheet.firstDataRowIndex + 2)
+          .map((row) => row.map((cell) => String(cell.value || "")));
 
         // Get AI categorization for this specific sheet
-        const actualCategorization = await categorizeColumnsWithGemini({
-          sheet,
-          excelFileData,
+        const actualCategorization = await screenColumnsGemini({
+          paperName: excelFileData.articleName,
+          excelFileName: excelFileData.excelFileName,
+          readmeContent: excelFileData.dataDescription,
+          columnNames: sheet.columnNames,
+          columnData: sampleData,
         });
         const uniqueColumnSet = new Set(actualCategorization.unique);
         const missingColumns =

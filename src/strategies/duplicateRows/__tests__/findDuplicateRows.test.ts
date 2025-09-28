@@ -1,8 +1,8 @@
 import { describe, it, expect } from "@jest/globals";
 import { findDuplicateRows } from "../findDuplicateRows";
 import { Sheet } from "../../../entities/Sheet";
-import type { ColumnCategorization } from "../../../ai/ColumnCategorizer";
 import xlsx from "xlsx";
+import { mockCategorizedColumns } from "../../../testUtils/mockCategorizedColumns";
 
 // Helper function to create a mock sheet with test data
 function createMockSheet(
@@ -14,17 +14,9 @@ function createMockSheet(
   return sheet;
 }
 
-// Helper function to create mock column categorization
-function createColumnCategorization(
-  unique: string[],
-  shared: string[] = [],
-): ColumnCategorization {
-  return { unique, shared, motivation: "" };
-}
-
 describe("findDuplicateRows", () => {
   describe("basic duplicate detection", () => {
-    it("should find rows with high-entropy duplicate values", () => {
+    it("should find rows with high-entropy duplicate values", async () => {
       const data = [
         ["ID", "Value", "Score"],
         [1234567, 100, 8500001],
@@ -34,7 +26,10 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization(["ID", "Score"]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID", "Score"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 
@@ -45,7 +40,7 @@ describe("findDuplicateRows", () => {
       expect(result.duplicateRows[0].totalSharedCount).toBe(2);
     });
 
-    it("should find multiple shared values between rows", () => {
+    it("should find multiple shared values between rows", async () => {
       const data = [
         ["ID", "SecondaryID", "Name"],
         [1234567, 9876543, "Alice"],
@@ -55,10 +50,10 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization([
-        "ID",
-        "SecondaryID",
-      ]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID", "SecondaryID"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 
@@ -70,7 +65,7 @@ describe("findDuplicateRows", () => {
   });
 
   describe("edge cases", () => {
-    it("should return empty result when no duplicates exist", () => {
+    it("should return empty result when no duplicates exist", async () => {
       const data = [
         ["ID", "Value"],
         [1234567, 100],
@@ -79,7 +74,10 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization(["ID"]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 
@@ -92,7 +90,7 @@ describe("findDuplicateRows", () => {
       expect(() => createMockSheet("TestSheet", data)).toThrow();
     });
 
-    test("should return empty result when no unique columns are found", () => {
+    test("should return empty result when no unique columns are found", async () => {
       const data = [
         ["ID", "Value"],
         [1234567, 100],
@@ -100,16 +98,17 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization([
-        "NonExistentColumn",
-      ]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["NonExistentColumn"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 
       expect(result.duplicateRows).toHaveLength(0);
     });
 
-    test("should filter out low entropy values", () => {
+    test("should filter out low entropy values", async () => {
       const data = [
         ["ID", "SimpleValue"],
         [1, 100], // Low entropy ID
@@ -118,7 +117,10 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization(["ID"]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 
@@ -126,7 +128,7 @@ describe("findDuplicateRows", () => {
       expect(result.duplicateRows).toHaveLength(0);
     });
 
-    test("should filter out rows with only one shared column", () => {
+    test("should filter out rows with only one shared column", async () => {
       const data = [
         ["ID", "Value"],
         [1234567, 100], // High entropy ID
@@ -135,7 +137,10 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization(["ID"]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 
@@ -145,7 +150,7 @@ describe("findDuplicateRows", () => {
   });
 
   describe("column categorization filtering", () => {
-    test("should only check columns marked as unique", () => {
+    test("should only check columns marked as unique", async () => {
       const data = [
         ["ID", "SharedValue", "Name", "Score"],
         [1234567, 1.7392828, "Alice", 8500001],
@@ -154,9 +159,9 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization(
-        ["ID", "Score"],
-        ["SharedValue"],
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID", "Score"]),
       );
 
       const result = findDuplicateRows(sheet, columnCategorization);
@@ -167,7 +172,7 @@ describe("findDuplicateRows", () => {
       expect(result.duplicateRows[0].sharedValues).not.toContain(1.7392828); // SharedValue not checked
     });
 
-    test("should ignore non-numeric columns", () => {
+    test("should ignore non-numeric columns", async () => {
       const data = [
         ["ID", "TextColumn", "Score"],
         [1234567, "duplicate", 8500001],
@@ -176,11 +181,10 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization([
-        "ID",
-        "TextColumn",
-        "Score",
-      ]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID", "TextColumn", "Score"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 
@@ -192,7 +196,7 @@ describe("findDuplicateRows", () => {
   });
 
   describe("entropy scoring and sorting", () => {
-    test("should sort results by row entropy score", () => {
+    test("should sort results by row entropy score", async () => {
       const data = [
         ["ID", "SecondaryID"],
         [121212, 2222222], // Lower entropy pair
@@ -202,10 +206,10 @@ describe("findDuplicateRows", () => {
       ];
 
       const sheet = createMockSheet("TestSheet", data);
-      const columnCategorization = createColumnCategorization([
-        "ID",
-        "SecondaryID",
-      ]);
+      const columnCategorization = await mockCategorizedColumns(
+        sheet,
+        new Set(["ID", "SecondaryID"]),
+      );
 
       const result = findDuplicateRows(sheet, columnCategorization);
 

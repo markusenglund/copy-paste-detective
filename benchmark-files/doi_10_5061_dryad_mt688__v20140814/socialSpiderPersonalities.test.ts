@@ -1,29 +1,39 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
-import { ScreenColumnsResponse } from "../../src/ai/geminiService";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
 import { SuspicionLevel } from "../../src/types";
 import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
+import {
+  categorizeColumns,
+  CategorizedColumn,
+} from "../../src/columnCategorization/columnCategorization";
 
 describe("Persistent social interactions in social spiders", () => {
   let excelFileData: ExcelFileData;
-  const categorizedColumnsBySheet = new Map<string, ScreenColumnsResponse>();
-  categorizedColumnsBySheet.set("Sheet5", {
-    unique: ["Prosoma", "Boldness.1", "Boldness.2", "Boldness.3", "Boldness.4"],
-    shared: [
-      "Source",
-      "Weeks.since.disturbance",
-      "Treatment",
-      "Expt.colony",
-      "ID",
-    ],
-    motivation: "",
-  });
+  const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
 
-  beforeAll(() => {
+  beforeAll(async () => {
     const datasetFolder = "benchmark-files/doi_10_5061_dryad_mt688__v20140814";
     excelFileData = loadExcelFileFromFolder(datasetFolder, 0);
+
+    const uniqueColumns = new Set([
+      "Prosoma",
+      "Boldness.1",
+      "Boldness.2",
+      "Boldness.3",
+      "Boldness.4",
+    ]);
+
+    const columns: CategorizedColumn[] = (
+      await categorizeColumns(excelFileData.sheets[0], excelFileData, {
+        excludeAiProfile: true,
+      })
+    ).map((column) => ({
+      ...column,
+      isIncludedInAnalysis: uniqueColumns.has(column.name) || false,
+    }));
+    categorizedColumnsBySheet.set(excelFileData.sheets[0].name, columns);
   });
 
   describe("Duplicate rows strategy", () => {
