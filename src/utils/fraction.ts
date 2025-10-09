@@ -1,3 +1,4 @@
+import { round } from "lodash-es";
 import { getNumDecimals } from "./getNumDecimals";
 
 export interface RepeatingFractionMatch {
@@ -19,24 +20,35 @@ export function detectRepeatingFraction(
     return null;
   }
 
-  const tolerance = Math.min(minTolerance, Math.pow(10, -numDecimals + 3));
-
-  const repeatingDecimalDenominators = [
-    3, 7, 9, 11, 13, 17, 19, 23, 30, 90, 300,
-  ];
-
+  const repeatingDecimalDenominators = [3, 7, 9, 11, 13, 17, 19, 21, 23];
+  const maxDecimalPlacesToTry = 3;
   for (const denominator of repeatingDecimalDenominators) {
-    const numerator = Math.abs(value) * denominator;
-    const roundedNumerator = Math.round(numerator);
+    for (let k = 0; k <= maxDecimalPlacesToTry; k++) {
+      const tolerance = Math.min(
+        minTolerance * Math.pow(10, -k * 1.5),
+        Math.pow(10, -numDecimals + 2),
+      );
+      const numerator = Math.abs(value) * denominator;
+      const roundedNumerator = round(numerator, k);
 
-    const numeratorRoundingOffset = Math.abs(numerator - roundedNumerator);
+      const numeratorRoundingOffset = Math.abs(numerator - roundedNumerator);
 
-    if (numeratorRoundingOffset < tolerance && roundedNumerator !== 0) {
-      return {
-        numerator: roundedNumerator,
-        numeratorRoundingOffset,
-        denominator,
-      };
+      // console.log({
+      //   value,
+      //   denominator,
+      //   numerator,
+      //   k,
+      //   tolerance,
+      //   numeratorRoundingOffset,
+      //   diff: numeratorRoundingOffset - tolerance,
+      // });
+      if (numeratorRoundingOffset < tolerance && roundedNumerator !== 0) {
+        return {
+          numerator: Math.round(roundedNumerator * Math.pow(10, k)),
+          numeratorRoundingOffset,
+          denominator,
+        };
+      }
     }
   }
 

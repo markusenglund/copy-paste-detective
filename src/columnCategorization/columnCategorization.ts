@@ -158,9 +158,9 @@ function getCalculatedColumnProfile(
 
       const naturalLogarithmMatch = detectNaturalLogarithm(value);
       if (naturalLogarithmMatch) {
-        console.log(
-          `Natural logarithm: ${cell.cellId}  - ${value}=ln(${naturalLogarithmMatch.argument}) (${column.name})`,
-        );
+        // console.log(
+        //   `Natural logarithm: ${cell.cellId}  - ${value}=ln(${naturalLogarithmMatch.argument}) (${column.name})`,
+        // );
         naturalLogarithmMatches.push(naturalLogarithmMatch);
         continue;
       }

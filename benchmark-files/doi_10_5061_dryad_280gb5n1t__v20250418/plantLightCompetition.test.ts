@@ -86,7 +86,7 @@ describe("Plant responses to light competition", () => {
           isLnArgument: false,
         },
         "Internode length": {
-          isRepeatingFraction: false,
+          isRepeatingFraction: true,
           isSquareRoot: false,
           isLnArgument: false,
         },
