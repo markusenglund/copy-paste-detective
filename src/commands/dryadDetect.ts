@@ -34,7 +34,7 @@ program
       );
       process.exit(1);
     }
-    if (dataset.status !== "downloaded" && dataset.status !== "analyzed") {
+    if (!["downloaded", "analyzed", "evaluated"].includes(dataset.status)) {
       console.error(`Dataset with extId ${datasetExtId} is not downloaded.`);
       process.exit(1);
     }
