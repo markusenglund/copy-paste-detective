@@ -1,8 +1,12 @@
 import * as csv from "@fast-csv/parse";
 import fs from "fs";
 import { JournalSchema, type Journal } from "./scimagoJournalSchema";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const scimagoCsvPath = "sjr-2024.csv";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const scimagoCsvPath = path.join(__dirname, "sjr-2024.csv");
 
 export async function loadScimagoIssnJournalMap(): Promise<
   Map<string, Journal>
@@ -50,7 +54,7 @@ export async function loadScimagoIssnJournalMap(): Promise<
   const journalByIssn = new Map<string, Journal>();
   for (const journal of journals) {
     for (const issn of journal.issns) {
-      journalByIssn.set(issn, journal);
+      journalByIssn.set(normalizeIssn(issn), journal);
     }
   }
   return journalByIssn;
@@ -75,7 +79,7 @@ export async function getJournalByIssn(
   return journalByIssn.get(normalizedIssn);
 }
 
-function normalizeIssn(v: string): string {
+export function normalizeIssn(v: string): string {
   return v.replace(/[^0-9Xx]/g, "").toUpperCase();
 }
 
