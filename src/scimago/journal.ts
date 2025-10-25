@@ -4,8 +4,10 @@ import { JournalSchema, type Journal } from "./scimagoJournalSchema";
 
 const scimagoCsvPath = "sjr-2024.csv";
 
-export async function loadScimagoJournals(): Promise<Journal[]> {
-  return new Promise<Journal[]>((resolve, reject) => {
+export async function loadScimagoIssnJournalMap(): Promise<
+  Map<string, Journal>
+> {
+  const journals = await new Promise<Journal[]>((resolve, reject) => {
     const results: Journal[] = [];
 
     const fixedCsv = fixMalformedQuotes(
@@ -43,12 +45,39 @@ export async function loadScimagoJournals(): Promise<Journal[]> {
         results.push(parsed);
       })
       .on("end", () => resolve(results));
-    return results;
   });
+
+  const journalByIssn = new Map<string, Journal>();
+  for (const journal of journals) {
+    for (const issn of journal.issns) {
+      journalByIssn.set(issn, journal);
+    }
+  }
+  return journalByIssn;
 }
 
-const scimagoJournals = await loadScimagoJournals();
-console.log(scimagoJournals);
+let journalsCachePromise: Promise<Map<string, Journal>> | null = null;
+
+export async function getScimagoIssnJournalMap(): Promise<
+  Map<string, Journal>
+> {
+  if (!journalsCachePromise) {
+    journalsCachePromise = loadScimagoIssnJournalMap();
+  }
+  return journalsCachePromise;
+}
+
+export async function getJournalByIssn(
+  issn: string,
+): Promise<Journal | undefined> {
+  const normalizedIssn = normalizeIssn(issn);
+  const journalByIssn = await getScimagoIssnJournalMap();
+  return journalByIssn.get(normalizedIssn);
+}
+
+function normalizeIssn(v: string): string {
+  return v.replace(/[^0-9Xx]/g, "").toUpperCase();
+}
 
 function fixMalformedQuotes(input: string): string {
   let out = "";
