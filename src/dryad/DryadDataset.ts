@@ -6,7 +6,7 @@ export type DryadFile = {
 };
 
 export type DryadDataset = {
-  status: "indexed" | "downloaded" | "analyzed" | "evaluated";
+  status: "indexed" | "downloaded" | "analyzed" | "evaluated" | "failed";
   extId: number;
   dryadDoi: string;
   originalFileSize?: number;

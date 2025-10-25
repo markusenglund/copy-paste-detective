@@ -8,6 +8,8 @@ import { AnalysisResults } from "../dryad/analysisResultsDb";
 
 const program = new Command();
 
+const maxExcelFilesPerDataset = 5;
+
 program
   .name("dryad-detect-all")
   .description("Analyze excel files from downloaded Dryad datasets.")
@@ -33,7 +35,14 @@ program
         `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
       );
       analysisResultsDb.data.results[dataset.extId] = {};
-      for (let j = 0; j < dataset.excelFiles.length; j++) {
+      for (
+        let j = 0;
+        j < Math.min(dataset.excelFiles.length, maxExcelFilesPerDataset);
+        j++
+      ) {
+        console.log(
+          `[${i}] Analyzing file ${j} out of ${dataset.excelFiles.length}`,
+        );
         const excelFile = dataset.excelFiles[j];
         if (excelFile.status !== "downloaded") {
           continue;

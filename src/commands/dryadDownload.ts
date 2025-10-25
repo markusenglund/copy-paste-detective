@@ -1,6 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import { db } from "../dryad/datasetsDb";
 import { downloadFile } from "../dryad/downloadFile";
+import { parseIntArgument } from "../utils/command";
 
 const program = new Command();
 
@@ -10,7 +11,8 @@ program
     "Download excel files from Dryad that were previously indexed in the database.",
   )
   .version("0.1.0")
-  .action(async () => {
+  .argument("[count]", "Number of datasets to download", parseIntArgument, 100)
+  .action(async (count) => {
     const datasets = db.data.datasets;
     const maxFileSize = 10_000_000; // 10MB
 
@@ -46,7 +48,7 @@ program
       `Found ${latestIndexedDatasets.length} datasets that fulfil the criteria for download (out of ${datasets.length}).`,
     );
 
-    for (let i = 0; i < Math.min(100, latestIndexedDatasets.length); i++) {
+    for (let i = 0; i < Math.min(count, latestIndexedDatasets.length); i++) {
       const dataset = latestIndexedDatasets[i];
       console.log(
         `[${i}] Downloading dataset ${dataset.extId} from ${dataset.dryadPublicationDate} ("${dataset.title}")`,
@@ -54,25 +56,41 @@ program
       console.log(
         `${dataset.excelFiles.length} Excel files found:\n ${dataset.excelFiles.map((file) => file.filename).join("\n")}`,
       );
+
+      let numFailedDownloads = 0;
+
       for (const excelFile of dataset.excelFiles) {
         if (excelFile.size < maxFileSize) {
-          await downloadFile({
-            fileId: excelFile.fileId,
-            filename: excelFile.filename,
-            datasetId: dataset.extId,
-          });
-          excelFile.status = "downloaded";
+          try {
+            await downloadFile({
+              fileId: excelFile.fileId,
+              filename: excelFile.filename,
+              datasetId: dataset.extId,
+            });
+            excelFile.status = "downloaded";
+          } catch (err) {
+            console.error(err);
+            numFailedDownloads += 1;
+          }
         }
       }
       if (dataset.readmeFile) {
-        await downloadFile({
-          fileId: dataset.readmeFile.fileId,
-          filename: dataset.readmeFile.filename,
-          datasetId: dataset.extId,
-        });
-        dataset.readmeFile.status = "downloaded";
+        try {
+          await downloadFile({
+            fileId: dataset.readmeFile.fileId,
+            filename: dataset.readmeFile.filename,
+            datasetId: dataset.extId,
+          });
+          dataset.readmeFile.status = "downloaded";
+        } catch (err) {
+          console.error(err);
+        }
       }
-      dataset.status = "downloaded";
+      if (numFailedDownloads === dataset.excelFiles.length) {
+        dataset.status = "failed";
+      } else {
+        dataset.status = "downloaded";
+      }
       await db.write();
     }
   });
