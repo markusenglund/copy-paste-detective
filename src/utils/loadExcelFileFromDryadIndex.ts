@@ -5,6 +5,7 @@ import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { DryadDataset } from "../dryad/DryadDataset";
 
+const maxSheetsToLoad = 6;
 export function loadExcelFileFromDryadIndex(
   dataset: DryadDataset,
   fileIndex: number = 0,
@@ -21,7 +22,7 @@ export function loadExcelFileFromDryadIndex(
   const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
 
   const sheets: Sheet[] = [];
-  workbook.SheetNames.slice(0, 10) // Limit to first 10 sheets
+  workbook.SheetNames.slice(0, maxSheetsToLoad) // Limit to first 10 sheets
     .forEach((sheetName) => {
       const workbookSheet = workbook.Sheets[sheetName];
       try {

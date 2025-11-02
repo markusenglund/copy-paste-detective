@@ -5,6 +5,7 @@ import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadInde
 import { StrategyName } from "../types/strategies";
 import { runStrategies } from "../runStrategies";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
+import { parseIntArgument } from "../utils/command";
 
 const program = new Command();
 
@@ -14,7 +15,9 @@ program
   .name("dryad-detect-all")
   .description("Analyze excel files from downloaded Dryad datasets.")
   .version("0.1.0")
-  .action(async () => {
+  .argument("[count]", "Number of datasets to analyze", parseIntArgument, 100)
+
+  .action(async (count) => {
     const datasets = datasetDb.data.datasets;
     const downloadedDatasets = datasets
       .filter((dataset) => dataset.status === "downloaded")
@@ -29,7 +32,7 @@ program
       `Found ${downloadedDatasets.length} datasets that are marked as downloaded.`,
     );
 
-    for (let i = 0; i < downloadedDatasets.length; i++) {
+    for (let i = 1; i < Math.min(count, downloadedDatasets.length); i++) {
       const dataset = downloadedDatasets[i];
       console.log(
         `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
