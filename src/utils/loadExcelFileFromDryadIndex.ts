@@ -22,7 +22,7 @@ export function loadExcelFileFromDryadIndex(
   const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
 
   const sheets: Sheet[] = [];
-  workbook.SheetNames.slice(0, maxSheetsToLoad) // Limit to first 10 sheets
+  workbook.SheetNames.slice(0, maxSheetsToLoad) // Limit to first n sheets
     .forEach((sheetName) => {
       const workbookSheet = workbook.Sheets[sheetName];
       try {
