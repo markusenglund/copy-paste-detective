@@ -47,7 +47,7 @@ program
       );
     }
 
-    for (let i = 1; i < numDatasetsToAnalyze; i++) {
+    for (let i = 0; i < numDatasetsToAnalyze; i++) {
       const dataset = downloadedDatasets[i];
       console.log(
         `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,

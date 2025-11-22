@@ -33,37 +33,25 @@ export type CategorizedColumn = Pick<Column, "index" | "name" | "id"> &
 export type CategorizedColumnBasic = Pick<Column, "index" | "name" | "id"> &
   CalculatedColumnProfile;
 
-// Overloads
-export function categorizeColumns(
-  sheet: Sheet,
-  excelFileData: ExcelFileData,
-): Promise<CategorizedColumn[]>;
-export function categorizeColumns(
-  sheet: Sheet,
-  excelFileData: ExcelFileData,
-  options: { excludeAiProfile: false },
-): Promise<CategorizedColumn[]>;
-export function categorizeColumns(
-  sheet: Sheet,
-  excelFileData: ExcelFileData,
-  options: { excludeAiProfile: true },
-): Promise<CategorizedColumnBasic[]>;
-
 // Implementation
 export async function categorizeColumns(
   sheet: Sheet,
   excelFileData: ExcelFileData,
   options?: { excludeAiProfile: boolean },
-): Promise<CategorizedColumn[] | CategorizedColumnBasic[]> {
+): Promise<CategorizedColumn[]> {
   const calculatedColumnProfiles = getCalculatedColumnsProfiles(sheet);
 
   if (options?.excludeAiProfile) {
     const categorizedColumns = sheet.getColumns().map((column, index) => ({
       ...column,
       ...calculatedColumnProfiles[index],
+      isIncludedInAnalysis: true,
     }));
     return categorizedColumns;
   }
+  console.log(
+    `[${sheet.name}] Getting AI column profiles for ${sheet.getColumns().length} columns`,
+  );
 
   const aiColumnProfiles = await getAiColumnProfiles(sheet, excelFileData);
 
