@@ -28,7 +28,7 @@ export class EnhancedCell {
     return this.originalCell?.w || String(this.value || "");
   }
 
-  private get isDate(): boolean {
+  get isDate(): boolean {
     if (!this.originalCell) return false;
 
     // Check if cell type is explicitly date
@@ -38,8 +38,8 @@ export class EnhancedCell {
 
     // For numeric cells, check if the formatted value looks like a date
     if (this.originalCell.t === "n" && this.originalCell.w) {
-      // Common date patterns: MM/DD/YY, MM/DD/YYYY, M/D/YY, etc.
-      const datePattern = /^\d{1,2}\/\d{1,2}\/\d{2,4}$/;
+      // Common date patterns: MM/DD/YY, MM/DD/YYYY, M/D/YY, etc., or Month-YYYY (e.g., Apr-2023)
+      const datePattern = /^\d{1,2}\/\d{1,2}\/\d{2,4}$|^[A-Za-z]{3}-\d{4}$/;
       return datePattern.test(this.originalCell.w);
     }
 
