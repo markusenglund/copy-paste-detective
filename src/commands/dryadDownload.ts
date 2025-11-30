@@ -22,6 +22,14 @@ program
     const latestIndexedDatasets = datasets
       .filter((dataset) => dataset.status === "indexed")
       .filter((dataset) => {
+        const journalData = dataset.journalIssn
+          ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+          : null;
+        return ["Medicine", "Psychology", "Neuroscience"].find((field) =>
+          journalData?.fields.includes(field),
+        );
+      })
+      .filter((dataset) => {
         const containsUsageNotesOrReadme =
           dataset.readmeFile || dataset.usageNotes;
 
@@ -42,21 +50,21 @@ program
       })
       .toSorted((a, b) => {
         // Filter by highest SJR score
-        const journalData = a.journalIssn
-          ? scimagoIssnJournalMap.get(normalizeIssn(a.journalIssn))
-          : null;
-        const bJournalData = b.journalIssn
-          ? scimagoIssnJournalMap.get(normalizeIssn(b.journalIssn))
-          : null;
-        const aSjrScore = journalData?.scimagoJournalScore ?? 0;
-        const bSjrScore = bJournalData?.scimagoJournalScore ?? 0;
-        if (aSjrScore === bSjrScore) {
-          return (
-            new Date(b.dryadPublicationDate).getTime() -
-            new Date(a.dryadPublicationDate).getTime()
-          );
-        }
-        return bSjrScore - aSjrScore;
+        // const journalData = a.journalIssn
+        //   ? scimagoIssnJournalMap.get(normalizeIssn(a.journalIssn))
+        //   : null;
+        // const bJournalData = b.journalIssn
+        //   ? scimagoIssnJournalMap.get(normalizeIssn(b.journalIssn))
+        //   : null;
+        // const aSjrScore = journalData?.scimagoJournalScore ?? 0;
+        // const bSjrScore = bJournalData?.scimagoJournalScore ?? 0;
+        // if (aSjrScore === bSjrScore) {
+        return (
+          new Date(b.dryadPublicationDate).getTime() -
+          new Date(a.dryadPublicationDate).getTime()
+        );
+        // }
+        // return bSjrScore - aSjrScore;
       });
 
     console.log(
@@ -73,6 +81,8 @@ program
         `[${dataset.extId}] ${journalData?.title} (${journalData?.scimagoJournalScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
       );
     }
+
+    throw new Error("Hst");
 
     for (let i = 0; i < Math.min(count, latestIndexedDatasets.length); i++) {
       const dataset = latestIndexedDatasets[i];

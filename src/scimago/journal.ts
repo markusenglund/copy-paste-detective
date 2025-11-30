@@ -44,6 +44,7 @@ export async function loadScimagoIssnJournalMap(): Promise<
             .filter((s) => s.length > 0),
           scimagoJournalScore: toFloatEU(row["SJR"]),
           avgNumCitations: toFloatEU(row["Citations / Doc. (2years)"]),
+          fields: toStringArray(row["Areas"]),
         };
         const parsed = JournalSchema.parse(journal);
         results.push(parsed);
@@ -132,4 +133,11 @@ function toFloatEU(value: string): number | undefined {
   const n = Number.parseFloat(normalized);
   if (Number.isNaN(n)) throw new Error(`Invalid number: ${value}`);
   return n;
+}
+
+function toStringArray(value: string): string[] {
+  return value
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }

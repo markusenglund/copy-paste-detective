@@ -6,6 +6,7 @@ export const JournalSchema = z.object({
   issns: z.array(z.string()),
   scimagoJournalScore: z.number().nullish(),
   avgNumCitations: z.number().nullish(),
+  fields: z.array(z.string()),
 });
 
 export type Journal = z.infer<typeof JournalSchema>;
