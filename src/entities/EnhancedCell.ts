@@ -36,14 +36,20 @@ export class EnhancedCell {
       return true;
     }
 
+    // TODO: This part can probably be removed, but needs to check if the z property is set on date columns
     // For numeric cells, check if the formatted value looks like a date
     if (this.originalCell.t === "n" && this.originalCell.w) {
       // Common date patterns: MM/DD/YY, MM/DD/YYYY, M/D/YY, etc., or Month-YYYY (e.g., Apr-2023)
       const datePattern = /^\d{1,2}\/\d{1,2}\/\d{2,4}$|^[A-Za-z]{3}-\d{4}$/;
-      return datePattern.test(this.originalCell.w);
+      if (datePattern.test(this.originalCell.w)) {
+        return true;
+      }
     }
 
-    return false;
+    if (!this.originalCell.z) {
+      return false;
+    }
+    return xlsx.SSF.is_date(this.originalCell.z);
   }
 
   private get isNumeric(): boolean {

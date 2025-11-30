@@ -82,8 +82,6 @@ program
       );
     }
 
-    throw new Error("Hst");
-
     for (let i = 0; i < Math.min(count, latestIndexedDatasets.length); i++) {
       const dataset = latestIndexedDatasets[i];
       console.log(

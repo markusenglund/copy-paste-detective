@@ -19,7 +19,7 @@ export function loadExcelFileFromDryadIndex(
   const datasetFolder = `data/dryad/files/${dataset.extId}`;
   const selectedFile = dataset.excelFiles[fileIndex];
   const excelPath = path.join(datasetFolder, selectedFile.filename);
-  const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
+  const workbook = xlsx.readFile(excelPath, { sheetRows: 5000, cellNF: true });
 
   const sheets: Sheet[] = [];
   workbook.SheetNames.slice(0, maxSheetsToLoad) // Limit to first n sheets
