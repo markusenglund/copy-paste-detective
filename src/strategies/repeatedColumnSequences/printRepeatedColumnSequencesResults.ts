@@ -15,7 +15,7 @@ function formatSequencesForDisplay(sequences: RepeatedColumnSequence[]): Array<{
   instances: number;
 }> {
   return sequences.map((sequence) => {
-    const firstCellID = sequence.positions[0].cellId;
+    const firstCellId = sequence.positions[0].cellId;
     const secondCellId = sequence.positions[1].cellId;
     const table = {
       level: levelToSymbol[sequence.suspicionLevel],
@@ -27,7 +27,7 @@ function formatSequencesForDisplay(sequences: RepeatedColumnSequence[]): Array<{
       length: sequence.values.length,
       entropy: sequence.sequenceEntropyScore.toFixed(1),
       sizeAdj: sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
-      cell1: firstCellID,
+      cell1: firstCellId,
       cell2: secondCellId,
       matrix: sequence.numberCount,
       instances: sequence.positions.length,

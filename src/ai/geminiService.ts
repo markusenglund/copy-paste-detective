@@ -28,7 +28,7 @@ async function screenColumnsGeminiInternal(
 
   try {
     const response = await geminiClient.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
       config: {
         temperature: 0,
