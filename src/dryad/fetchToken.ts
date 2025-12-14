@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { config } from "../config/env";
+import { mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { JSONFilePreset } from "lowdb/node";
 
 const tokenResponseSchema = z.object({
@@ -18,8 +20,10 @@ export async function fetchToken(): Promise<string> {
   if (accessToken) {
     return accessToken;
   }
+  const dbPath = "data/dryad/token.json";
+  await mkdir(dirname(dbPath), { recursive: true });
   const db = await JSONFilePreset<TokenResponse | null>(
-    "data/dryad/token.json",
+    dbPath,
     null,
   );
   if (db.data) {

@@ -19,7 +19,7 @@ export async function indexDatasetPage(
       !(
         "message" in dataset &&
         dataset.message ===
-          "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
+        "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
       ),
   );
   console.log(`Fetched ${extDryadDatasets.length} datasets`);
@@ -41,7 +41,8 @@ export async function indexDatasetPage(
 
     const extDryadExcelFiles = extDryadFiles
       .filter(
-        (file) => file.path.endsWith(".xlsx") || file.path.endsWith(".xls"),
+        (file) =>
+          file.path.endsWith(".xlsx") || file.path.endsWith(".xls") || file.path.endsWith(".csv")
       )
       .filter((file) => {
         if (!file._links["stash:download"]) {
@@ -61,12 +62,12 @@ export async function indexDatasetPage(
     );
     const readmeFile = extDryadReadmeFile?._links["stash:download"]
       ? {
-          filename: extDryadReadmeFile.path,
-          size: extDryadReadmeFile.size,
-          fileId: Number(
-            extDryadReadmeFile._links["stash:download"].href.split("/").at(-2),
-          ),
-        }
+        filename: extDryadReadmeFile.path,
+        size: extDryadReadmeFile.size,
+        fileId: Number(
+          extDryadReadmeFile._links["stash:download"].href.split("/").at(-2),
+        ),
+      }
       : undefined;
 
     const dataset: DryadDataset = {

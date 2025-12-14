@@ -1,3 +1,5 @@
+import { mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { JSONFilePreset } from "lowdb/node";
 
 export type AnalysisResults = {
@@ -18,7 +20,10 @@ const defaultData: AnalysisResultsData = {
   results: {},
 };
 
+const dbPath = "data/dryad/analysis-results.json";
+await mkdir(dirname(dbPath), { recursive: true });
+
 export const db = await JSONFilePreset(
-  "data/dryad/analysis-results.json",
+  dbPath,
   defaultData,
 );
