@@ -6,6 +6,7 @@ export const MetadataFileSchema = z.object({
 
 export const MetadataSchema = z.object({
   name: z.string(),
+  abstract: z.string().optional(),
   files: z.array(MetadataFileSchema),
 });
 

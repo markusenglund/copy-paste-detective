@@ -46,5 +46,6 @@ export function loadExcelFileFromFolder(
     excelFileName: selectedFile.name,
     articleName: metadata.name,
     dataDescription: readmeContent,
+    abstract: metadata.abstract,
   };
 }

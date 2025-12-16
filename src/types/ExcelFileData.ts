@@ -4,5 +4,6 @@ export interface ExcelFileData {
   sheets: Sheet[];
   excelFileName: string;
   articleName: string;
+  abstract?: string;
   dataDescription: string;
 }

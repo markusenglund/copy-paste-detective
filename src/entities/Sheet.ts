@@ -70,11 +70,17 @@ export class Sheet {
   getSampleData(numRows: number): string[][] {
     const sampleData = this.enhancedMatrix
       .slice(this.firstDataRowIndex, this.firstDataRowIndex + numRows)
-      .map((row) => row.map((cell) => String(cell.value || "")));
+      .map((row) => row.map((cell) => String(cell.value ?? "")));
     if (sampleData.length < numRows) {
       throw new Error(`Couldn't find at least ${numRows} data rows`);
     }
     return sampleData;
+  }
+
+  getSampleRow(rowIndex: number): string[] {
+    return this.enhancedMatrix[rowIndex].map((cell) =>
+      String(cell.value ?? ""),
+    );
   }
 
   /**
