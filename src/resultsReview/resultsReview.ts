@@ -8,6 +8,7 @@ import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
 import { groupBy } from "lodash-es";
 import { DuplicateRowsResult } from "../types/strategies";
 import { RepeatedColumnSequencesResult } from "../types/strategies";
+import { SuspicionLevel } from "../types";
 
 export async function reviewResults(
   excelFileData: ExcelFileData,
@@ -25,20 +26,32 @@ export async function reviewResults(
     "sheet.name",
   );
 
-  const minSizeAdjustedEntropyScore = 2;
-
   const promptInputs = excelFileData.sheets
     .map((sheet) => {
       const duplicateRows =
-        duplicateRowsBySheet[sheet.name]?.toSorted(
-          (a, b) =>
-            b.matrixSizeAdjustedEntropyScore - a.matrixSizeAdjustedEntropyScore,
-        ) ?? [];
+        duplicateRowsBySheet[sheet.name]
+          ?.filter((duplicateRow) =>
+            [SuspicionLevel.Medium, SuspicionLevel.High].includes(
+              duplicateRow.suspicionLevel,
+            ),
+          )
+          .toSorted(
+            (a, b) =>
+              b.matrixSizeAdjustedEntropyScore -
+              a.matrixSizeAdjustedEntropyScore,
+          ) ?? [];
       const duplicateColumnSequences =
-        duplicateColumnSequencesBySheet[sheet.name]?.toSorted(
-          (a, b) =>
-            b.matrixSizeAdjustedEntropyScore - a.matrixSizeAdjustedEntropyScore,
-        ) ?? [];
+        duplicateColumnSequencesBySheet[sheet.name]
+          ?.filter((columnSequence) =>
+            [SuspicionLevel.Medium, SuspicionLevel.High].includes(
+              columnSequence.suspicionLevel,
+            ),
+          )
+          .toSorted(
+            (a, b) =>
+              b.matrixSizeAdjustedEntropyScore -
+              a.matrixSizeAdjustedEntropyScore,
+          ) ?? [];
       return {
         sheet,
         duplicateRows,
@@ -49,13 +62,6 @@ export async function reviewResults(
       (sheet) =>
         sheet.duplicateRows.length > 0 ||
         sheet.duplicateColumnSequences.length > 0,
-    )
-    .filter(
-      (sheet) =>
-        sheet.duplicateRows[0].matrixSizeAdjustedEntropyScore >
-          minSizeAdjustedEntropyScore ||
-        sheet.duplicateColumnSequences[0].matrixSizeAdjustedEntropyScore >
-          minSizeAdjustedEntropyScore,
     );
 
   // Prepare output file (in project root, append all prompts)
@@ -103,7 +109,7 @@ const createPrompt = (
 Title of the paper: ${excelFileData.articleName}
 Excel filename: ${excelFileData.excelFileName}
 Sheet name: ${sheet.name}
-Number of rows: ${sheet.numRows}
+Number of rows in sheet: ${sheet.numRows}
 `;
 
   if (excelFileData.abstract) {
@@ -130,7 +136,7 @@ Here are the first ${numberOfSampleRows} rows of the spreadsheet to help you und
 
 ${sampleTable}
 `;
-  const numDuplicateRowSamples = 4;
+  const numDuplicateRowSamples = 6;
   const duplicateRowSamples = duplicateRows.slice(0, numDuplicateRowSamples);
   if (duplicateRowSamples.length > 0) {
     prompt += `
