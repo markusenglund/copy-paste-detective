@@ -1,4 +1,6 @@
 import { markdownTable } from "markdown-table";
+import fs from "node:fs";
+import path from "node:path";
 import { DuplicateRow } from "../entities/DuplicateRow";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { Sheet } from "../entities/Sheet";
@@ -56,17 +58,28 @@ export async function reviewResults(
           minSizeAdjustedEntropyScore,
     );
 
+  // Prepare output file (in project root, append all prompts)
+  const outputFilePath = path.resolve("tmp/prompts.txt");
+  // Overwrite any existing file at the start of a run
+  fs.writeFileSync(
+    outputFilePath,
+    `Prompts generated for Excel file: ${excelFileData.excelFileName}\n\n`,
+    "utf8",
+  );
+
   promptInputs.forEach((promptInput, index) => {
     const prompt = createPrompt(excelFileData, promptInput);
 
+    const header = `\n\n================ Prompt ${index + 1} ================\n\n`;
+    const footer = `\n================ End of prompt ${index + 1} ================\n`;
+
     // Use stdout directly so very long prompts are not truncated by util.inspect / console.log
-    process.stdout.write(
-      `\n\n================ Prompt ${index + 1} ================\n\n`,
-    );
+    process.stdout.write(header);
     process.stdout.write(prompt);
-    process.stdout.write(
-      `\n================ End of prompt ${index + 1} ================\n`,
-    );
+    process.stdout.write(footer);
+
+    // Also append to a text file for later use
+    fs.appendFileSync(outputFilePath, `${header}${prompt}${footer}`, "utf8");
   });
 }
 
@@ -117,7 +130,7 @@ Here are the first ${numberOfSampleRows} rows of the spreadsheet to help you und
 
 ${sampleTable}
 `;
-  const numDuplicateRowSamples = 2;
+  const numDuplicateRowSamples = 4;
   const duplicateRowSamples = duplicateRows.slice(0, numDuplicateRowSamples);
   if (duplicateRowSamples.length > 0) {
     prompt += `
@@ -134,7 +147,7 @@ And here are examples of row pairs with some duplicate cell values.
     prompt += `
 Rows ${rowIndex1 + 1} and ${rowIndex2 + 1}:
   
-    ${duplicateRowTable}
+${duplicateRowTable}
     `;
   }
   prompt += `

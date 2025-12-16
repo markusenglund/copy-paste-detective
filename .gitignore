@@ -5,3 +5,4 @@ files/non-fraud
 files/false-positives
 data
 .~lock.*#
+tmp
