@@ -151,6 +151,7 @@ ${duplicateRowTable}
 
 Here are examples of pairs of vertical sequences of cells that are perfect duplicates.
 `;
+    const maxDuplicateSequenceRows = 10;
     for (const duplicateColumnSequence of duplicateColumnSequenceSamples) {
       const { sequences, values } = duplicateColumnSequence;
       console.log(duplicateColumnSequence);
@@ -160,17 +161,67 @@ Here are examples of pairs of vertical sequences of cells that are perfect dupli
       const sequence2StartRowNumber = sequences[1].startRowIndex + 1;
       const sequence2EndRowNumber = sequences[1].startRowIndex + values.length;
       const sequence2ColumnName = sequences[1].column.name;
+
+      const numDuplicateSequenceRowsInTable = Math.min(
+        maxDuplicateSequenceRows,
+        values.length,
+      );
+
+      console.log({ numDuplicateSequenceRowsInTable, vlength: values.length });
+
+      const sequence1Rows = sheet
+        .getSampleData(
+          numDuplicateSequenceRowsInTable,
+          sequences[0].startRowIndex,
+        )
+        .map((row, i) => {
+          const originalRowNumber = sequence1StartRowNumber + i;
+          return [String(originalRowNumber), ...row];
+        });
+      const sequence1MarkdownTable = markdownTable([
+        ["originalRowNumber", ...columnNames],
+        ...sequence1Rows,
+      ]);
+
+      console.log("Table rows", sequence1Rows.length);
+
+      const sequence2Rows = sheet
+        .getSampleData(
+          numDuplicateSequenceRowsInTable,
+          sequences[1].startRowIndex,
+        )
+        .map((row, i) => {
+          const originalRowNumber = sequence2StartRowNumber + i;
+          return [String(originalRowNumber), ...row];
+        });
+      const sequence2MarkdownTable = markdownTable([
+        ["originalRowNumber", ...columnNames],
+        ...sequence2Rows,
+      ]);
       prompt += `
-The sequence of ${duplicateColumnSequence.values.length} values from row ${sequence1StartRowNumber} to ${sequence1EndRowNumber} of the column '${sequence1ColumnName}' is the same as the sequence from row ${sequence2StartRowNumber} to ${sequence2EndRowNumber} of the column '${sequence2ColumnName}'.
+The sequence of ${duplicateColumnSequence.values.length} values from row ${sequence1StartRowNumber} to ${sequence1EndRowNumber} of the column '${sequence1ColumnName}' is a perfect duplicate of the sequence from row ${sequence2StartRowNumber} to ${sequence2EndRowNumber} of the column '${sequence2ColumnName}'.
+
+Rows ${sequence1StartRowNumber} to ${sequence1StartRowNumber + numDuplicateSequenceRowsInTable - 1}:
+
+${sequence1MarkdownTable}
+
+Rows ${sequence2StartRowNumber} to ${sequence2EndRowNumber + numDuplicateSequenceRowsInTable - 1}:
+
+${sequence2MarkdownTable}
 
 `;
+      if (values.length > numDuplicateSequenceRowsInTable) {
+        prompt += `
+The sequence has been truncated to ${maxDuplicateSequenceRows} for brevity.
+  `;
+      }
     }
   }
 
   prompt += `
 # Instructions
 
-Do you think these duplicated rows make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include your reasoning.
+Do you think these duplicated blocks of cells make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include your reasoning.
 `;
 
   return prompt;

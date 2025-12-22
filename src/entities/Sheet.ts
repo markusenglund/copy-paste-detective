@@ -67,9 +67,12 @@ export class Sheet {
     return this.getColumns().map((column) => column.name);
   }
 
-  getSampleData(numRows: number): string[][] {
+  getSampleData(
+    numRows: number,
+    startRowIndex: number = this.firstDataRowIndex,
+  ): string[][] {
     const sampleData = this.enhancedMatrix
-      .slice(this.firstDataRowIndex, this.firstDataRowIndex + numRows)
+      .slice(startRowIndex, startRowIndex + numRows)
       .map((row) => row.map((cell) => String(cell.value ?? "")));
     if (sampleData.length < numRows) {
       throw new Error(`Couldn't find at least ${numRows} data rows`);
