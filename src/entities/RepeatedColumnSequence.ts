@@ -3,6 +3,7 @@ import { Sheet } from "./Sheet";
 import { calculateColumnSequenceEntropyScore } from "../utils/entropy";
 import { calculateSequenceRegularity } from "../utils/sequence";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
+import { Column } from "./Column";
 
 export type Position = {
   column: number;
@@ -10,8 +11,14 @@ export type Position = {
   cellId: string;
 };
 
+export type ColumnSequence = {
+  startRowIndex: number;
+  startCellId: string;
+  column: Column;
+};
+
 export class RepeatedColumnSequence {
-  positions: [Position, Position];
+  sequences: [ColumnSequence, ColumnSequence];
   values: number[];
   sequenceEntropyScore: number;
   adjustedSequenceEntropyScore: number;
@@ -20,12 +27,12 @@ export class RepeatedColumnSequence {
   sheetName: string;
 
   constructor(data: {
-    positions: [Position, Position];
+    sequences: [ColumnSequence, ColumnSequence];
     values: number[];
     sheet: Sheet;
     categorizedColumn: CategorizedColumn;
   }) {
-    this.positions = data.positions;
+    this.sequences = data.sequences;
     this.values = data.values;
     this.sheetName = data.sheet.name;
     this.numberCount = data.sheet.numNumericCells;

@@ -1,5 +1,6 @@
 import xlsx from "xlsx";
 import { roundFloatingPointInaccuracies } from "../utils/roundFloatingPointInaccuracies";
+import { getCellId } from "../utils/getCellId";
 
 export class EnhancedCell {
   public readonly value: unknown;
@@ -21,7 +22,7 @@ export class EnhancedCell {
   }
 
   get cellId(): string {
-    return xlsx.utils.encode_cell({ r: this.row, c: this.col });
+    return getCellId(this.row, this.col);
   }
 
   get formattedValue(): string {

@@ -2,7 +2,9 @@ import { RepeatedColumnSequencesResult } from "../../types/strategies";
 import { RepeatedColumnSequence } from "../../entities/RepeatedColumnSequence";
 import { levelToSymbol } from "../../utils/output";
 
-function formatSequencesForDisplay(sequences: RepeatedColumnSequence[]): Array<{
+function formatSequencesForDisplay(
+  repeatedSequences: RepeatedColumnSequence[],
+): Array<{
   level: string;
   sheetName: string;
   values: string;
@@ -14,23 +16,23 @@ function formatSequencesForDisplay(sequences: RepeatedColumnSequence[]): Array<{
   matrix: number;
   instances: number;
 }> {
-  return sequences.map((sequence) => {
-    const firstCellId = sequence.positions[0].cellId;
-    const secondCellId = sequence.positions[1].cellId;
+  return repeatedSequences.map((repeatedSequence) => {
+    const firstCellId = repeatedSequence.sequences[0].startCellId;
+    const secondCellId = repeatedSequence.sequences[1].startCellId;
     const table = {
-      level: levelToSymbol[sequence.suspicionLevel],
-      sheetName: sequence.sheetName,
+      level: levelToSymbol[repeatedSequence.suspicionLevel],
+      sheetName: repeatedSequence.sheetName,
       values:
-        sequence.values.length > 1
-          ? `${sequence.values[0]} -> ${sequence.values.at(-1)}`
-          : `${sequence.values[0]}`,
-      length: sequence.values.length,
-      entropy: sequence.sequenceEntropyScore.toFixed(1),
-      sizeAdj: sequence.matrixSizeAdjustedEntropyScore.toFixed(1),
+        repeatedSequence.values.length > 1
+          ? `${repeatedSequence.values[0]} -> ${repeatedSequence.values.at(-1)}`
+          : `${repeatedSequence.values[0]}`,
+      length: repeatedSequence.values.length,
+      entropy: repeatedSequence.sequenceEntropyScore.toFixed(1),
+      sizeAdj: repeatedSequence.matrixSizeAdjustedEntropyScore.toFixed(1),
       cell1: firstCellId,
       cell2: secondCellId,
-      matrix: sequence.numberCount,
-      instances: sequence.positions.length,
+      matrix: repeatedSequence.numberCount,
+      instances: repeatedSequence.sequences.length,
     };
     return table;
   });

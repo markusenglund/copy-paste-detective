@@ -14,29 +14,29 @@ export function deduplicateSortedSequences(
 ): RepeatedColumnSequence[] {
   let previousSequence: RepeatedColumnSequence | null = null;
   const deduplicatedSortedSequences: RepeatedColumnSequence[] = [];
-  for (const sequence of repeatedSequences) {
+  for (const repeatedSequence of repeatedSequences) {
     if (previousSequence) {
       const isSameSequence =
         previousSequence.adjustedSequenceEntropyScore ===
-          sequence.adjustedSequenceEntropyScore &&
+          repeatedSequence.adjustedSequenceEntropyScore &&
         previousSequence.values.every((value, index) => {
-          return value === sequence.values[index];
+          return value === repeatedSequence.values[index];
         });
       if (isSameSequence) {
-        sequence.positions.forEach((position) => {
+        repeatedSequence.sequences.forEach((sequence) => {
           // Check if position already exists in previousSequence and if not, add it
-          const exists = previousSequence?.positions.find(
-            (p) => p.cellId === position.cellId,
+          const exists = previousSequence?.sequences.find(
+            (s) => s.startCellId === sequence.startCellId,
           );
           if (!exists) {
-            previousSequence?.positions.push(position);
+            previousSequence?.sequences.push(sequence);
           }
         });
         continue;
       }
     }
-    deduplicatedSortedSequences.push(sequence);
-    previousSequence = sequence;
+    deduplicatedSortedSequences.push(repeatedSequence);
+    previousSequence = repeatedSequence;
   }
   return deduplicatedSortedSequences;
 }
@@ -54,6 +54,8 @@ export function findRepeatedSequences(
   if (uniqueColumnIndices.length === 0) {
     return [];
   }
+
+  const columns = sheet.getColumns();
 
   const matrix = sheet.invertedEnhancedMatrix;
 
@@ -149,7 +151,18 @@ export function findRepeatedSequences(
               continue;
             }
             const repeatedSequence = new RepeatedColumnSequence({
-              positions: [previouslySeenPosition, newPosition],
+              sequences: [
+                {
+                  startRowIndex: previouslySeenPosition.startRow,
+                  startCellId: previouslySeenPosition.cellId,
+                  column: columns[previouslySeenPosition.column],
+                },
+                {
+                  startRowIndex: newPosition.startRow,
+                  startCellId: newPosition.cellId,
+                  column: columns[newPosition.column],
+                },
+              ],
               values: repeatedValues,
               sheet,
               categorizedColumn,

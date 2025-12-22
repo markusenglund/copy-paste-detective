@@ -23,7 +23,7 @@ export async function reviewResults(
   );
   const duplicateColumnSequencesBySheet = groupBy(
     duplicateColumnSequencesResult?.sequences,
-    "sheet.name",
+    "sheetName",
   );
 
   const promptInputs = excelFileData.sheets
@@ -64,28 +64,13 @@ export async function reviewResults(
         sheet.duplicateColumnSequences.length > 0,
     );
 
-  // Prepare output file (in project root, append all prompts)
-  const outputFilePath = path.resolve("tmp/prompts.txt");
-  // Overwrite any existing file at the start of a run
-  fs.writeFileSync(
-    outputFilePath,
-    `Prompts generated for Excel file: ${excelFileData.excelFileName}\n\n`,
-    "utf8",
-  );
-
   promptInputs.forEach((promptInput, index) => {
+    // Prepare output file (in project root, append all prompts)
+    const outputFilePath = path.resolve(`tmp/prompts_${index}.md`);
+    // Overwrite any existing file at the start of a run
     const prompt = createPrompt(excelFileData, promptInput);
 
-    const header = `\n\n================ Prompt ${index + 1} ================\n\n`;
-    const footer = `\n================ End of prompt ${index + 1} ================\n`;
-
-    // Use stdout directly so very long prompts are not truncated by util.inspect / console.log
-    process.stdout.write(header);
-    process.stdout.write(prompt);
-    process.stdout.write(footer);
-
-    // Also append to a text file for later use
-    fs.appendFileSync(outputFilePath, `${header}${prompt}${footer}`, "utf8");
+    fs.writeFileSync(outputFilePath, prompt, "utf8");
   });
 }
 
@@ -97,19 +82,15 @@ const createPrompt = (
     duplicateColumnSequences: RepeatedColumnSequence[];
   },
 ): string => {
-  const {
-    sheet,
-    duplicateRows,
-    duplicateColumnSequences: _duplicateColumnSequences,
-  } = promptInput;
-  let prompt = `The raw data belonging to a scientific paper  has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the duplication makes sense in the context of the paper or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and an abbreviated version of the data itself.
+  const { sheet, duplicateRows, duplicateColumnSequences } = promptInput;
+  let prompt = `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the duplication makes sense in the context of the paper or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and an abbreviated version of the data itself.
 
 # Basic info
 
-Title of the paper: ${excelFileData.articleName}
-Excel filename: ${excelFileData.excelFileName}
-Sheet name: ${sheet.name}
-Number of rows in sheet: ${sheet.numRows}
+- Title of the paper: ${excelFileData.articleName}
+- Excel filename: ${excelFileData.excelFileName}
+- Sheet name: ${sheet.name}
+- Number of rows in sheet: ${sheet.numRows}
 `;
 
   if (excelFileData.abstract) {
@@ -136,26 +117,56 @@ Here are the first ${numberOfSampleRows} rows of the spreadsheet to help you und
 
 ${sampleTable}
 `;
-  const numDuplicateRowSamples = 6;
-  const duplicateRowSamples = duplicateRows.slice(0, numDuplicateRowSamples);
-  if (duplicateRowSamples.length > 0) {
+  if (duplicateRows.length > 0) {
+    const numDuplicateRowSamples = 6;
+    const duplicateRowSamples = duplicateRows.slice(0, numDuplicateRowSamples);
     prompt += `
-And here are examples of row pairs with some duplicate cell values.
+
+### Row pairs with duplicate cell values
+
 `;
-  }
-  for (const duplicateRow of duplicateRowSamples) {
-    const [rowIndex1, rowIndex2] = duplicateRow.rowIndices;
-    const duplicateRowTable = markdownTable([
-      ["originalRowNumber", ...columnNames],
-      [String(rowIndex1 + 1), ...sheet.getSampleRow(rowIndex1)],
-      [String(rowIndex2 + 1), ...sheet.getSampleRow(rowIndex2)],
-    ]);
-    prompt += `
+    for (const duplicateRow of duplicateRowSamples) {
+      const [rowIndex1, rowIndex2] = duplicateRow.rowIndices;
+      const duplicateRowTable = markdownTable([
+        ["originalRowNumber", ...columnNames],
+        [String(rowIndex1 + 1), ...sheet.getSampleRow(rowIndex1)],
+        [String(rowIndex2 + 1), ...sheet.getSampleRow(rowIndex2)],
+      ]);
+      prompt += `
 Rows ${rowIndex1 + 1} and ${rowIndex2 + 1}:
-  
+
 ${duplicateRowTable}
-    `;
+  `;
+    }
   }
+
+  if (duplicateColumnSequences.length > 0) {
+    const numDuplicateColumnSequenceSamples = 2;
+    const duplicateColumnSequenceSamples = duplicateColumnSequences.slice(
+      0,
+      numDuplicateColumnSequenceSamples,
+    );
+    prompt += `
+### Duplicated vertical sequences of cells
+
+Here are examples of pairs of vertical sequences of cells that are perfect duplicates.
+`;
+    for (const duplicateColumnSequence of duplicateColumnSequenceSamples) {
+      const { sequences, values } = duplicateColumnSequence;
+      console.log(duplicateColumnSequence);
+      const sequence1StartRowNumber = sequences[0].startRowIndex + 1;
+      const sequence1EndRowNumber = sequences[0].startRowIndex + values.length;
+      const sequence1ColumnName = sequences[0].column.name;
+      const sequence2StartRowNumber = sequences[1].startRowIndex + 1;
+      const sequence2EndRowNumber = sequences[1].startRowIndex + values.length;
+      const sequence2ColumnName = sequences[1].column.name;
+      prompt += `
+The sequence of ${duplicateColumnSequence.values.length} values from row ${sequence1StartRowNumber} to ${sequence1EndRowNumber} of the column '${sequence1ColumnName}' is the same as the sequence from row ${sequence2StartRowNumber} to ${sequence2EndRowNumber} of the column '${sequence2ColumnName}'.
+
+`;
+    }
+  }
+
   prompt += `
 # Instructions
 
