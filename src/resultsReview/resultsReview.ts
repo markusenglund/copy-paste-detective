@@ -141,8 +141,23 @@ ${duplicateRowTable}
   }
 
   if (duplicateColumnSequences.length > 0) {
+    const seenStartRowIndices = new Set<number>();
+    const uniqueDuplicateColumnSequences = duplicateColumnSequences.filter(
+      (sequence) => {
+        const [seq1, seq2] = sequence.sequences;
+        const hasSeenStartRow =
+          seenStartRowIndices.has(seq1.startRowIndex) ||
+          seenStartRowIndices.has(seq2.startRowIndex);
+        if (!hasSeenStartRow) {
+          seenStartRowIndices.add(seq1.startRowIndex);
+          seenStartRowIndices.add(seq2.startRowIndex);
+          return true;
+        }
+        return false;
+      },
+    );
     const numDuplicateColumnSequenceSamples = 2;
-    const duplicateColumnSequenceSamples = duplicateColumnSequences.slice(
+    const duplicateColumnSequenceSamples = uniqueDuplicateColumnSequences.slice(
       0,
       numDuplicateColumnSequenceSamples,
     );
@@ -205,14 +220,14 @@ Rows ${sequence1StartRowNumber} to ${sequence1StartRowNumber + numDuplicateSeque
 
 ${sequence1MarkdownTable}
 
-Rows ${sequence2StartRowNumber} to ${sequence2EndRowNumber + numDuplicateSequenceRowsInTable - 1}:
+Rows ${sequence2StartRowNumber} to ${sequence2StartRowNumber + numDuplicateSequenceRowsInTable - 1}:
 
 ${sequence2MarkdownTable}
 
 `;
       if (values.length > numDuplicateSequenceRowsInTable) {
         prompt += `
-The sequence has been truncated to ${maxDuplicateSequenceRows} for brevity.
+The sequence has been truncated to ${numDuplicateSequenceRowsInTable} for brevity.
   `;
       }
     }
