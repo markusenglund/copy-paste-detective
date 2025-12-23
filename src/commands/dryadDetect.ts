@@ -5,6 +5,7 @@ import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadInde
 import { StrategyName } from "../types/strategies";
 import { runStrategies } from "../runStrategies";
 import { parseIntArgument, parseStrategies } from "../utils/command";
+import { reviewResults } from "../resultsReview/resultsReview";
 
 const program = new Command();
 
@@ -52,7 +53,12 @@ program
     analysisResultsDb.data.results[dataset.extId] = {};
     const excelFileData = loadExcelFileFromDryadIndex(dataset, fileIndex);
 
-    await runStrategies(options.strategies, excelFileData);
+    const results = await runStrategies(options.strategies, excelFileData);
+    await reviewResults(
+      excelFileData,
+      results[StrategyName.DuplicateRows],
+      results[StrategyName.RepeatedColumnSequences],
+    );
   });
 
 program.parse();

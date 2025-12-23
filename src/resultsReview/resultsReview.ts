@@ -16,7 +16,6 @@ export async function reviewResults(
   duplicateColumnSequencesResult?: RepeatedColumnSequencesResult,
 ): Promise<void> {
   // Group issues by sheet
-
   const duplicateRowsBySheet = groupBy(
     duplicateRowsResult?.duplicateRows,
     "sheet.name",
@@ -87,9 +86,9 @@ const createPrompt = (
 
 # Basic info
 
-- Title of the paper: ${excelFileData.articleName}
-- Excel filename: ${excelFileData.excelFileName}
-- Sheet name: ${sheet.name}
+- Title: '${excelFileData.articleName}'
+- Excel filename: '${excelFileData.excelFileName}'
+- Sheet name: '${sheet.name}'
 - Number of rows in sheet: ${sheet.numRows}
 `;
 
@@ -118,8 +117,23 @@ Here are the first ${numberOfSampleRows} rows of the spreadsheet to help you und
 ${sampleTable}
 `;
   if (duplicateRows.length > 0) {
+    const seenRowIndices = new Set<number>();
+    const uniqueDuplicateRows = duplicateRows.filter((duplicateRow) => {
+      const [rowIndex1, rowIndex2] = duplicateRow.rowIndices;
+      const hasSeenRow =
+        seenRowIndices.has(rowIndex1) || seenRowIndices.has(rowIndex2);
+      if (!hasSeenRow) {
+        seenRowIndices.add(rowIndex1);
+        seenRowIndices.add(rowIndex2);
+        return true;
+      }
+      return false;
+    });
     const numDuplicateRowSamples = 6;
-    const duplicateRowSamples = duplicateRows.slice(0, numDuplicateRowSamples);
+    const duplicateRowSamples = uniqueDuplicateRows.slice(
+      0,
+      numDuplicateRowSamples,
+    );
     prompt += `
 
 ### Row pairs with duplicate cell values
