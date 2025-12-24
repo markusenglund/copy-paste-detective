@@ -65,7 +65,9 @@ export async function reviewResults(
 
   promptInputs.forEach((promptInput, index) => {
     // Prepare output file (in project root, append all prompts)
-    const outputFilePath = path.resolve(`tmp/prompts_${index}.md`);
+    const outputFilePath = path.resolve(
+      `tmp/prompts_${excelFileData.excelFileName}_${index}.md`,
+    );
     // Overwrite any existing file at the start of a run
     const prompt = createPrompt(excelFileData, promptInput);
 

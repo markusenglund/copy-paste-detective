@@ -34,7 +34,7 @@ export async function runStrategies(
   await Promise.all(
     sheets.map(async (sheet) => {
       const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
-        excludeAiProfile: true,
+        excludeAiProfile: false,
       });
 
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
