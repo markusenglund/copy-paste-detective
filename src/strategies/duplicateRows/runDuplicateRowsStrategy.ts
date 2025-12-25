@@ -1,10 +1,10 @@
-import { findDuplicateRows } from "../../detection";
 import {
   DuplicateRowsResult,
   StrategyName,
   StrategyDependencies,
 } from "../../types/strategies";
 import { ExcelFileData } from "../../types/ExcelFileData";
+import { findDuplicateRows } from "./findDuplicateRows";
 
 async function runDuplicateRowsStrategy(
   excelFileData: ExcelFileData,

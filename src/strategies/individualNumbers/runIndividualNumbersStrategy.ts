@@ -1,4 +1,4 @@
-import { findDuplicateValues } from "../../detection";
+import { findDuplicateValues } from "../../detection/findDuplicateValues";
 import {
   IndividualNumbersResult,
   StrategyName,
