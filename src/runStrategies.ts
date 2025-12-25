@@ -12,6 +12,7 @@ import {
   categorizeColumns,
   CategorizedColumn,
 } from "./columnCategorization/columnCategorization";
+import { reviewResults } from "./resultsReview/resultsReview";
 
 type StrategyResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -89,6 +90,13 @@ export async function runStrategies(
     individualNumbersStrategy.printResults(result);
     results[StrategyName.IndividualNumbers] = result;
   }
+
+  await reviewResults(
+    excelFileData,
+    categorizedColumnsBySheet,
+    results[StrategyName.DuplicateRows],
+    results[StrategyName.RepeatedColumnSequences],
+  );
 
   return results;
 }

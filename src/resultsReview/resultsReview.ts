@@ -9,9 +9,11 @@ import { groupBy } from "lodash-es";
 import { DuplicateRowsResult } from "../types/strategies";
 import { RepeatedColumnSequencesResult } from "../types/strategies";
 import { SuspicionLevel } from "../types";
+import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
 export async function reviewResults(
   excelFileData: ExcelFileData,
+  categorizedColumnsBySheet: Map<string, CategorizedColumn[]>,
   duplicateRowsResult?: DuplicateRowsResult,
   duplicateColumnSequencesResult?: RepeatedColumnSequencesResult,
 ): Promise<void> {
@@ -27,6 +29,13 @@ export async function reviewResults(
 
   const promptInputs = excelFileData.sheets
     .map((sheet) => {
+      const categorizedColumns = categorizedColumnsBySheet.get(sheet.name);
+      if (!categorizedColumns) {
+        throw new Error(
+          `Unexpectedly missing categorized columns for sheet ${sheet.name}`,
+        );
+      }
+
       const duplicateRows =
         duplicateRowsBySheet[sheet.name]
           ?.filter((duplicateRow) =>
@@ -55,6 +64,7 @@ export async function reviewResults(
         sheet,
         duplicateRows,
         duplicateColumnSequences,
+        categorizedColumns,
       };
     })
     .filter(
@@ -79,11 +89,17 @@ const createPrompt = (
   excelFileData: ExcelFileData,
   promptInput: {
     sheet: Sheet;
+    categorizedColumns: CategorizedColumn[];
     duplicateRows: DuplicateRow[];
     duplicateColumnSequences: RepeatedColumnSequence[];
   },
 ): string => {
-  const { sheet, duplicateRows, duplicateColumnSequences } = promptInput;
+  const { sheet, duplicateRows, duplicateColumnSequences, categorizedColumns } =
+    promptInput;
+
+  const lnColumns = categorizedColumns
+    .filter((column) => column.isLnArgument)
+    .map(({ name }) => name);
   let prompt = `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the duplication makes sense in the context of the paper or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and an abbreviated version of the data itself.
 
 # Basic info
@@ -136,6 +152,14 @@ ${sampleTable}
       0,
       numDuplicateRowSamples,
     );
+
+    if (lnColumns.length > 0) {
+      prompt += `
+Note that some columns have artificially many significant digits because they are the result of taking the natural logarithm of the original measured value. These are the columns affected:
+${lnColumns.map((columnName) => "- " + columnName).join("\n")}
+      `;
+    }
+
     prompt += `
 
 ### Row pairs with duplicate cell values
@@ -185,7 +209,6 @@ Here are examples of pairs of vertical sequences of cells that are perfect dupli
     const maxDuplicateSequenceRows = 10;
     for (const duplicateColumnSequence of duplicateColumnSequenceSamples) {
       const { sequences, values } = duplicateColumnSequence;
-      console.log(duplicateColumnSequence);
       const sequence1StartRowNumber = sequences[0].startRowIndex + 1;
       const sequence1EndRowNumber = sequences[0].startRowIndex + values.length;
       const sequence1ColumnName = sequences[0].column.name;
@@ -197,8 +220,6 @@ Here are examples of pairs of vertical sequences of cells that are perfect dupli
         maxDuplicateSequenceRows,
         values.length,
       );
-
-      console.log({ numDuplicateSequenceRowsInTable, vlength: values.length });
 
       const sequence1Rows = sheet
         .getSampleData(
@@ -213,8 +234,6 @@ Here are examples of pairs of vertical sequences of cells that are perfect dupli
         ["originalRowNumber", ...columnNames],
         ...sequence1Rows,
       ]);
-
-      console.log("Table rows", sequence1Rows.length);
 
       const sequence2Rows = sheet
         .getSampleData(

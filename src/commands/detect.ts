@@ -4,7 +4,6 @@ import { StrategyName } from "../types/strategies";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
 import { parseIntArgument, parseStrategies } from "../utils/command";
-import { reviewResults } from "../resultsReview/resultsReview";
 
 const program = new Command();
 
@@ -41,12 +40,7 @@ program
       `📄 Selected file '${excelFileData.excelFileName}' (index ${fileIndex}) from folder: '${folder}'`,
     );
 
-    const results = await runStrategies(options.strategies, excelFileData);
-    await reviewResults(
-      excelFileData,
-      results[StrategyName.DuplicateRows],
-      results[StrategyName.RepeatedColumnSequences],
-    );
+    await runStrategies(options.strategies, excelFileData);
     console.timeEnd("Total execution time");
   });
 
