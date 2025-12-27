@@ -8,22 +8,29 @@ import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
 import { groupBy } from "lodash-es";
 import { DuplicateRowsResult } from "../types/strategies";
 import { RepeatedColumnSequencesResult } from "../types/strategies";
-import { SuspicionLevel } from "../types";
+import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 
-export async function reviewResults(
-  excelFileData: ExcelFileData,
-  categorizedColumnsBySheet: Map<string, CategorizedColumn[]>,
-  duplicateRowsResult?: DuplicateRowsResult,
-  duplicateColumnSequencesResult?: RepeatedColumnSequencesResult,
-): Promise<void> {
+export async function reviewResults({
+  excelFileData,
+  categorizedColumnsBySheet,
+  duplicateRowsResult,
+  repeatedColumnSequencesResult,
+  duplicateValuesResultsBySheet,
+}: {
+  excelFileData: ExcelFileData;
+  categorizedColumnsBySheet: Map<string, CategorizedColumn[]>;
+  duplicateRowsResult?: DuplicateRowsResult;
+  repeatedColumnSequencesResult?: RepeatedColumnSequencesResult;
+  duplicateValuesResultsBySheet: Map<string, DuplicateValuesResult>;
+}): Promise<void> {
   // Group issues by sheet
   const duplicateRowsBySheet = groupBy(
     duplicateRowsResult?.duplicateRows,
     "sheet.name",
   );
   const duplicateColumnSequencesBySheet = groupBy(
-    duplicateColumnSequencesResult?.sequences,
+    repeatedColumnSequencesResult?.sequences,
     "sheetName",
   );
 
@@ -60,11 +67,22 @@ export async function reviewResults(
               b.matrixSizeAdjustedEntropyScore -
               a.matrixSizeAdjustedEntropyScore,
           ) ?? [];
+
+      const duplicateValuesResult = duplicateValuesResultsBySheet.get(
+        sheet.name,
+      );
+      if (!duplicateValuesResult) {
+        throw new Error(
+          `Sheet '${sheet.name}' unexpectedly lacks duplicate values result, something has gone wrong...`,
+        );
+      }
+      const { numOccurrencesByNumericValue } = duplicateValuesResult;
       return {
         sheet,
         duplicateRows,
         duplicateColumnSequences,
         categorizedColumns,
+        numOccurrencesByNumericValue,
       };
     })
     .filter(
@@ -90,17 +108,23 @@ const createPrompt = (
   promptInput: {
     sheet: Sheet;
     categorizedColumns: CategorizedColumn[];
+    numOccurrencesByNumericValue: Map<number, number>;
     duplicateRows: DuplicateRow[];
     duplicateColumnSequences: RepeatedColumnSequence[];
   },
 ): string => {
-  const { sheet, duplicateRows, duplicateColumnSequences, categorizedColumns } =
-    promptInput;
+  const {
+    sheet,
+    duplicateRows,
+    duplicateColumnSequences,
+    categorizedColumns,
+    numOccurrencesByNumericValue,
+  } = promptInput;
 
   const lnColumns = categorizedColumns
     .filter((column) => column.isLnArgument)
     .map(({ name }) => name);
-  let prompt = `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the duplication makes sense in the context of the paper or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and an abbreviated version of the data itself.
+  let prompt = `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the flagged duplication is a false positive (i.e. it makes sense in the context of the paper) or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and the parts of the data that was flagged.
 
 # Basic info
 
@@ -120,9 +144,17 @@ ${excelFileData.abstract}
 
   prompt += `
 # Description of the data
-
+\`\`\`
 ${excelFileData.dataDescription}
+\`\`\`
 `;
+
+  prompt += `
+# Instructions
+Keep the following in mind when analyzing the duplications
+- If a duplicate sequence/row has many values that are common in the spreadsheet (high number of occurrences): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
+`;
+
   const numberOfSampleRows = 8;
   const columnNames = sheet.columnNames;
   const firstTenRows = sheet.getSampleData(numberOfSampleRows);
@@ -176,6 +208,21 @@ ${lnColumns.map((columnName) => "- " + columnName).join("\n")}
 Rows ${rowIndex1 + 1} and ${rowIndex2 + 1}:
 
 ${duplicateRowTable}
+
+They share the values following columns:
+${duplicateRow.sharedColumns
+  .map((columnIndex, i) => {
+    const value = duplicateRow.sharedValues[i];
+    const numOccurrences = numOccurrencesByNumericValue.get(value);
+    if (!numOccurrences) {
+      throw new Error(
+        `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
+      );
+    }
+    const column = duplicateRow.categorizedColumns[columnIndex];
+    return `- '${column.name}' - value: ${value}, occurrences of value: ${numOccurrences}`;
+  })
+  .join("\n")}
   `;
     }
   }
@@ -259,6 +306,18 @@ Rows ${sequence2StartRowNumber} to ${sequence2StartRowNumber + numDuplicateSeque
 
 ${sequence2MarkdownTable}
 
+They share the values following values:
+${duplicateColumnSequence.values
+  .map((value) => {
+    const numOccurrences = numOccurrencesByNumericValue.get(value);
+    if (!numOccurrences) {
+      throw new Error(
+        `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
+      );
+    }
+    return `- Value: ${value}, occurrences of value: ${numOccurrences}`;
+  })
+  .join("\n")}
 `;
       if (values.length > numDuplicateSequenceRowsInTable) {
         prompt += `
@@ -269,7 +328,7 @@ The sequence has been truncated to ${numDuplicateSequenceRowsInTable} for brevit
   }
 
   prompt += `
-# Instructions
+# Your task
 
 Do you think these duplicated blocks of cells make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include your reasoning.
 `;

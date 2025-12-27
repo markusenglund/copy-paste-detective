@@ -11,7 +11,7 @@ export class DuplicateRow {
   public readonly totalSharedCount: number;
   public readonly sheet: Sheet;
   public readonly numComparedColumns: number;
-  private readonly categorizedColumns: CategorizedColumn[];
+  public readonly categorizedColumns: CategorizedColumn[];
 
   constructor(
     rowIndices: [number, number],

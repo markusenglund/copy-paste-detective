@@ -41,7 +41,7 @@ export async function runStrategies(
   await Promise.all(
     sheets.map(async (sheet) => {
       const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
-        excludeAiProfile: false,
+        excludeAiProfile: true,
       });
 
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
@@ -104,12 +104,14 @@ export async function runStrategies(
     results[StrategyName.IndividualNumbers] = result;
   }
 
-  await reviewResults(
+  await reviewResults({
     excelFileData,
     categorizedColumnsBySheet,
-    results[StrategyName.DuplicateRows],
-    results[StrategyName.RepeatedColumnSequences],
-  );
+    duplicateValuesResultsBySheet,
+    duplicateRowsResult: results[StrategyName.DuplicateRows],
+    repeatedColumnSequencesResult:
+      results[StrategyName.RepeatedColumnSequences],
+  });
 
   return results;
 }
