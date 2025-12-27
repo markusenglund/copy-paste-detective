@@ -1,4 +1,3 @@
-import { findDuplicateValues } from "../../detection/findDuplicateValues";
 import {
   IndividualNumbersResult,
   StrategyName,
@@ -30,7 +29,11 @@ function areAllCellPairsAlreadyReported(
 
 export function runIndividualNumbersStrategy(
   excelFileData: ExcelFileData,
-  { previousResults, categorizedColumnsBySheet }: StrategyDependencies,
+  {
+    previousResults,
+    categorizedColumnsBySheet,
+    duplicateValuesResultsBySheet,
+  }: StrategyDependencies,
 ): IndividualNumbersResult {
   const startTime = performance.now();
 
@@ -62,8 +65,14 @@ export function runIndividualNumbersStrategy(
       throw new Error(`Categorized columns not found for sheet: ${sheet.name}`);
     }
 
-    const { duplicateValues } = findDuplicateValues(sheet, categorizedColumns);
+    const duplicateValuesResult = duplicateValuesResultsBySheet.get(sheet.name);
 
+    if (!duplicateValuesResult) {
+      throw new Error(
+        `Sheet '${sheet.name}' unexpectedly lacks duplicate value results, something has gone wrong...`,
+      );
+    }
+    const { duplicateValues } = duplicateValuesResult;
     // Filter out values where all cell pairs have already been reported in duplicate rows
     const filteredDuplicateValues = duplicateValues.filter(
       (duplicate) =>

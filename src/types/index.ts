@@ -10,6 +10,7 @@ import { DuplicateRow } from "../entities/DuplicateRow";
 
 export type DuplicateValuesResult = {
   duplicateValues: DuplicateValue[];
+  numOccurrencesByNumericValue: Map<number, number>;
 };
 
 export type DuplicateRowsResult = {

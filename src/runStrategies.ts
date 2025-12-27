@@ -13,6 +13,8 @@ import {
   CategorizedColumn,
 } from "./columnCategorization/columnCategorization";
 import { reviewResults } from "./resultsReview/resultsReview";
+import { findDuplicateValues } from "./detection/findDuplicateValues";
+import { DuplicateValuesResult } from "./types";
 
 type StrategyResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -32,6 +34,10 @@ export async function runStrategies(
 
   const results: StrategyResults = {};
   const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
+  const duplicateValuesResultsBySheet = new Map<
+    string,
+    DuplicateValuesResult
+  >();
   await Promise.all(
     sheets.map(async (sheet) => {
       const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
@@ -39,6 +45,11 @@ export async function runStrategies(
       });
 
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
+      const duplicateValuesResults = findDuplicateValues(
+        sheet,
+        categorizedColumns,
+      );
+      duplicateValuesResultsBySheet.set(sheet.name, duplicateValuesResults);
     }),
   );
 
@@ -49,6 +60,7 @@ export async function runStrategies(
     console.log(`\n🔍 Running ${StrategyName.DuplicateRows} strategy...`);
     duplicateRowsResult = await duplicateRowsStrategy.execute(excelFileData, {
       categorizedColumnsBySheet,
+      duplicateValuesResultsBySheet,
     });
     console.log(
       `✅ ${StrategyName.DuplicateRows} completed in ${duplicateRowsResult.executionTime.toFixed(2)}ms`,
@@ -64,7 +76,7 @@ export async function runStrategies(
     );
     const result = await repeatedColumnSequencesStrategy.execute(
       excelFileData,
-      { categorizedColumnsBySheet },
+      { categorizedColumnsBySheet, duplicateValuesResultsBySheet },
     );
     console.log(
       `✅ ${StrategyName.RepeatedColumnSequences} completed in ${result.executionTime.toFixed(2)}ms`,
@@ -79,6 +91,7 @@ export async function runStrategies(
     const individualNumbersDependencies = {
       categorizedColumnsBySheet,
       previousResults: duplicateRowsResult ? [duplicateRowsResult] : [],
+      duplicateValuesResultsBySheet,
     };
     const result = await individualNumbersStrategy.execute(
       excelFileData,

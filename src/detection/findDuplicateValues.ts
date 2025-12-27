@@ -15,8 +15,10 @@ export function findDuplicateValues(
     .map((col) => col.index)
     .filter((index) => sheet.numericColumnIndices.includes(index));
 
+  const numOccurrencesByNumericValue = new Map<number, number>();
+
   if (uniqueColumnIndices.length === 0) {
-    return { duplicateValues: [] };
+    return { duplicateValues: [], numOccurrencesByNumericValue };
   }
 
   const cellsByNumericValue = new Map<number, EnhancedCell[]>();
@@ -53,7 +55,12 @@ export function findDuplicateValues(
         b.occurenceAdjustedEntropyScore - a.occurenceAdjustedEntropyScore,
     );
 
+  for (const entry of cellsByNumericValue) {
+    const [numericValue, cells] = entry;
+    numOccurrencesByNumericValue.set(numericValue, cells.length);
+  }
   return {
     duplicateValues,
+    numOccurrencesByNumericValue,
   };
 }
