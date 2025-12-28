@@ -12,6 +12,7 @@ import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 import { slugify } from "../utils/slugify";
 import { maxPromptDataDescriptionChars, maxNumRowsToAnalyze } from "../config";
+import { wrapInCodeBlock } from "../utils/markdown";
 
 export async function reviewResults({
   excelFileData,
@@ -180,9 +181,8 @@ function createDataDescriptionSection(excelFileData: ExcelFileData): string {
       : excelFileData.dataDescription;
   return `
 # Description of the data
-\`\`\`
-${truncatedDataDescription}
-\`\`\`
+
+${wrapInCodeBlock(truncatedDataDescription)}
 `;
 }
 
@@ -310,7 +310,7 @@ Rows ${rowIndex1 + 1} and ${rowIndex2 + 1}:
 
 ${duplicateRowTable}
 
-They share the values following columns:
+They share the values in the following columns:
 ${duplicateRow.sharedColumns
   .map((columnIndex, i) => {
     const value = duplicateRow.sharedValues[i];
