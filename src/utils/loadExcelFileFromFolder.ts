@@ -4,6 +4,7 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { MetadataSchema } from "../types/metadata";
 import { ExcelFileData } from "../types/ExcelFileData";
+import { maxNumRowsToAnalyze } from "../config";
 
 export function loadExcelFileFromFolder(
   datasetFolder: string,
@@ -25,7 +26,7 @@ export function loadExcelFileFromFolder(
 
   const selectedFile = metadata.files[fileIndex];
   const excelPath = path.join(datasetFolder, selectedFile.name);
-  const workbook = xlsx.readFile(excelPath, { sheetRows: 5000 });
+  const workbook = xlsx.readFile(excelPath, { sheetRows: maxNumRowsToAnalyze });
 
   const sheets: Sheet[] = [];
   workbook.SheetNames.forEach((sheetName) => {

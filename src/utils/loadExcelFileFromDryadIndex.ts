@@ -4,6 +4,7 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { DryadDataset } from "../dryad/DryadDataset";
+import { maxNumRowsToAnalyze } from "../config";
 
 const maxSheetsToLoad = 6;
 export function loadExcelFileFromDryadIndex(
@@ -19,7 +20,10 @@ export function loadExcelFileFromDryadIndex(
   const datasetFolder = `data/dryad/files/${dataset.extId}`;
   const selectedFile = dataset.excelFiles[fileIndex];
   const excelPath = path.join(datasetFolder, selectedFile.filename);
-  const workbook = xlsx.readFile(excelPath, { sheetRows: 5000, cellNF: true });
+  const workbook = xlsx.readFile(excelPath, {
+    sheetRows: maxNumRowsToAnalyze,
+    cellNF: true,
+  });
 
   const sheets: Sheet[] = [];
   workbook.SheetNames.slice(0, maxSheetsToLoad) // Limit to first n sheets

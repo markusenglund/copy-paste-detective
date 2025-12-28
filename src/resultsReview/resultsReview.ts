@@ -11,6 +11,7 @@ import { RepeatedColumnSequencesResult } from "../types/strategies";
 import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 import { slugify } from "../utils/slugify";
+import { maxNumRowsToAnalyze } from "../config";
 
 export async function reviewResults({
   excelFileData,
@@ -122,6 +123,68 @@ const createPrompt = (
     numOccurrencesByNumericValue,
   } = promptInput;
 
+  return (
+    createIntroduction() +
+    createBasicInfoSection(excelFileData, sheet) +
+    createAbstractSection(excelFileData) +
+    createDataDescriptionSection(excelFileData) +
+    createInstructionsSection(categorizedColumns) +
+    createDataSection(sheet) +
+    createDuplicateRowsSection(
+      sheet,
+      duplicateRows,
+      numOccurrencesByNumericValue,
+    ) +
+    createDuplicateColumnSequencesSection(
+      sheet,
+      duplicateColumnSequences,
+      numOccurrencesByNumericValue,
+    ) +
+    createTaskSection()
+  );
+};
+
+function createIntroduction(): string {
+  return `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the flagged duplication is a false positive (i.e. it makes sense in the context of the paper) or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and the parts of the data that was flagged.
+`;
+}
+
+function createBasicInfoSection(
+  excelFileData: ExcelFileData,
+  sheet: Sheet,
+): string {
+  return `# Basic info
+
+- Title: '${excelFileData.articleName}'
+- Excel filename: '${excelFileData.excelFileName}'
+- Sheet name: '${sheet.name}'
+- Number of rows in sheet: ${sheet.numRows >= maxNumRowsToAnalyze ? sheet.numRows + "+" : sheet.numRows}
+`;
+}
+
+function createAbstractSection(excelFileData: ExcelFileData): string {
+  if (!excelFileData.abstract) {
+    return "";
+  }
+  return `
+# Abstract
+
+${excelFileData.abstract}
+`;
+}
+
+function createDataDescriptionSection(excelFileData: ExcelFileData): string {
+  return `
+# Description of the data
+\`\`\`
+${excelFileData.dataDescription}
+\`\`\`
+`;
+}
+
+function createInstructionsSection(
+  categorizedColumns: CategorizedColumn[],
+): string {
   const lnColumns = categorizedColumns
     .filter((column) => column.isLnArgument)
     .map(({ name }) => name);
@@ -132,32 +195,7 @@ const createPrompt = (
     .filter((column) => column.isRepeatingFraction)
     .map(({ name }) => name);
 
-  let prompt = `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the flagged duplication is a false positive (i.e. it makes sense in the context of the paper) or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and the parts of the data that was flagged.
-
-# Basic info
-
-- Title: '${excelFileData.articleName}'
-- Excel filename: '${excelFileData.excelFileName}'
-- Sheet name: '${sheet.name}'
-- Number of rows in sheet: ${sheet.numRows}
-`;
-
-  if (excelFileData.abstract) {
-    prompt += `
-# Abstract
-
-${excelFileData.abstract}
-`;
-  }
-
-  prompt += `
-# Description of the data
-\`\`\`
-${excelFileData.dataDescription}
-\`\`\`
-`;
-
-  prompt += `
+  let instructions = `
 # Instructions
 Keep the following in mind when analyzing the duplications
 - If a duplicate sequence/row has many values that are common in the spreadsheet (high number of occurrences): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
@@ -168,75 +206,90 @@ Keep the following in mind when analyzing the duplications
     sqrtColumns.length > 0 ||
     fractionColumns.length > 0
   ) {
-    prompt += `
+    instructions += `
 Note that some columns have artificially many significant digits because they are the result of either 1) a fraction 2) a log transformation or 3) a square root of the original measurement.   
 `;
   }
 
   if (fractionColumns.length > 0) {
-    prompt += `
+    instructions += `
 The following columns contain fractions:
 ${fractionColumns.map((columnName) => "- " + columnName).join("\n")}
 `;
   }
 
   if (sqrtColumns.length > 0) {
-    prompt += `
+    instructions += `
 The following columns contains square roots:
 ${sqrtColumns.map((columnName) => "- " + columnName).join("\n")}
 `;
   }
 
   if (lnColumns.length > 0) {
-    prompt += `
+    instructions += `
 The following columns are log-transformed:
 ${lnColumns.map((columnName) => "- " + columnName).join("\n")}
   `;
   }
 
+  return instructions;
+}
+
+function createDataSection(sheet: Sheet): string {
   const numberOfSampleRows = 8;
   const columnNames = sheet.columnNames;
   const firstTenRows = sheet.getSampleData(numberOfSampleRows);
   const sampleTable = markdownTable([columnNames, ...firstTenRows]);
 
-  prompt += `
+  return `
 # Data
 Here are the first ${numberOfSampleRows} rows of the spreadsheet to help you understand the structure of the spreadsheet:
 
 ${sampleTable}
 `;
-  if (duplicateRows.length > 0) {
-    const seenRowIndices = new Set<number>();
-    const uniqueDuplicateRows = duplicateRows.filter((duplicateRow) => {
-      const [rowIndex1, rowIndex2] = duplicateRow.rowIndices;
-      const hasSeenRow =
-        seenRowIndices.has(rowIndex1) || seenRowIndices.has(rowIndex2);
-      if (!hasSeenRow) {
-        seenRowIndices.add(rowIndex1);
-        seenRowIndices.add(rowIndex2);
-        return true;
-      }
-      return false;
-    });
-    const numDuplicateRowSamples = 6;
-    const duplicateRowSamples = uniqueDuplicateRows.slice(
-      0,
-      numDuplicateRowSamples,
-    );
+}
 
-    prompt += `
+function createDuplicateRowsSection(
+  sheet: Sheet,
+  duplicateRows: DuplicateRow[],
+  numOccurrencesByNumericValue: Map<number, number>,
+): string {
+  if (duplicateRows.length === 0) {
+    return "";
+  }
+
+  const seenRowIndices = new Set<number>();
+  const uniqueDuplicateRows = duplicateRows.filter((duplicateRow) => {
+    const [rowIndex1, rowIndex2] = duplicateRow.rowIndices;
+    const hasSeenRow =
+      seenRowIndices.has(rowIndex1) || seenRowIndices.has(rowIndex2);
+    if (!hasSeenRow) {
+      seenRowIndices.add(rowIndex1);
+      seenRowIndices.add(rowIndex2);
+      return true;
+    }
+    return false;
+  });
+  const numDuplicateRowSamples = 6;
+  const duplicateRowSamples = uniqueDuplicateRows.slice(
+    0,
+    numDuplicateRowSamples,
+  );
+
+  const columnNames = sheet.columnNames;
+  let section = `
 
 ### Row pairs with duplicate cell values
 
 `;
-    for (const duplicateRow of duplicateRowSamples) {
-      const [rowIndex1, rowIndex2] = duplicateRow.rowIndices;
-      const duplicateRowTable = markdownTable([
-        ["originalRowNumber", ...columnNames],
-        [String(rowIndex1 + 1), ...sheet.getSampleRow(rowIndex1)],
-        [String(rowIndex2 + 1), ...sheet.getSampleRow(rowIndex2)],
-      ]);
-      prompt += `
+  for (const duplicateRow of duplicateRowSamples) {
+    const [rowIndex1, rowIndex2] = duplicateRow.rowIndices;
+    const duplicateRowTable = markdownTable([
+      ["originalRowNumber", ...columnNames],
+      [String(rowIndex1 + 1), ...sheet.getSampleRow(rowIndex1)],
+      [String(rowIndex2 + 1), ...sheet.getSampleRow(rowIndex2)],
+    ]);
+    section += `
 Rows ${rowIndex1 + 1} and ${rowIndex2 + 1}:
 
 ${duplicateRowTable}
@@ -256,78 +309,90 @@ ${duplicateRow.sharedColumns
   })
   .join("\n")}
   `;
-    }
   }
 
-  if (duplicateColumnSequences.length > 0) {
-    const seenStartRowIndices = new Set<number>();
-    const uniqueDuplicateColumnSequences = duplicateColumnSequences.filter(
-      (sequence) => {
-        const [seq1, seq2] = sequence.sequences;
-        const hasSeenStartRow =
-          seenStartRowIndices.has(seq1.startRowIndex) ||
-          seenStartRowIndices.has(seq2.startRowIndex);
-        if (!hasSeenStartRow) {
-          seenStartRowIndices.add(seq1.startRowIndex);
-          seenStartRowIndices.add(seq2.startRowIndex);
-          return true;
-        }
-        return false;
-      },
-    );
-    const numDuplicateColumnSequenceSamples = 2;
-    const duplicateColumnSequenceSamples = uniqueDuplicateColumnSequences.slice(
-      0,
-      numDuplicateColumnSequenceSamples,
-    );
-    prompt += `
+  return section;
+}
+
+function createDuplicateColumnSequencesSection(
+  sheet: Sheet,
+  duplicateColumnSequences: RepeatedColumnSequence[],
+  numOccurrencesByNumericValue: Map<number, number>,
+): string {
+  if (duplicateColumnSequences.length === 0) {
+    return "";
+  }
+
+  const seenStartRowIndices = new Set<number>();
+  const uniqueDuplicateColumnSequences = duplicateColumnSequences.filter(
+    (sequence) => {
+      const [seq1, seq2] = sequence.sequences;
+      const hasSeenStartRow =
+        seenStartRowIndices.has(seq1.startRowIndex) ||
+        seenStartRowIndices.has(seq2.startRowIndex);
+      if (!hasSeenStartRow) {
+        seenStartRowIndices.add(seq1.startRowIndex);
+        seenStartRowIndices.add(seq2.startRowIndex);
+        return true;
+      }
+      return false;
+    },
+  );
+  const numDuplicateColumnSequenceSamples = 2;
+  const duplicateColumnSequenceSamples = uniqueDuplicateColumnSequences.slice(
+    0,
+    numDuplicateColumnSequenceSamples,
+  );
+
+  const columnNames = sheet.columnNames;
+  let section = `
 ### Duplicated vertical sequences of cells
 
 Here are examples of pairs of vertical sequences of cells that are perfect duplicates.
 `;
-    const maxDuplicateSequenceRows = 10;
-    for (const duplicateColumnSequence of duplicateColumnSequenceSamples) {
-      const { sequences, values } = duplicateColumnSequence;
-      const sequence1StartRowNumber = sequences[0].startRowIndex + 1;
-      const sequence1EndRowNumber = sequences[0].startRowIndex + values.length;
-      const sequence1ColumnName = sequences[0].column.name;
-      const sequence2StartRowNumber = sequences[1].startRowIndex + 1;
-      const sequence2EndRowNumber = sequences[1].startRowIndex + values.length;
-      const sequence2ColumnName = sequences[1].column.name;
+  const maxDuplicateSequenceRows = 10;
+  for (const duplicateColumnSequence of duplicateColumnSequenceSamples) {
+    const { sequences, values } = duplicateColumnSequence;
+    const sequence1StartRowNumber = sequences[0].startRowIndex + 1;
+    const sequence1EndRowNumber = sequences[0].startRowIndex + values.length;
+    const sequence1ColumnName = sequences[0].column.name;
+    const sequence2StartRowNumber = sequences[1].startRowIndex + 1;
+    const sequence2EndRowNumber = sequences[1].startRowIndex + values.length;
+    const sequence2ColumnName = sequences[1].column.name;
 
-      const numDuplicateSequenceRowsInTable = Math.min(
-        maxDuplicateSequenceRows,
-        values.length,
-      );
+    const numDuplicateSequenceRowsInTable = Math.min(
+      maxDuplicateSequenceRows,
+      values.length,
+    );
 
-      const sequence1Rows = sheet
-        .getSampleData(
-          numDuplicateSequenceRowsInTable,
-          sequences[0].startRowIndex,
-        )
-        .map((row, i) => {
-          const originalRowNumber = sequence1StartRowNumber + i;
-          return [String(originalRowNumber), ...row];
-        });
-      const sequence1MarkdownTable = markdownTable([
-        ["originalRowNumber", ...columnNames],
-        ...sequence1Rows,
-      ]);
+    const sequence1Rows = sheet
+      .getSampleData(
+        numDuplicateSequenceRowsInTable,
+        sequences[0].startRowIndex,
+      )
+      .map((row, i) => {
+        const originalRowNumber = sequence1StartRowNumber + i;
+        return [String(originalRowNumber), ...row];
+      });
+    const sequence1MarkdownTable = markdownTable([
+      ["originalRowNumber", ...columnNames],
+      ...sequence1Rows,
+    ]);
 
-      const sequence2Rows = sheet
-        .getSampleData(
-          numDuplicateSequenceRowsInTable,
-          sequences[1].startRowIndex,
-        )
-        .map((row, i) => {
-          const originalRowNumber = sequence2StartRowNumber + i;
-          return [String(originalRowNumber), ...row];
-        });
-      const sequence2MarkdownTable = markdownTable([
-        ["originalRowNumber", ...columnNames],
-        ...sequence2Rows,
-      ]);
-      prompt += `
+    const sequence2Rows = sheet
+      .getSampleData(
+        numDuplicateSequenceRowsInTable,
+        sequences[1].startRowIndex,
+      )
+      .map((row, i) => {
+        const originalRowNumber = sequence2StartRowNumber + i;
+        return [String(originalRowNumber), ...row];
+      });
+    const sequence2MarkdownTable = markdownTable([
+      ["originalRowNumber", ...columnNames],
+      ...sequence2Rows,
+    ]);
+    section += `
 The sequence of ${duplicateColumnSequence.values.length} values from row ${sequence1StartRowNumber} to ${sequence1EndRowNumber} of the column '${sequence1ColumnName}' is a perfect duplicate of the sequence from row ${sequence2StartRowNumber} to ${sequence2EndRowNumber} of the column '${sequence2ColumnName}'.
 
 Rows ${sequence1StartRowNumber} to ${sequence1StartRowNumber + numDuplicateSequenceRowsInTable - 1}:
@@ -351,19 +416,20 @@ ${duplicateColumnSequence.values
   })
   .join("\n")}
 `;
-      if (values.length > numDuplicateSequenceRowsInTable) {
-        prompt += `
-The sequence has been truncated to ${numDuplicateSequenceRowsInTable} for brevity.
+    if (values.length > numDuplicateSequenceRowsInTable) {
+      section += `
+The table was truncated to ${numDuplicateSequenceRowsInTable} for brevity.
   `;
-      }
     }
   }
 
-  prompt += `
+  return section;
+}
+
+function createTaskSection(): string {
+  return `
 # Your task
 
 Do you think these duplicated blocks of cells make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include your reasoning.
 `;
-
-  return prompt;
-};
+}
