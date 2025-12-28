@@ -25,7 +25,7 @@ const throttle = pThrottle({
   strict: true,
 });
 
-const model = "gemini-2.0-flash";
+const model = "gemini-2.5-flash";
 
 async function screenColumnsGeminiInternal(
   params: PromptTemplateParams,
@@ -34,16 +34,13 @@ async function screenColumnsGeminiInternal(
 
   // Check if the prompt is in the file cache
   const cacheFolder = `.cache/categorized-columns/${slugify(params.paperName.slice(0, 32))}`;
-  const promptHash = createHash("md5")
-    .update(`${prompt}-${model}`)
-    .digest("hex")
-    .slice(0, 8);
+  const promptHash = createHash("md5").update(prompt).digest("hex").slice(0, 8);
   const filenameBase = `${slugify(params.excelFileName.slice(0, 32))}-${promptHash}`;
   const promptFilePath = `${cacheFolder}/${filenameBase}-prompt.md`;
 
   await mkdir(dirname(promptFilePath), { recursive: true });
   await writeFile(promptFilePath, prompt, "utf-8");
-  const responseFilePath = `${cacheFolder}/${filenameBase}.json`;
+  const responseFilePath = `${cacheFolder}/${filenameBase}-${model}.json`;
 
   try {
     const cachedResponse = await readFile(responseFilePath, "utf-8");
