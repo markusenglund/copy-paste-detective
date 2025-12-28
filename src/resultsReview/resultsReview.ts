@@ -10,6 +10,7 @@ import { DuplicateRowsResult } from "../types/strategies";
 import { RepeatedColumnSequencesResult } from "../types/strategies";
 import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
+import { slugify } from "../utils/slugify";
 
 export async function reviewResults({
   excelFileData,
@@ -94,7 +95,7 @@ export async function reviewResults({
   promptInputs.forEach((promptInput, index) => {
     // Prepare output file (in project root, append all prompts)
     const outputFilePath = path.resolve(
-      `tmp/prompts_${excelFileData.excelFileName}_${index}.md`,
+      `tmp/prompts_${slugify(excelFileData.articleName)}_${index}.md`,
     );
     // Overwrite any existing file at the start of a run
     const prompt = createPrompt(excelFileData, promptInput);
