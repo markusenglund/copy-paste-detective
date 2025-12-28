@@ -6,3 +6,4 @@ files/false-positives
 data
 .~lock.*#
 tmp
+.cache
