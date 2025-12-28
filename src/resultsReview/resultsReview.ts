@@ -199,6 +199,15 @@ function createInstructionsSection(
 # Instructions
 Keep the following in mind when analyzing the duplications
 - If a duplicate sequence/row has many values that are common in the spreadsheet (high number of occurrences): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
+- It's good to consider what a row represents, for example whether it's one observation of a single individual or aggregated data of multiple observations.
+
+### Common sources of false positives
+- If the duplicate values are actually supposed to be shared between rows, such as species level data shared between all individuals belonging to that species.
+- If the duplicate values are the result of some transformation (for example a fraction, square root, z-transformation or some statistical measure) where the original raw measurement was a number with low number of significant digits, but after the transformation gains a large amount of digits and looks more unique than it really is.
+- If the duplicate values are part of a column with very tight distribution (for example, a measurement of body temperature where most measured values are around 37 degrees C)
+- If a row contains multiple columns that are just transformations of the same data (for example, it's not suspicious if rows that share a 'diameter' also share a 'radius')
+
+None of these are a definite sign of a false positive, but might provide an innocent reason for why the duplicates exist.
 `;
 
   if (
@@ -430,6 +439,10 @@ function createTaskSection(): string {
   return `
 # Your task
 
-Do you think these duplicated blocks of cells make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include your reasoning.
+Do you think these duplicated blocks of cells make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include the following in your response:
+- Your best explanation for the duplicates (could be different for each example).
+- Your best theory for how the patterns could have an innocent explanation and therefore be a false positive.
+- A suspiciousness score from 1 to 10 that expresses the probability that the data contains real issues, where 1 means it's a certain false positive and 10 means it's 100% a real issue.
+- If you believe the data has issues, provide an impact score from 1 to 10 which expresses how seriously the issue might impact the paper's conclusions, where 1 means no impact and 10 means that the conclusions are entirely untrustworthy.
 `;
 }
