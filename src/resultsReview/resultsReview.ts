@@ -238,7 +238,7 @@ ${sqrtColumns.map((columnName) => "- " + columnName).join("\n")}
     instructions += `
 The following columns are log-transformed:
 ${lnColumns.map((columnName) => "- " + columnName).join("\n")}
-  `;
+`;
   }
 
   return instructions;
@@ -284,6 +284,9 @@ function createDuplicateRowsSection(
     0,
     numDuplicateRowSamples,
   );
+  const remainingDuplicateRows = uniqueDuplicateRows.slice(
+    numDuplicateRowSamples,
+  );
 
   const columnNames = sheet.columnNames;
   let section = `
@@ -317,7 +320,13 @@ ${duplicateRow.sharedColumns
     return `- '${column.name}' - value: ${value}, occurrences of value: ${numOccurrences}`;
   })
   .join("\n")}
-  `;
+`;
+  }
+
+  if (remainingDuplicateRows.length > 0) {
+    section += `
+Not shown are an additional ${remainingDuplicateRows.length} duplicate rows flagged as having a high or medium level or suspiciosness.
+`;
   }
 
   return section;
@@ -352,6 +361,8 @@ function createDuplicateColumnSequencesSection(
     0,
     numDuplicateColumnSequenceSamples,
   );
+  const remainingDuplicateColumnSequences =
+    uniqueDuplicateColumnSequences.slice(numDuplicateColumnSequenceSamples);
 
   const columnNames = sheet.columnNames;
   let section = `
@@ -428,10 +439,14 @@ ${duplicateColumnSequence.values
     if (values.length > numDuplicateSequenceRowsInTable) {
       section += `
 The table was truncated to ${numDuplicateSequenceRowsInTable} for brevity.
-  `;
+`;
     }
   }
-
+  if (remainingDuplicateColumnSequences.length > 0) {
+    section += `
+Not shown are an additional ${remainingDuplicateColumnSequences.length} duplicated sequences flagged as having a high or medium level of suspiciousness.
+`;
+  }
   return section;
 }
 
