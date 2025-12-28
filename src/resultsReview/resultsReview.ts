@@ -124,6 +124,13 @@ const createPrompt = (
   const lnColumns = categorizedColumns
     .filter((column) => column.isLnArgument)
     .map(({ name }) => name);
+  const sqrtColumns = categorizedColumns
+    .filter((column) => column.isSquareRoot)
+    .map(({ name }) => name);
+  const fractionColumns = categorizedColumns
+    .filter((column) => column.isRepeatingFraction)
+    .map(({ name }) => name);
+
   let prompt = `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the flagged duplication is a false positive (i.e. it makes sense in the context of the paper) or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and the parts of the data that was flagged.
 
 # Basic info
@@ -155,6 +162,37 @@ Keep the following in mind when analyzing the duplications
 - If a duplicate sequence/row has many values that are common in the spreadsheet (high number of occurrences): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
 `;
 
+  if (
+    lnColumns.length > 0 ||
+    sqrtColumns.length > 0 ||
+    fractionColumns.length > 0
+  ) {
+    prompt += `
+Note that some columns have artificially many significant digits because they are the result of either 1) a fraction 2) a log transformation or 3) a square root of the original measurement.   
+`;
+  }
+
+  if (fractionColumns.length > 0) {
+    prompt += `
+The following columns contain fractions:
+${fractionColumns.map((columnName) => "- " + columnName).join("\n")}
+`;
+  }
+
+  if (sqrtColumns.length > 0) {
+    prompt += `
+The following columns contains square roots:
+${sqrtColumns.map((columnName) => "- " + columnName).join("\n")}
+`;
+  }
+
+  if (lnColumns.length > 0) {
+    prompt += `
+The following columns are log-transformed:
+${lnColumns.map((columnName) => "- " + columnName).join("\n")}
+  `;
+  }
+
   const numberOfSampleRows = 8;
   const columnNames = sheet.columnNames;
   const firstTenRows = sheet.getSampleData(numberOfSampleRows);
@@ -184,13 +222,6 @@ ${sampleTable}
       0,
       numDuplicateRowSamples,
     );
-
-    if (lnColumns.length > 0) {
-      prompt += `
-Note that some columns have artificially many significant digits because they are the result of taking the natural logarithm of the original measured value. These are the columns affected:
-${lnColumns.map((columnName) => "- " + columnName).join("\n")}
-      `;
-    }
 
     prompt += `
 
