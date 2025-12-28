@@ -1,5 +1,5 @@
 import { markdownTable } from "markdown-table";
-import { maxColumnPromptReadmeChars } from "../config";
+import { maxPromptDataDescriptionChars } from "../config";
 
 export interface PromptTemplateParams {
   paperName: string;
@@ -16,8 +16,8 @@ export function generateColumnCategorizationPrompt(
     params;
 
   const truncatedReadmeContent =
-    readmeContent.length > maxColumnPromptReadmeChars
-      ? `${readmeContent.slice(0, maxColumnPromptReadmeChars)}... (content truncated due to exceeding character limit)`
+    readmeContent.length > maxPromptDataDescriptionChars
+      ? `${readmeContent.slice(0, maxPromptDataDescriptionChars)}... (content truncated due to exceeding character limit)`
       : params.readmeContent;
 
   const nonEmptyTable: [string[], string[], string[]] = [[], [], []];

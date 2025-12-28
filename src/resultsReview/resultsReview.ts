@@ -11,7 +11,7 @@ import { RepeatedColumnSequencesResult } from "../types/strategies";
 import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 import { slugify } from "../utils/slugify";
-import { maxNumRowsToAnalyze } from "../config";
+import { maxPromptDataDescriptionChars, maxNumRowsToAnalyze } from "../config";
 
 export async function reviewResults({
   excelFileData,
@@ -174,10 +174,14 @@ ${excelFileData.abstract}
 }
 
 function createDataDescriptionSection(excelFileData: ExcelFileData): string {
+  const truncatedDataDescription =
+    excelFileData.dataDescription.length > maxPromptDataDescriptionChars
+      ? `${excelFileData.dataDescription.slice(0, maxPromptDataDescriptionChars)}... (content truncated due to exceeding character limit)`
+      : excelFileData.dataDescription;
   return `
 # Description of the data
 \`\`\`
-${excelFileData.dataDescription}
+${truncatedDataDescription}
 \`\`\`
 `;
 }
