@@ -1,4 +1,5 @@
 import { markdownTable } from "markdown-table";
+import { maxColumnPromptReadmeChars } from "../config";
 
 export interface PromptTemplateParams {
   paperName: string;
@@ -13,6 +14,11 @@ export function generateColumnCategorizationPrompt(
 ): string {
   const { paperName, excelFileName, readmeContent, columnNames, columnData } =
     params;
+
+  const truncatedReadmeContent =
+    readmeContent.length > maxColumnPromptReadmeChars
+      ? `${readmeContent.slice(0, maxColumnPromptReadmeChars)}... (content truncated due to exceeding character limit)`
+      : params.readmeContent;
 
   const nonEmptyTable: [string[], string[], string[]] = [[], [], []];
   for (let i = 0; i < columnNames.length; i++) {
@@ -67,7 +73,7 @@ Apply these rules when categorizing columns:
 **3. Data Description (from README):**
 
 \`\`\`
-${readmeContent}
+${truncatedReadmeContent}
 \`\`\`
 
 **4. Column Headers & Sample Data:**
