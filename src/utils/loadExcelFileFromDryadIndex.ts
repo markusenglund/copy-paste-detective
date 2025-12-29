@@ -55,5 +55,6 @@ export function loadExcelFileFromDryadIndex(
     excelFileName: selectedFile.filename,
     articleName: dataset.title,
     dataDescription,
+    abstract: dataset.abstract,
   };
 }
