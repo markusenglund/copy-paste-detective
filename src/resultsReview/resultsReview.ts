@@ -202,7 +202,7 @@ function createInstructionsSection(
   let instructions = `
 # Instructions
 Keep the following in mind when analyzing the duplications
-- If a duplicate sequence/row has many values that are common in the spreadsheet (high number of occurrences): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
+- If a duplicate sequence or row has values that have a high number of occurrences in the sheet (meaning the same exact value is found in lots of other cells): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
 - It's good to consider what a row represents, for example whether it's one observation of a single individual or aggregated data of multiple observations.
 
 ### Common sources of false positives
@@ -233,7 +233,7 @@ ${fractionColumns.map((columnName) => "- " + columnName).join("\n")}
 
   if (sqrtColumns.length > 0) {
     instructions += `
-The following columns contains square roots:
+The following columns contain square roots:
 ${sqrtColumns.map((columnName) => "- " + columnName).join("\n")}
 `;
   }
