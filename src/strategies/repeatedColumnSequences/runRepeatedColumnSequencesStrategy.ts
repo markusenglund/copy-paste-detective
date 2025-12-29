@@ -10,6 +10,7 @@ import {
 } from "../../entities/RepeatedColumnSequence";
 import { calculateColumnSequenceEntropyScore } from "../../utils/entropy";
 import { CategorizedColumn } from "../../columnCategorization/columnCategorization";
+import { Sheet } from "../../entities/Sheet";
 
 export async function runRepeatedColumnSequencesStrategy(
   excelFileData: ExcelFileData,
@@ -187,13 +188,7 @@ function findRepeatedSequences(
             if (sequenceEntropyScore <= minSequenceEntropyScore) {
               continue;
             }
-            if (
-              previouslySeenPosition.column === newPosition.column &&
-              previouslySeenPosition.startRow + length === newPosition.startRow
-            ) {
-              // Skip if the repeated sequences are back-to-back
-              continue;
-            }
+
             const repeatedSequence = new RepeatedColumnSequence({
               sequences: [
                 {

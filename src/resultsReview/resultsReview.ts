@@ -427,8 +427,11 @@ Rows ${sequence2StartRowNumber} to ${sequence2StartRowNumber + numDuplicateSeque
 
 ${sequence2MarkdownTable}
 
-They share the values following values:
+The tables were truncated to ${numDuplicateSequenceRowsInTable} for brevity.
+
+They share the following values:
 ${duplicateColumnSequence.values
+  .slice(0, 100) // Prevent showing ludicrously long sequences of numbers
   .map((value) => {
     const numOccurrences = numOccurrencesByNumericValue.get(value);
     if (!numOccurrences) {
@@ -442,7 +445,6 @@ ${duplicateColumnSequence.values
 `;
     if (values.length > numDuplicateSequenceRowsInTable) {
       section += `
-The table was truncated to ${numDuplicateSequenceRowsInTable} for brevity.
 `;
     }
   }

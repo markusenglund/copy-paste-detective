@@ -25,7 +25,7 @@ const throttle = pThrottle({
   strict: true,
 });
 
-const model = "gemini-2.5-flash";
+const model = "gemini-2.5-flash-lite";
 
 async function screenColumnsGeminiInternal(
   params: PromptTemplateParams,
