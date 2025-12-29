@@ -12,7 +12,6 @@ import {
   categorizeColumns,
   CategorizedColumn,
 } from "../columnCategorization/columnCategorization";
-import { reviewResults } from "../resultsReview/resultsReview";
 import { findDuplicateValues } from "./findDuplicateValues";
 import { DuplicateValuesResult } from "../types";
 
@@ -110,15 +109,6 @@ export async function analyzeExcelFile(
     individualNumbersStrategy.printResults(result);
     results[StrategyName.IndividualNumbers] = result;
   }
-
-  await reviewResults({
-    excelFileData,
-    categorizedColumnsBySheet,
-    duplicateValuesResultsBySheet,
-    duplicateRowsResult: results[StrategyName.DuplicateRows],
-    repeatedColumnSequencesResult:
-      results[StrategyName.RepeatedColumnSequences],
-  });
 
   return {
     excelFileName: excelFileData.excelFileName,

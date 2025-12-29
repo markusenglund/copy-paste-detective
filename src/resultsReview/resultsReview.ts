@@ -5,10 +5,7 @@ import { DuplicateRow } from "../entities/DuplicateRow";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { Sheet } from "../entities/Sheet";
 import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
-import { groupBy } from "lodash-es";
-import { DuplicateRowsResult } from "../types/strategies";
-import { RepeatedColumnSequencesResult } from "../types/strategies";
-import { DuplicateValuesResult, SuspicionLevel } from "../types";
+import { SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 import { slugify } from "../utils/slugify";
 import {
@@ -17,96 +14,73 @@ import {
 } from "../config/config";
 import { wrapInCodeBlock } from "../utils/markdown";
 
-export async function reviewResults({
-  excelFileData,
-  categorizedColumnsBySheet,
-  duplicateRowsResult,
-  repeatedColumnSequencesResult,
-  duplicateValuesResultsBySheet,
-}: {
+export type SheetReviewInput = {
+  sheet: Sheet;
   excelFileData: ExcelFileData;
-  categorizedColumnsBySheet: Map<string, CategorizedColumn[]>;
-  duplicateRowsResult?: DuplicateRowsResult;
-  repeatedColumnSequencesResult?: RepeatedColumnSequencesResult;
-  duplicateValuesResultsBySheet: Map<string, DuplicateValuesResult>;
-}): Promise<void> {
-  // Group issues by sheet
-  const duplicateRowsBySheet = groupBy(
-    duplicateRowsResult?.duplicateRows,
-    "sheet.name",
-  );
-  const duplicateColumnSequencesBySheet = groupBy(
-    repeatedColumnSequencesResult?.sequences,
-    "sheetName",
-  );
+  categorizedColumns: CategorizedColumn[];
+  duplicateRows: DuplicateRow[];
+  duplicateColumnSequences: RepeatedColumnSequence[];
+  numOccurrencesByNumericValue: Map<number, number>;
+};
 
-  const promptInputs = excelFileData.sheets
-    .map((sheet) => {
-      const categorizedColumns = categorizedColumnsBySheet.get(sheet.name);
-      if (!categorizedColumns) {
-        throw new Error(
-          `Unexpectedly missing categorized columns for sheet ${sheet.name}`,
-        );
-      }
+export function reviewSheetResults(
+  input: SheetReviewInput,
+  promptIndex: number,
+): void {
+  const {
+    sheet,
+    excelFileData,
+    categorizedColumns,
+    duplicateRows,
+    duplicateColumnSequences,
+    numOccurrencesByNumericValue,
+  } = input;
 
-      const duplicateRows =
-        duplicateRowsBySheet[sheet.name]
-          ?.filter((duplicateRow) =>
-            [SuspicionLevel.Medium, SuspicionLevel.High].includes(
-              duplicateRow.suspicionLevel,
-            ),
-          )
-          .toSorted(
-            (a, b) =>
-              b.matrixSizeAdjustedEntropyScore -
-              a.matrixSizeAdjustedEntropyScore,
-          ) ?? [];
-      const duplicateColumnSequences =
-        duplicateColumnSequencesBySheet[sheet.name]
-          ?.filter((columnSequence) =>
-            [SuspicionLevel.Medium, SuspicionLevel.High].includes(
-              columnSequence.suspicionLevel,
-            ),
-          )
-          .toSorted(
-            (a, b) =>
-              b.matrixSizeAdjustedEntropyScore -
-              a.matrixSizeAdjustedEntropyScore,
-          ) ?? [];
-
-      const duplicateValuesResult = duplicateValuesResultsBySheet.get(
-        sheet.name,
-      );
-      if (!duplicateValuesResult) {
-        throw new Error(
-          `Sheet '${sheet.name}' unexpectedly lacks duplicate values result, something has gone wrong...`,
-        );
-      }
-      const { numOccurrencesByNumericValue } = duplicateValuesResult;
-      return {
-        sheet,
-        duplicateRows,
-        duplicateColumnSequences,
-        categorizedColumns,
-        numOccurrencesByNumericValue,
-      };
-    })
-    .filter(
-      (sheet) =>
-        sheet.duplicateRows.length > 0 ||
-        sheet.duplicateColumnSequences.length > 0,
+  // Filter and sort duplicate rows by suspicion level
+  const filteredDuplicateRows = duplicateRows
+    .filter((duplicateRow) =>
+      [SuspicionLevel.Medium, SuspicionLevel.High].includes(
+        duplicateRow.suspicionLevel,
+      ),
+    )
+    .toSorted(
+      (a, b) =>
+        b.matrixSizeAdjustedEntropyScore - a.matrixSizeAdjustedEntropyScore,
     );
 
-  promptInputs.forEach((promptInput, index) => {
-    // Prepare output file (in project root, append all prompts)
-    const outputFilePath = path.resolve(
-      `tmp/prompts_${slugify(excelFileData.articleName)}_${index}.md`,
+  // Filter and sort duplicate column sequences by suspicion level
+  const filteredDuplicateColumnSequences = duplicateColumnSequences
+    .filter((columnSequence) =>
+      [SuspicionLevel.Medium, SuspicionLevel.High].includes(
+        columnSequence.suspicionLevel,
+      ),
+    )
+    .toSorted(
+      (a, b) =>
+        b.matrixSizeAdjustedEntropyScore - a.matrixSizeAdjustedEntropyScore,
     );
-    // Overwrite any existing file at the start of a run
-    const prompt = createPrompt(excelFileData, promptInput);
 
-    fs.writeFileSync(outputFilePath, prompt, "utf8");
+  // Only create prompt if there are findings
+  if (
+    filteredDuplicateRows.length === 0 &&
+    filteredDuplicateColumnSequences.length === 0
+  ) {
+    return;
+  }
+
+  const outputFilePath = path.resolve(
+    `tmp/prompts_${slugify(excelFileData.articleName)}_${promptIndex}.md`,
+  );
+
+  const prompt = createPrompt(excelFileData, {
+    sheet,
+    categorizedColumns,
+    numOccurrencesByNumericValue,
+    duplicateRows: filteredDuplicateRows,
+    duplicateColumnSequences: filteredDuplicateColumnSequences,
   });
+
+  fs.writeFileSync(outputFilePath, prompt, "utf8");
 }
 
 const createPrompt = (
