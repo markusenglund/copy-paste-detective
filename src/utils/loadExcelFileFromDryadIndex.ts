@@ -4,7 +4,7 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { DryadDataset } from "../dryad/DryadDataset";
-import { maxNumRowsToAnalyze } from "../config";
+import { maxNumRowsToAnalyze } from "../config/config";
 
 const maxSheetsToLoad = 6;
 export function loadExcelFileFromDryadIndex(

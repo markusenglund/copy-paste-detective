@@ -1,5 +1,5 @@
 import { markdownTable } from "markdown-table";
-import { maxPromptDataDescriptionChars } from "../config";
+import { maxPromptDataDescriptionChars } from "../config/config";
 
 export interface PromptTemplateParams {
   paperName: string;

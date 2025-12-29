@@ -11,7 +11,10 @@ import { RepeatedColumnSequencesResult } from "../types/strategies";
 import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 import { slugify } from "../utils/slugify";
-import { maxPromptDataDescriptionChars, maxNumRowsToAnalyze } from "../config";
+import {
+  maxPromptDataDescriptionChars,
+  maxNumRowsToAnalyze,
+} from "../config/config";
 import { wrapInCodeBlock } from "../utils/markdown";
 
 export async function reviewResults({

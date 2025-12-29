@@ -4,7 +4,7 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { MetadataSchema } from "../types/metadata";
 import { ExcelFileData } from "../types/ExcelFileData";
-import { maxNumRowsToAnalyze } from "../config";
+import { maxNumRowsToAnalyze } from "../config/config";
 
 export function loadExcelFileFromFolder(
   datasetFolder: string,
