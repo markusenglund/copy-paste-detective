@@ -7,10 +7,9 @@ import { runStrategies } from "../runStrategies";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
 import { parseIntArgument } from "../utils/command";
 import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
+import { maxExcelFilesPerDataset } from "../config/config";
 
 const program = new Command();
-
-const maxExcelFilesPerDataset = 5;
 
 program
   .name("dryad-detect-all")

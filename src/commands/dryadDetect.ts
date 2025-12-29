@@ -1,10 +1,10 @@
 import { Command } from "@commander-js/extra-typings";
 import { db as datasetDb } from "../dryad/datasetsDb";
-import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
 import { runStrategies } from "../runStrategies";
 import { parseIntArgument, parseStrategies } from "../utils/command";
+import { maxExcelFilesPerDataset } from "../config/config";
 
 const program = new Command();
 
@@ -14,9 +14,8 @@ program
   .argument("<datasetExtId>", "Dryad dataset external ID", parseIntArgument)
   .argument(
     "[fileIndex]",
-    "Index of the file in the metadata.json files array",
+    "Index of the file in the excelFiles array of the dataset",
     parseIntArgument,
-    0,
   )
   .option(
     "--strategies <strategies>",
@@ -39,20 +38,30 @@ program
       process.exit(1);
     }
 
-    const excelFile = dataset.excelFiles[fileIndex];
-    if (excelFile.status !== "downloaded") {
-      console.error(
-        `Excel file at index ${fileIndex} is not downloaded. Status: ${excelFile.status}`,
-      );
-      process.exit(1);
-    }
-    console.log(
-      `Analyzing ${excelFile.filename} from dataset ${dataset.extId} from ${dataset.dryadPublicationDate} (${excelFile.size} bytes) - "${dataset.title}"`,
-    );
-    analysisResultsDb.data.results[dataset.extId] = {};
-    const excelFileData = loadExcelFileFromDryadIndex(dataset, fileIndex);
+    // If fileIndex is not provided, analyze all Excel files in the dataset.
+    const excelFiles =
+      fileIndex === undefined
+        ? dataset.excelFiles
+        : [dataset.excelFiles[fileIndex]];
 
-    await runStrategies(options.strategies, excelFileData);
+    for (
+      let i = 0;
+      i < Math.min(excelFiles.length, maxExcelFilesPerDataset);
+      i++
+    ) {
+      const excelFile = excelFiles[i];
+      if (excelFile.status !== "downloaded") {
+        console.error(
+          `Excel file at index ${i} is not downloaded. Status: ${excelFile.status}`,
+        );
+        continue;
+      }
+      console.log(
+        `Analyzing ${excelFile.filename} from dataset ${dataset.extId} from ${dataset.dryadPublicationDate} (${excelFile.size} bytes) - "${dataset.title}"`,
+      );
+      const excelFileData = loadExcelFileFromDryadIndex(dataset, i);
+      await runStrategies(options.strategies, excelFileData);
+    }
   });
 
 program.parse();
