@@ -3,7 +3,7 @@ import { db as datasetDb } from "../dryad/datasetsDb";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
-import { runStrategies } from "../runStrategies";
+import { analyzeExcelFile } from "../detection/analyzeExcelFile";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
 import { parseIntArgument } from "../utils/command";
 import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
@@ -67,7 +67,7 @@ program
         console.log(`- ${excelFile.filename} (${excelFile.size} bytes)`);
         const excelFileData = loadExcelFileFromDryadIndex(dataset, j);
         const allStrategies = Object.values(StrategyName);
-        const strategyResults = await runStrategies(
+        const strategyResults = await analyzeExcelFile(
           allStrategies,
           excelFileData,
         );

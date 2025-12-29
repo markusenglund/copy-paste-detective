@@ -3,36 +3,43 @@ import {
   IndividualNumbersResult,
   RepeatedColumnSequencesResult,
   StrategyName,
-} from "./types/strategies";
-import individualNumbersStrategy from "./strategies/individualNumbers/individualNumbers";
-import repeatedColumnSequencesStrategy from "./strategies/repeatedColumnSequences/repeatedColumnSequences";
-import duplicateRowsStrategy from "./strategies/duplicateRows/duplicateRows";
-import { ExcelFileData } from "./types/ExcelFileData";
+} from "../types/strategies";
+import individualNumbersStrategy from "../strategies/individualNumbers/individualNumbers";
+import repeatedColumnSequencesStrategy from "../strategies/repeatedColumnSequences/repeatedColumnSequences";
+import duplicateRowsStrategy from "../strategies/duplicateRows/duplicateRows";
+import { ExcelFileData } from "../types/ExcelFileData";
 import {
   categorizeColumns,
   CategorizedColumn,
-} from "./columnCategorization/columnCategorization";
-import { reviewResults } from "./resultsReview/resultsReview";
-import { findDuplicateValues } from "./detection/findDuplicateValues";
-import { DuplicateValuesResult } from "./types";
+} from "../columnCategorization/columnCategorization";
+import { reviewResults } from "../resultsReview/resultsReview";
+import { findDuplicateValues } from "./findDuplicateValues";
+import { DuplicateValuesResult } from "../types";
 
-type StrategyResults = {
+export type ExcelFileAnalysisResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
   [StrategyName.RepeatedColumnSequences]?: RepeatedColumnSequencesResult;
   [StrategyName.DuplicateRows]?: DuplicateRowsResult;
 };
 
-export async function runStrategies(
+export type ExcelFileAnalysis = {
+  excelFileName: string;
+  categorizedColumnsBySheet: Map<string, CategorizedColumn[]>;
+  duplicateValuesResultsBySheet: Map<string, DuplicateValuesResult>;
+  results: ExcelFileAnalysisResults;
+};
+
+export async function analyzeExcelFile(
   strategies: StrategyName[],
   excelFileData: ExcelFileData,
-): Promise<StrategyResults> {
+): Promise<ExcelFileAnalysis> {
   console.log("🔍 Running strategies:", strategies.join(", "));
   const { sheets } = excelFileData;
   console.log(
     `Found ${sheets.length} sheet(s): ${sheets.map((s) => s.name).join(", ")}`,
   );
 
-  const results: StrategyResults = {};
+  const results: ExcelFileAnalysisResults = {};
   const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
   const duplicateValuesResultsBySheet = new Map<
     string,
@@ -113,5 +120,10 @@ export async function runStrategies(
       results[StrategyName.RepeatedColumnSequences],
   });
 
-  return results;
+  return {
+    excelFileName: excelFileData.excelFileName,
+    categorizedColumnsBySheet,
+    duplicateValuesResultsBySheet,
+    results,
+  };
 }

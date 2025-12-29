@@ -1,5 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
-import { runStrategies } from "../runStrategies";
+import { analyzeExcelFile } from "../detection/analyzeExcelFile";
 import { StrategyName } from "../types/strategies";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
@@ -40,7 +40,7 @@ program
       `📄 Selected file '${excelFileData.excelFileName}' (index ${fileIndex}) from folder: '${folder}'`,
     );
 
-    await runStrategies(options.strategies, excelFileData);
+    await analyzeExcelFile(options.strategies, excelFileData);
     console.timeEnd("Total execution time");
   });
 

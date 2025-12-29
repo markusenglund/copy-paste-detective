@@ -2,9 +2,10 @@ import { Command } from "@commander-js/extra-typings";
 import { db as datasetDb } from "../dryad/datasetsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
-import { runStrategies } from "../runStrategies";
 import { parseIntArgument, parseStrategies } from "../utils/command";
 import { maxExcelFilesPerDataset } from "../config/config";
+import { analyzeDataset } from "../detection/analyzeDataset";
+import { ExcelFileData } from "../types/ExcelFileData";
 
 const program = new Command();
 
@@ -39,29 +40,31 @@ program
     }
 
     // If fileIndex is not provided, analyze all Excel files in the dataset.
-    const excelFiles =
+    const dryadExcelFiles =
       fileIndex === undefined
         ? dataset.excelFiles
         : [dataset.excelFiles[fileIndex]];
 
+    const downloadedExcelFiles: ExcelFileData[] = [];
     for (
       let i = 0;
-      i < Math.min(excelFiles.length, maxExcelFilesPerDataset);
+      i < Math.min(dryadExcelFiles.length, maxExcelFilesPerDataset);
       i++
     ) {
-      const excelFile = excelFiles[i];
-      if (excelFile.status !== "downloaded") {
+      const dryadExcelFile = dryadExcelFiles[i];
+      if (dryadExcelFile.status !== "downloaded") {
         console.error(
-          `Excel file at index ${i} is not downloaded. Status: ${excelFile.status}`,
+          `Excel file at index ${i} is not downloaded. Status: ${dryadExcelFile.status}`,
         );
         continue;
       }
       console.log(
-        `Analyzing ${excelFile.filename} from dataset ${dataset.extId} from ${dataset.dryadPublicationDate} (${excelFile.size} bytes) - "${dataset.title}"`,
+        `Analyzing ${dryadExcelFile.filename} from dataset ${dataset.extId} from ${dataset.dryadPublicationDate} (${dryadExcelFile.size} bytes) - "${dataset.title}"`,
       );
       const excelFileData = loadExcelFileFromDryadIndex(dataset, i);
-      await runStrategies(options.strategies, excelFileData);
+      downloadedExcelFiles.push(excelFileData);
     }
+    await analyzeDataset(downloadedExcelFiles, options.strategies);
   });
 
 program.parse();
