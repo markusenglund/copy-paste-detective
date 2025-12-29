@@ -4,9 +4,8 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { DryadDataset } from "../dryad/DryadDataset";
-import { maxNumRowsToAnalyze } from "../config/config";
+import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
 
-const maxSheetsToLoad = 6;
 export function loadExcelFileFromDryadIndex(
   dataset: DryadDataset,
   fileIndex: number = 0,
@@ -26,18 +25,15 @@ export function loadExcelFileFromDryadIndex(
   });
 
   const sheets: Sheet[] = [];
-  workbook.SheetNames.slice(0, maxSheetsToLoad) // Limit to first n sheets
-    .forEach((sheetName) => {
-      const workbookSheet = workbook.Sheets[sheetName];
-      try {
-        const sheet = new Sheet(workbookSheet, sheetName);
-        sheets.push(sheet);
-      } catch (err) {
-        console.log(
-          `Skipping sheet '${sheetName}' due to error: ${err.message}`,
-        );
-      }
-    });
+  workbook.SheetNames.slice(0, maxSheetsPerExcelFile).forEach((sheetName) => {
+    const workbookSheet = workbook.Sheets[sheetName];
+    try {
+      const sheet = new Sheet(workbookSheet, sheetName);
+      sheets.push(sheet);
+    } catch (err) {
+      console.log(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
+    }
+  });
   let dataDescription: string | undefined;
   if (dataset.readmeFile) {
     const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
