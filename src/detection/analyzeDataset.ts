@@ -128,6 +128,14 @@ function reviewMostSuspiciousResults(
   // Take top N sheets and review them
   const sheetsToReview = sortedSheets.slice(0, maxAiReviewsPerDataset);
 
+  console.log(
+    `Reviewing ${sheetsToReview.length} sheets: ${sheetsToReview
+      .map((s) => {
+        return `'${s.sheet.name}' from file '${s.excelFileData.excelFileName}' (suspicion score: ${s.suspicionScore.toFixed(2)})`;
+      })
+      .join("\n")}`,
+  );
+
   sheetsToReview.forEach((sheetData, index) => {
     const reviewInput: SheetReviewInput = {
       sheet: sheetData.sheet,
