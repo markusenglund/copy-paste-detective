@@ -52,5 +52,6 @@ export function loadExcelFileFromDryadIndex(
     articleName: dataset.title,
     dataDescription,
     abstract: dataset.abstract,
+    extId: String(dataset.extId),
   };
 }
