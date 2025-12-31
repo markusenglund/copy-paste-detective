@@ -68,25 +68,6 @@ If you have existing data in `data/dryad/datasets.json`, run the migration scrip
 npx tsx -r dotenv/config src/scripts/migrateFromJson.ts
 ```
 
-### Docker commands reference
-
-```bash
-# Stop the database
-docker stop science-detective-db
-
-# Start the database (after stop)
-docker start science-detective-db
-
-# View logs
-docker logs science-detective-db
-
-# Remove the container (data persists in volume)
-docker rm science-detective-db
-
-# Remove the data volume (WARNING: deletes all data)
-docker volume rm science-detective-pgdata
-```
-
 # Detection Strategies
 
 There are currently three pluggable algorithms:
