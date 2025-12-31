@@ -39,8 +39,8 @@ Start a PostgreSQL container:
 ```bash
 docker run -d \
   --name science-detective-db \
-  -e POSTGRES_USER=science \
-  -e POSTGRES_PASSWORD=science \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=science_detective \
   -p 5432:5432 \
   -v science-detective-pgdata:/var/lib/postgresql/data \
@@ -50,7 +50,7 @@ docker run -d \
 Add the database URL to your `.env` file:
 
 ```
-DATABASE_URL=postgresql://science:science@localhost:5432/science_detective
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/science_detective
 ```
 
 Generate and run database migrations:
