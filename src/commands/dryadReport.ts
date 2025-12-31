@@ -1,7 +1,8 @@
 import { Command } from "@commander-js/extra-typings";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
-import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
+import { getJournalsByIssnMap } from "../repositories/journals/journalsRepository";
+import { formatIssn } from "../scimago/journal";
 
 const program = new Command();
 
@@ -17,7 +18,7 @@ program
       completedDatasets.map((dataset) => [dataset.extId, dataset]),
     );
 
-    const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
+    const journalByIssn = await getJournalsByIssnMap();
 
     const analysisResults = analysisResultsDb.data.results;
 
@@ -26,8 +27,8 @@ program
       .filter(([extId]) => datasetByExtId.has(Number(extId)))
       .map(([extId, datasetResult]) => {
         const dataset = datasetByExtId.get(Number(extId));
-        const journalData = dataset?.journalIssn
-          ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+        const journal = dataset?.journalIssn
+          ? journalByIssn.get(formatIssn(dataset.journalIssn))
           : null;
         const files = Object.entries(datasetResult).map(
           ([fileName, fileResult]) => ({
@@ -46,7 +47,7 @@ program
           extId,
           files,
           mostSuspiciousFile,
-          journalData,
+          journal,
         };
       })
       .toSorted(
@@ -61,8 +62,8 @@ program
         fileName: dataset.mostSuspiciousFile.fileName.slice(0, 50),
         highestEntropyScore:
           dataset.mostSuspiciousFile.highestEntropyScore.toFixed(2),
-        journalScore: dataset.journalData?.scimagoJournalScore,
-        journal: dataset.journalData?.title?.slice(0, 32),
+        journalScore: dataset.journal?.sjrScore,
+        journal: dataset.journal?.title?.slice(0, 32),
       })),
     );
   });

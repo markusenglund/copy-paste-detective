@@ -8,7 +8,8 @@ import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelF
 import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument } from "../utils/command";
-import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
+import { getJournalsByIssnMap } from "../repositories/journals/journalsRepository";
+import { formatIssn } from "../scimago/journal";
 
 const program = new Command();
 
@@ -20,18 +21,18 @@ program
   .version("0.1.0")
   .argument("[count]", "Number of datasets to download", parseIntArgument, 100)
   .action(async (count) => {
-    const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
+    const journalByIssn = await getJournalsByIssnMap();
 
     const datasets = await getDatasetsByDownloadStatusWithFiles("not_started");
     const maxFileSize = 10_000_000; // 10MB
 
     const latestIndexedDatasets = datasets
       .filter((dataset) => {
-        const journalData = dataset.journalIssn
-          ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+        const journal = dataset.journalIssn
+          ? journalByIssn.get(formatIssn(dataset.journalIssn))
           : null;
         return ["Medicine", "Psychology", "Neuroscience"].find((field) =>
-          journalData?.fields.includes(field),
+          journal?.fields.includes(field),
         );
       })
       .filter((dataset) => {
@@ -66,12 +67,12 @@ program
 
     for (const dataset of latestIndexedDatasets.slice(0, count)) {
       // Log the journal name, journal score and title
-      const journalData = dataset.journalIssn
-        ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+      const journal = dataset.journalIssn
+        ? journalByIssn.get(formatIssn(dataset.journalIssn))
         : null;
       //  Log the publishing date also
       console.log(
-        `[${dataset.extId}] ${journalData?.title} (${journalData?.scimagoJournalScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+        `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
       );
     }
 

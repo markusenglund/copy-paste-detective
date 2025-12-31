@@ -17,4 +17,4 @@ export { dryadDatasets } from "./datasets/schema";
 export { dryadExcelFiles } from "./excelFiles/schema";
 export { dryadReadmeFiles } from "./readmeFiles/schema";
 export { dryadIndexingState } from "./indexingState/schema";
-
+export { journals } from "./journals/schema";

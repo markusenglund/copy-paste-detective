@@ -6,7 +6,8 @@ import { StrategyName } from "../types/strategies";
 import { analyzeDataset } from "../detection/analyzeDataset";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
 import { parseIntArgument } from "../utils/command";
-import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
+import { getJournalsByIssnMap } from "../repositories/journals/journalsRepository";
+import { formatIssn } from "../scimago/journal";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
 
@@ -19,7 +20,7 @@ program
   .argument("[count]", "Number of datasets to analyze", parseIntArgument, 100)
 
   .action(async (count) => {
-    const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
+    const journalByIssn = await getJournalsByIssnMap();
 
     // Get datasets that have been downloaded (downloadStatus === "completed")
     const allDownloadedDatasets =
@@ -46,11 +47,11 @@ program
 
     // For each dataset, log the journal name, journal score and title
     for (const dataset of downloadedDatasets.slice(0, numDatasetsToAnalyze)) {
-      const journalData = dataset.journalIssn
-        ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+      const journal = dataset.journalIssn
+        ? journalByIssn.get(formatIssn(dataset.journalIssn))
         : null;
       console.log(
-        `[${dataset.extId}] ${journalData?.title} (${journalData?.scimagoJournalScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+        `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
       );
     }
 
