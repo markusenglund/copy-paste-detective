@@ -38,19 +38,19 @@ Start a PostgreSQL container:
 
 ```bash
 docker run -d \
-  --name fraud-detector-db \
-  -e POSTGRES_USER=fraud \
-  -e POSTGRES_PASSWORD=fraud \
-  -e POSTGRES_DB=fraud_detector \
+  --name science-detective-db \
+  -e POSTGRES_USER=science \
+  -e POSTGRES_PASSWORD=science \
+  -e POSTGRES_DB=science_detective \
   -p 5432:5432 \
-  -v fraud-detector-pgdata:/var/lib/postgresql/data \
+  -v science-detective-pgdata:/var/lib/postgresql/data \
   postgres:16
 ```
 
 Add the database URL to your `.env` file:
 
 ```
-DATABASE_URL=postgresql://fraud:fraud@localhost:5432/fraud_detector
+DATABASE_URL=postgresql://science:science@localhost:5432/science_detective
 ```
 
 Generate and run database migrations:
@@ -72,19 +72,19 @@ npx tsx -r dotenv/config src/scripts/migrateFromJson.ts
 
 ```bash
 # Stop the database
-docker stop fraud-detector-db
+docker stop science-detective-db
 
 # Start the database (after stop)
-docker start fraud-detector-db
+docker start science-detective-db
 
 # View logs
-docker logs fraud-detector-db
+docker logs science-detective-db
 
 # Remove the container (data persists in volume)
-docker rm fraud-detector-db
+docker rm science-detective-db
 
 # Remove the data volume (WARNING: deletes all data)
-docker volume rm fraud-detector-pgdata
+docker volume rm science-detective-pgdata
 ```
 
 # Detection Strategies
