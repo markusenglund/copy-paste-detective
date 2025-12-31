@@ -5,6 +5,20 @@ import { journals } from "./schema";
 // Re-export types for convenience
 export type JournalRow = typeof journals.$inferSelect;
 
+/**
+ * Formats an ISSN with a hyphen after the 4th character.
+ * Strips all non-alphanumeric characters first.
+ * Example: "12622966" → "1262-2966"
+ * Example: "1262-2966" → "1262-2966"
+ */
+export function formatIssn(v: string): string {
+  const normalized = v.replace(/[^0-9Xx]/g, "").toUpperCase();
+  if (normalized.length !== 8) {
+    return normalized; // Return as-is if not a valid 8-character ISSN
+  }
+  return `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
+}
+
 export async function getJournalByIssn(
   issn: string,
 ): Promise<JournalRow | undefined> {

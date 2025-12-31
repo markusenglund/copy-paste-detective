@@ -8,8 +8,10 @@ import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelF
 import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument } from "../utils/command";
-import { getJournalsByIssnMap } from "../repositories/journals/journalsRepository";
-import { formatIssn } from "../scimago/journal";
+import {
+  getJournalsByIssnMap,
+  formatIssn,
+} from "../repositories/journals/journalsRepository";
 
 const program = new Command();
 

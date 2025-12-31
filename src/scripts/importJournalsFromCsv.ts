@@ -2,8 +2,11 @@ import * as csv from "@fast-csv/parse";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { insertJournals, getJournalCount } from "../repositories/journals/journalsRepository";
-import { formatIssn } from "../scimago/journal";
+import {
+  insertJournals,
+  getJournalCount,
+  formatIssn,
+} from "../repositories/journals/journalsRepository";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

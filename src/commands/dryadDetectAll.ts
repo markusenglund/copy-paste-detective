@@ -6,8 +6,10 @@ import { StrategyName } from "../types/strategies";
 import { analyzeDataset } from "../detection/analyzeDataset";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
 import { parseIntArgument } from "../utils/command";
-import { getJournalsByIssnMap } from "../repositories/journals/journalsRepository";
-import { formatIssn } from "../scimago/journal";
+import {
+  getJournalsByIssnMap,
+  formatIssn,
+} from "../repositories/journals/journalsRepository";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
 
