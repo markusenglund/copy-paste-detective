@@ -21,8 +21,71 @@
 
 # Setup
 
-- Create an `.env` file and add the Gemini and Dryad environment variables specified in `.env.dist`
-- Run `npm i` to install dependencies
+## Prerequisites
+
+- Node.js (v18+)
+- Docker
+
+## Installation
+
+1. Run `npm i` to install dependencies
+
+2. Create an `.env` file and add the environment variables specified in `.env.dist`
+
+## Database Setup (PostgreSQL with Docker)
+
+Start a PostgreSQL container:
+
+```bash
+docker run -d \
+  --name fraud-detector-db \
+  -e POSTGRES_USER=fraud \
+  -e POSTGRES_PASSWORD=fraud \
+  -e POSTGRES_DB=fraud_detector \
+  -p 5432:5432 \
+  -v fraud-detector-pgdata:/var/lib/postgresql/data \
+  postgres:16
+```
+
+Add the database URL to your `.env` file:
+
+```
+DATABASE_URL=postgresql://fraud:fraud@localhost:5432/fraud_detector
+```
+
+Generate and run database migrations:
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
+
+### Migrating existing JSON data
+
+If you have existing data in `data/dryad/datasets.json`, run the migration script:
+
+```bash
+npx tsx -r dotenv/config src/scripts/migrateFromJson.ts
+```
+
+### Docker commands reference
+
+```bash
+# Stop the database
+docker stop fraud-detector-db
+
+# Start the database (after stop)
+docker start fraud-detector-db
+
+# View logs
+docker logs fraud-detector-db
+
+# Remove the container (data persists in volume)
+docker rm fraud-detector-db
+
+# Remove the data volume (WARNING: deletes all data)
+docker volume rm fraud-detector-pgdata
+```
 
 # Detection Strategies
 
