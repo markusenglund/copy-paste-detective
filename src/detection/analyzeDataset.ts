@@ -154,7 +154,7 @@ function reviewMostSuspiciousResults(
 export async function analyzeDataset(
   excelFiles: ExcelFileData[],
   strategies: StrategyName[],
-): Promise<void> {
+): Promise<ExcelFileAnalysis[]> {
   const selectedExcelFilesByFilename = Object.fromEntries(
     excelFiles
       .slice(0, maxExcelFilesPerDataset)
@@ -168,4 +168,6 @@ export async function analyzeDataset(
   }
 
   reviewMostSuspiciousResults(excelFileAnalyses, selectedExcelFilesByFilename);
+
+  return excelFileAnalyses;
 }

@@ -1,10 +1,10 @@
 import { JSONFilePreset } from "lowdb/node";
 
 export type AnalysisResults = {
+  filename: string;
   duplicateRowEntropyScores: number[];
   columnSequencesEntropyScores: number[];
   analysisVersion: string;
-  fileIndex: number;
 };
 type AnalysisResultsData = {
   results: {

@@ -3,11 +3,12 @@ import { db as datasetDb } from "../dryad/datasetsDb";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
-import { analyzeExcelFile } from "../detection/analyzeExcelFile";
+import { analyzeDataset } from "../detection/analyzeDataset";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
 import { parseIntArgument } from "../utils/command";
 import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
 import { maxExcelFilesPerDataset } from "../config/config";
+import { ExcelFileData } from "../types/ExcelFileData";
 
 const program = new Command();
 
@@ -52,50 +53,60 @@ program
         `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
       );
       analysisResultsDb.data.results[dataset.extId] = {};
+
+      // Load all downloaded Excel files for this dataset
+      const excelFilesData: ExcelFileData[] = [];
+
       for (
         let j = 0;
         j < Math.min(dataset.excelFiles.length, maxExcelFilesPerDataset);
         j++
       ) {
-        console.log(
-          `[${i}] Analyzing file ${j} out of ${dataset.excelFiles.length}`,
-        );
         const excelFile = dataset.excelFiles[j];
         if (excelFile.status !== "downloaded") {
+          console.log(
+            `[${i}] Skipping file ${j} (${excelFile.filename}) - not downloaded`,
+          );
           continue;
         }
-        console.log(`- ${excelFile.filename} (${excelFile.size} bytes)`);
-        const excelFileData = loadExcelFileFromDryadIndex(dataset, j);
-        const allStrategies = Object.values(StrategyName);
-        const strategyResults = await analyzeExcelFile(
-          allStrategies,
-          excelFileData,
+        console.log(
+          `[${i}] Loading file ${j}: ${excelFile.filename} (${excelFile.size} bytes)`,
         );
+        const excelFileData = loadExcelFileFromDryadIndex(dataset, j);
+        excelFilesData.push(excelFileData);
+      }
 
+      // Analyze all files in the dataset together
+      const allStrategies = Object.values(StrategyName);
+      const analyses = await analyzeDataset(excelFilesData, allStrategies);
+
+      // Save results from each analysis
+      for (const analysis of analyses) {
         const duplicateRows =
-          strategyResults[StrategyName.DuplicateRows]?.duplicateRows || [];
+          analysis.results[StrategyName.DuplicateRows]?.duplicateRows || [];
         const duplicateRowEntropyScores = duplicateRows
           .map((row) => row.matrixSizeAdjustedEntropyScore)
           .slice(0, 20);
         const repeatedColumnSequences =
-          strategyResults[StrategyName.RepeatedColumnSequences]?.sequences ||
+          analysis.results[StrategyName.RepeatedColumnSequences]?.sequences ||
           [];
         const columnSequencesEntropyScores = repeatedColumnSequences
           .map((seq) => seq.matrixSizeAdjustedEntropyScore)
           .slice(0, 20);
 
         const analysisResults: AnalysisResults = {
-          fileIndex: j,
+          filename: analysis.excelFileName,
           duplicateRowEntropyScores,
           columnSequencesEntropyScores,
           analysisVersion: "2025.07.04",
         };
-        analysisResultsDb.data.results[dataset.extId][excelFile.filename] =
+        analysisResultsDb.data.results[dataset.extId][analysis.excelFileName] =
           analysisResults;
         console.log(
-          `Finished analyzing excel file ${j}: ${excelFile.filename} belonging to ${dataset.extId} (${i}).`,
+          `Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId} (${i}).`,
         );
       }
+
       await analysisResultsDb.write();
       dataset.status = "analyzed";
       await datasetDb.write();
