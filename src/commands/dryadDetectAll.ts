@@ -1,5 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
-import { db as datasetDb } from "../dryad/datasetsDb";
+import { getDatasetsByDownloadStatusWithFiles } from "../dryad/datasetsDb";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
@@ -21,9 +21,16 @@ program
   .action(async (count) => {
     const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
 
-    const datasets = datasetDb.data.datasets;
-    const downloadedDatasets = datasets
-      .filter((dataset) => dataset.status === "downloaded")
+    // Get datasets that have been downloaded (downloadStatus === "completed")
+    const allDownloadedDatasets =
+      await getDatasetsByDownloadStatusWithFiles("completed");
+
+    // Filter out datasets that have already been analyzed
+    const alreadyAnalyzedExtIds = new Set(
+      Object.keys(analysisResultsDb.data.results).map(Number),
+    );
+    const downloadedDatasets = allDownloadedDatasets
+      .filter((dataset) => !alreadyAnalyzedExtIds.has(dataset.extId))
       .toSorted((a, b) => {
         return (
           new Date(b.dryadPublicationDate).getTime() -
@@ -34,7 +41,7 @@ program
     const numDatasetsToAnalyze = Math.min(count, downloadedDatasets.length);
 
     console.log(
-      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are marked as downloaded.`,
+      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are marked as downloaded (${alreadyAnalyzedExtIds.size} already analyzed).`,
     );
 
     // For each dataset, log the journal name, journal score and title
@@ -63,7 +70,7 @@ program
         j++
       ) {
         const excelFile = dataset.excelFiles[j];
-        if (excelFile.status !== "downloaded") {
+        if (excelFile.downloadStatus !== "completed") {
           console.log(
             `[${i}] Skipping file ${j} (${excelFile.filename}) - not downloaded`,
           );
@@ -108,8 +115,6 @@ program
       }
 
       await analysisResultsDb.write();
-      dataset.status = "analyzed";
-      await datasetDb.write();
       console.log(
         `Dataset ${dataset.extId} (${i}) analyzed and results saved.`,
       );

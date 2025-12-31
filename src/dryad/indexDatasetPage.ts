@@ -1,7 +1,10 @@
 import { listDatasets } from "../dryad/listDatasets";
 import { listFiles } from "../dryad/listFiles";
-import { DryadDataset } from "./DryadDataset";
-import { db } from "./datasetsDb";
+import {
+  insertDataset,
+  insertExcelFiles,
+  insertReadmeFile,
+} from "./datasetsDb";
 import { Dataset, ForbiddenDataset } from "./schemas";
 import Mutex from "p-mutex";
 
@@ -59,48 +62,55 @@ export async function indexDatasetPage(
     const extDryadReadmeFile = extDryadFiles.find((file) =>
       /readme\.(txt|md)/i.test(file.path),
     );
-    const readmeFile = extDryadReadmeFile?._links["stash:download"]
-      ? {
-          filename: extDryadReadmeFile.path,
-          size: extDryadReadmeFile.size,
-          fileId: Number(
-            extDryadReadmeFile._links["stash:download"].href.split("/").at(-2),
-          ),
-        }
-      : undefined;
 
-    const dataset: DryadDataset = {
-      status: "indexed",
+    // Insert the dataset
+    const insertedDataset = await insertDataset({
       extId: extDataset.id,
-      dryadDoi: extDataset.identifier,
-      originalFileSize: extDataset.storageSize,
+      datasetDoi: extDataset.identifier,
+      originalFileSize: extDataset.storageSize ?? null,
       title: extDataset.title,
-      abstract: extDataset.abstract,
-      usageNotes: extDataset.usageNotes,
-      primaryArticleLink:
+      abstract: extDataset.abstract ?? null,
+      usageNotes: extDataset.usageNotes ?? null,
+      primaryArticleUrl:
         extDataset.relatedWorks?.find(
           (work) => work.relationship === "primary_article",
-        )?.identifier || undefined,
-      journalIssn: extDataset.relatedPublicationISSN,
+        )?.identifier ?? null,
+      journalIssn: extDataset.relatedPublicationISSN ?? null,
       dryadPublicationDate:
         extDataset.publicationDate ?? extDataset.lastModificationDate,
       dryadLastModifiedDate: extDataset.lastModificationDate,
       latestVersionId,
-      excelFiles: extDryadExcelFiles.map((file) => ({
+      downloadStatus: "not_started",
+    });
+
+    // Insert excel files
+    await insertExcelFiles(
+      extDryadExcelFiles.map((file) => ({
+        dryadDatasetId: insertedDataset.id,
+        extFileId: Number(file._links["stash:download"]!.href.split("/").at(-2)),
         filename: file.path,
         size: file.size,
-        fileId: Number(file._links["stash:download"]!.href.split("/").at(-2)),
+        downloadStatus: "not_started" as const,
       })),
-      readmeFile,
-      indexedTimestamp: new Date().toISOString(),
-      updatedTimestamp: new Date().toISOString(),
-    };
+    );
+
+    // Insert readme file if present
+    if (extDryadReadmeFile?._links["stash:download"]) {
+      await insertReadmeFile({
+        dryadDatasetId: insertedDataset.id,
+        extFileId: Number(
+          extDryadReadmeFile._links["stash:download"].href.split("/").at(-2),
+        ),
+        filename: extDryadReadmeFile.path,
+        size: extDryadReadmeFile.size,
+        downloadStatus: "not_started",
+      });
+    }
+
     numDatasetsWithExcelFiles++;
     console.log(
-      `Inserting dataset ${dataset.extId} with ${dataset.excelFiles.length} Excel files: ${dataset.excelFiles.map((file) => file.filename).join(", ")} Title: '${dataset.title}'`,
+      `Inserted dataset ${insertedDataset.extId} with ${extDryadExcelFiles.length} Excel files: ${extDryadExcelFiles.map((file) => file.path).join(", ")} Title: '${insertedDataset.title}'`,
     );
-    db.data.datasets.push(dataset);
-    await db.write();
   }
 
   console.log(

@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
-import { db as datasetsDb } from "../dryad/datasetsDb";
+import { getDatasetsByDownloadStatusWithFiles } from "../dryad/datasetsDb";
 import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
 
 const program = new Command();
@@ -10,20 +10,22 @@ program
   .description("Print a list of analyzed datasets ranked by suspicion level.")
   .version("0.1.0")
   .action(async () => {
-    const analyzedDatasets = datasetsDb.data.datasets.filter(
-      ({ status }) => status === "analyzed",
-    );
-    const analyzedDatasetByExtId = new Map(
-      analyzedDatasets.map((dataset) => [dataset.extId, dataset]),
+    // Get all completed (downloaded) datasets
+    const completedDatasets =
+      await getDatasetsByDownloadStatusWithFiles("completed");
+    const datasetByExtId = new Map(
+      completedDatasets.map((dataset) => [dataset.extId, dataset]),
     );
 
     const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
 
     const analysisResults = analysisResultsDb.data.results;
+
+    // Filter to only include datasets that have been analyzed
     const datasets = Object.entries(analysisResults)
-      .filter(([extId]) => analyzedDatasetByExtId.has(Number(extId)))
+      .filter(([extId]) => datasetByExtId.has(Number(extId)))
       .map(([extId, datasetResult]) => {
-        const dataset = analyzedDatasetByExtId.get(Number(extId));
+        const dataset = datasetByExtId.get(Number(extId));
         const journalData = dataset?.journalIssn
           ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
           : null;

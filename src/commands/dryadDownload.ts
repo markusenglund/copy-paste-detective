@@ -1,5 +1,11 @@
 import { Command } from "@commander-js/extra-typings";
-import { db } from "../dryad/datasetsDb";
+import {
+  getDatasetsByDownloadStatusWithFiles,
+  updateDatasetDownloadStatus,
+  updateExcelFileDownloadStatus,
+  updateReadmeFileDownloadStatus,
+  DryadDatasetWithFiles,
+} from "../dryad/datasetsDb";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument } from "../utils/command";
 import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
@@ -16,11 +22,10 @@ program
   .action(async (count) => {
     const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
 
-    const datasets = db.data.datasets;
+    const datasets = await getDatasetsByDownloadStatusWithFiles("not_started");
     const maxFileSize = 10_000_000; // 10MB
 
     const latestIndexedDatasets = datasets
-      .filter((dataset) => dataset.status === "indexed")
       .filter((dataset) => {
         const journalData = dataset.journalIssn
           ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
@@ -49,22 +54,10 @@ program
         return true;
       })
       .toSorted((a, b) => {
-        // Filter by highest SJR score
-        // const journalData = a.journalIssn
-        //   ? scimagoIssnJournalMap.get(normalizeIssn(a.journalIssn))
-        //   : null;
-        // const bJournalData = b.journalIssn
-        //   ? scimagoIssnJournalMap.get(normalizeIssn(b.journalIssn))
-        //   : null;
-        // const aSjrScore = journalData?.scimagoJournalScore ?? 0;
-        // const bSjrScore = bJournalData?.scimagoJournalScore ?? 0;
-        // if (aSjrScore === bSjrScore) {
         return (
           new Date(b.dryadPublicationDate).getTime() -
           new Date(a.dryadPublicationDate).getTime()
         );
-        // }
-        // return bSjrScore - aSjrScore;
       });
 
     console.log(
@@ -97,13 +90,14 @@ program
         if (excelFile.size < maxFileSize) {
           try {
             await downloadFile({
-              fileId: excelFile.fileId,
+              fileId: excelFile.extFileId,
               filename: excelFile.filename,
               datasetId: dataset.extId,
             });
-            excelFile.status = "downloaded";
+            await updateExcelFileDownloadStatus(excelFile.id, "completed");
           } catch (err) {
             console.error(err);
+            await updateExcelFileDownloadStatus(excelFile.id, "failed");
             numFailedDownloads += 1;
           }
         }
@@ -111,21 +105,24 @@ program
       if (dataset.readmeFile) {
         try {
           await downloadFile({
-            fileId: dataset.readmeFile.fileId,
+            fileId: dataset.readmeFile.extFileId,
             filename: dataset.readmeFile.filename,
             datasetId: dataset.extId,
           });
-          dataset.readmeFile.status = "downloaded";
+          await updateReadmeFileDownloadStatus(
+            dataset.readmeFile.id,
+            "completed",
+          );
         } catch (err) {
           console.error(err);
+          await updateReadmeFileDownloadStatus(dataset.readmeFile.id, "failed");
         }
       }
       if (numFailedDownloads === dataset.excelFiles.length) {
-        dataset.status = "failed";
+        await updateDatasetDownloadStatus(dataset.extId, "failed");
       } else {
-        dataset.status = "downloaded";
+        await updateDatasetDownloadStatus(dataset.extId, "completed");
       }
-      await db.write();
     }
   });
 

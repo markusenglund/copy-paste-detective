@@ -1,6 +1,10 @@
 import { Command } from "@commander-js/extra-typings";
-import { groupBy } from "lodash-es";
-import { db } from "../dryad/datasetsDb";
+import {
+  getAllDatasetsWithFiles,
+  getDatasetCountByStatus,
+  getTotalExcelFileCount,
+  getTotalExcelFileSize,
+} from "../dryad/datasetsDb";
 import { formatSize } from "../utils/formatSize";
 
 const program = new Command();
@@ -10,25 +14,28 @@ program
   .description("Log status of imported Dryad datasets.")
   .version("0.1.0")
   .action(async () => {
-    const datasets = db.data.datasets;
-    const excelFiles = datasets.flatMap((dataset) => dataset.excelFiles);
+    const datasets = await getAllDatasetsWithFiles();
+    const excelFileCount = await getTotalExcelFileCount();
 
     console.log(
-      `Database contains ${datasets.length} datasets with ${excelFiles.length} total Excel files.`,
+      `Database contains ${datasets.length} datasets with ${excelFileCount} total Excel files.`,
     );
-    const datasetsByStatus = groupBy(datasets, "status");
-    const datasetsByStatusEntries = Object.entries(datasetsByStatus);
-    console.log("Datasets by status:");
-    datasetsByStatusEntries.forEach(([status, datasets]) => {
-      console.log(`- ${status}: ${datasets.length} datasets`);
-    });
-    const sumSize = excelFiles.reduce((acc, file) => acc + file.size, 0);
-    const averageSize = sumSize / excelFiles.length;
+
+    const statusCounts = await getDatasetCountByStatus();
+    console.log("Datasets by download status:");
+    for (const [status, count] of Object.entries(statusCounts)) {
+      if (count > 0) {
+        console.log(`- ${status}: ${count} datasets`);
+      }
+    }
+
+    const totalSize = await getTotalExcelFileSize();
+    const averageSize = excelFileCount > 0 ? totalSize / excelFileCount : 0;
     console.log(`Average Excel file size: ${formatSize(averageSize)}`);
-    console.log(`Total size of all Excel files: ${formatSize(sumSize)}`);
+    console.log(`Total size of all Excel files: ${formatSize(totalSize)}`);
 
     const datasetsWithReadme = datasets.filter(
-      (dataset) => dataset.readmeFile !== undefined,
+      (dataset) => dataset.readmeFile !== null,
     );
     console.log(
       `Found ${datasetsWithReadme.length} datasets with a README file.`,
@@ -36,7 +43,7 @@ program
 
     const datasetsWithReadmeOrUsageNotes = datasets.filter(
       (dataset) =>
-        dataset.readmeFile !== undefined || dataset.usageNotes !== undefined,
+        dataset.readmeFile !== null || dataset.usageNotes !== null,
     );
     console.log(
       `Found ${datasetsWithReadmeOrUsageNotes.length} datasets with a README file or usage notes.`,

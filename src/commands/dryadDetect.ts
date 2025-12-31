@@ -1,5 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
-import { db as datasetDb } from "../dryad/datasetsDb";
+import { getDatasetWithFiles } from "../dryad/datasetsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
 import { parseIntArgument, parseStrategies } from "../utils/command";
@@ -25,17 +25,17 @@ program
     Object.values(StrategyName),
   )
   .action(async (datasetExtId, fileIndex, options) => {
-    const dataset = datasetDb.data.datasets.find(
-      (dataset) => dataset.extId === datasetExtId,
-    );
+    const dataset = await getDatasetWithFiles(datasetExtId);
     if (!dataset) {
       console.error(
         `Dataset with extId ${datasetExtId} not found in the database.`,
       );
       process.exit(1);
     }
-    if (!["downloaded", "analyzed", "evaluated"].includes(dataset.status)) {
-      console.error(`Dataset with extId ${datasetExtId} is not downloaded.`);
+    if (dataset.downloadStatus !== "completed") {
+      console.error(
+        `Dataset with extId ${datasetExtId} is not downloaded. Status: ${dataset.downloadStatus}`,
+      );
       process.exit(1);
     }
 
@@ -52,9 +52,9 @@ program
       i++
     ) {
       const dryadExcelFile = dryadExcelFiles[i];
-      if (dryadExcelFile.status !== "downloaded") {
+      if (dryadExcelFile.downloadStatus !== "completed") {
         console.error(
-          `Excel file at index ${i} is not downloaded. Status: ${dryadExcelFile.status}`,
+          `Excel file at index ${i} is not downloaded. Status: ${dryadExcelFile.downloadStatus}`,
         );
         continue;
       }
