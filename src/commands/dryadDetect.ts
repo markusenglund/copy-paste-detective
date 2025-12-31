@@ -1,5 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
-import { getDatasetWithFiles } from "../dryad/datasetsDb";
+import { getDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
 import { parseIntArgument, parseStrategies } from "../utils/command";

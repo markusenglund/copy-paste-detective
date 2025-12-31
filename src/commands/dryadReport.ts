@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
-import { getDatasetsByDownloadStatusWithFiles } from "../dryad/datasetsDb";
+import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
 import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
 
 const program = new Command();

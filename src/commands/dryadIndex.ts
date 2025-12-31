@@ -1,9 +1,9 @@
 import { Command } from "@commander-js/extra-typings";
+import { getAllExtIds } from "../repositories/datasets/datasetsRepository";
 import {
-  getAllExtIds,
   getLastPageIndexed,
   setLastPageIndexed,
-} from "../dryad/datasetsDb";
+} from "../repositories/indexingState/indexingStateRepository";
 import { indexDatasetPage } from "../dryad/indexDatasetPage";
 import { listDatasets } from "../dryad/listDatasets";
 import pMap from "p-map";

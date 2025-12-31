@@ -2,10 +2,10 @@ import { Command } from "@commander-js/extra-typings";
 import {
   getDatasetsByDownloadStatusWithFiles,
   updateDatasetDownloadStatus,
-  updateExcelFileDownloadStatus,
-  updateReadmeFileDownloadStatus,
   DryadDatasetWithFiles,
-} from "../dryad/datasetsDb";
+} from "../repositories/datasets/datasetsRepository";
+import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelFilesRepository";
+import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument } from "../utils/command";
 import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";

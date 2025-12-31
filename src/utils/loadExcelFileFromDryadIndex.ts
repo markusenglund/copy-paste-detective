@@ -3,7 +3,7 @@ import path from "path";
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
-import { DryadDatasetWithFiles } from "../dryad/datasetsDb";
+import { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
 
 export function loadExcelFileFromDryadIndex(

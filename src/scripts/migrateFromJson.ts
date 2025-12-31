@@ -6,7 +6,7 @@ import {
   dryadExcelFiles,
   dryadReadmeFiles,
   dryadIndexingState,
-} from "../db/schema";
+} from "../repositories";
 import { DryadDataset } from "../dryad/DryadDataset";
 
 type JsonData = {

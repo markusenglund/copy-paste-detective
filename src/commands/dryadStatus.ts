@@ -2,9 +2,11 @@ import { Command } from "@commander-js/extra-typings";
 import {
   getAllDatasetsWithFiles,
   getDatasetCountByStatus,
+} from "../repositories/datasets/datasetsRepository";
+import {
   getTotalExcelFileCount,
   getTotalExcelFileSize,
-} from "../dryad/datasetsDb";
+} from "../repositories/excelFiles/excelFilesRepository";
 import { formatSize } from "../utils/formatSize";
 
 const program = new Command();

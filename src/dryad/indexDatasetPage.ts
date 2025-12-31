@@ -1,10 +1,8 @@
 import { listDatasets } from "../dryad/listDatasets";
 import { listFiles } from "../dryad/listFiles";
-import {
-  insertDataset,
-  insertExcelFiles,
-  insertReadmeFile,
-} from "./datasetsDb";
+import { insertDataset } from "../repositories/datasets/datasetsRepository";
+import { insertExcelFiles } from "../repositories/excelFiles/excelFilesRepository";
+import { insertReadmeFile } from "../repositories/readmeFiles/readmeFilesRepository";
 import { Dataset, ForbiddenDataset } from "./schemas";
 import Mutex from "p-mutex";
 

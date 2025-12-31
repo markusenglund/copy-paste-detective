@@ -1,18 +1,14 @@
-import { eq, desc, sql, and } from "drizzle-orm";
-import { db } from "../db";
-import {
-  dryadDatasets,
-  dryadExcelFiles,
-  dryadReadmeFiles,
-  dryadIndexingState,
-  downloadStatusEnum,
-} from "../db/schema";
+import { eq, sql } from "drizzle-orm";
+import { db } from "../../db";
+import { DownloadStatus } from "../../db/shared/enums";
+import { dryadDatasets } from "./schema";
+import { dryadExcelFiles } from "../excelFiles/schema";
+import { dryadReadmeFiles } from "../readmeFiles/schema";
+import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
+import type { DryadReadmeFileRow } from "../readmeFiles/readmeFilesRepository";
 
 // Re-export types for convenience
 export type DryadDatasetRow = typeof dryadDatasets.$inferSelect;
-export type DryadExcelFileRow = typeof dryadExcelFiles.$inferSelect;
-export type DryadReadmeFileRow = typeof dryadReadmeFiles.$inferSelect;
-export type DownloadStatus = (typeof downloadStatusEnum.enumValues)[number];
 
 // Composite type that includes related files
 export type DryadDatasetWithFiles = DryadDatasetRow & {
@@ -181,113 +177,6 @@ export async function updateDatasetDownloadStatusByCurrentStatus(
   return result.rowCount ?? 0;
 }
 
-// ============ Excel Files ============
-
-export async function insertExcelFile(data: {
-  dryadDatasetId: number;
-  extFileId: number;
-  filename: string;
-  size: number;
-  downloadStatus?: DownloadStatus;
-}): Promise<DryadExcelFileRow> {
-  const [inserted] = await db
-    .insert(dryadExcelFiles)
-    .values({
-      ...data,
-      downloadStatus: data.downloadStatus ?? "not_started",
-    })
-    .returning();
-  return inserted;
-}
-
-export async function insertExcelFiles(
-  files: {
-    dryadDatasetId: number;
-    extFileId: number;
-    filename: string;
-    size: number;
-    downloadStatus?: DownloadStatus;
-  }[],
-): Promise<DryadExcelFileRow[]> {
-  if (files.length === 0) return [];
-  return db
-    .insert(dryadExcelFiles)
-    .values(
-      files.map((f) => ({
-        ...f,
-        downloadStatus: f.downloadStatus ?? "not_started",
-      })),
-    )
-    .returning();
-}
-
-export async function updateExcelFileDownloadStatus(
-  fileId: number,
-  status: DownloadStatus,
-): Promise<void> {
-  await db
-    .update(dryadExcelFiles)
-    .set({ downloadStatus: status })
-    .where(eq(dryadExcelFiles.id, fileId));
-}
-
-export async function getExcelFilesByDatasetId(
-  datasetId: number,
-): Promise<DryadExcelFileRow[]> {
-  return db
-    .select()
-    .from(dryadExcelFiles)
-    .where(eq(dryadExcelFiles.dryadDatasetId, datasetId));
-}
-
-// ============ Readme Files ============
-
-export async function insertReadmeFile(data: {
-  dryadDatasetId: number;
-  extFileId: number;
-  filename: string;
-  size: number;
-  downloadStatus?: DownloadStatus;
-}): Promise<DryadReadmeFileRow> {
-  const [inserted] = await db
-    .insert(dryadReadmeFiles)
-    .values({
-      ...data,
-      downloadStatus: data.downloadStatus ?? "not_started",
-    })
-    .returning();
-  return inserted;
-}
-
-export async function updateReadmeFileDownloadStatus(
-  fileId: number,
-  status: DownloadStatus,
-): Promise<void> {
-  await db
-    .update(dryadReadmeFiles)
-    .set({ downloadStatus: status })
-    .where(eq(dryadReadmeFiles.id, fileId));
-}
-
-// ============ Indexing State ============
-
-export async function getLastPageIndexed(): Promise<number | null> {
-  const result = await db.select().from(dryadIndexingState).limit(1);
-  return result[0]?.lastPageIndexed ?? null;
-}
-
-export async function setLastPageIndexed(page: number): Promise<void> {
-  const existing = await db.select().from(dryadIndexingState).limit(1);
-  if (existing.length === 0) {
-    await db.insert(dryadIndexingState).values({ lastPageIndexed: page });
-  } else {
-    await db
-      .update(dryadIndexingState)
-      .set({ lastPageIndexed: page })
-      .where(eq(dryadIndexingState.id, existing[0].id));
-  }
-}
-
 // ============ Stats ============
 
 export async function getDatasetCountByStatus(): Promise<
@@ -315,16 +204,3 @@ export async function getDatasetCountByStatus(): Promise<
   return counts;
 }
 
-export async function getTotalExcelFileCount(): Promise<number> {
-  const result = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(dryadExcelFiles);
-  return result[0]?.count ?? 0;
-}
-
-export async function getTotalExcelFileSize(): Promise<number> {
-  const result = await db
-    .select({ sum: sql<number>`coalesce(sum(size), 0)::bigint` })
-    .from(dryadExcelFiles);
-  return Number(result[0]?.sum ?? 0);
-}
