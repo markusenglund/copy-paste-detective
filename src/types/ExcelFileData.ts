@@ -6,4 +6,5 @@ export interface ExcelFileData {
   articleName: string;
   abstract?: string;
   dataDescription: string;
+  extId?: string;
 }

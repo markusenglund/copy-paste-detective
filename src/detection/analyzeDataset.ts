@@ -136,7 +136,7 @@ function reviewMostSuspiciousResults(
       .join("\n")}`,
   );
 
-  sheetsToReview.forEach((sheetData, index) => {
+  sheetsToReview.forEach((sheetData) => {
     const reviewInput: SheetReviewInput = {
       sheet: sheetData.sheet,
       excelFileData: sheetData.excelFileData,
@@ -147,7 +147,7 @@ function reviewMostSuspiciousResults(
         sheetData.duplicateValuesResult.numOccurrencesByNumericValue,
     };
 
-    reviewSheetResults(reviewInput, index);
+    reviewSheetResults(reviewInput);
   });
 }
 

@@ -7,12 +7,27 @@ import { Sheet } from "../entities/Sheet";
 import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
 import { SuspicionLevel } from "../types";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
-import { slugify } from "../utils/slugify";
+import { slugify, slugifyTruncated } from "../utils/slugify";
 import {
   maxPromptDataDescriptionChars,
   maxNumRowsToAnalyze,
 } from "../config/config";
 import { wrapInCodeBlock } from "../utils/markdown";
+
+function getOutputFilePath(excelFileData: ExcelFileData, sheet: Sheet): string {
+  const dir = "tmp/review-prompt";
+  fs.mkdirSync(dir, { recursive: true });
+
+  const paperName = slugifyTruncated(excelFileData.articleName, 20);
+  const filename = slugifyTruncated(excelFileData.excelFileName, 20);
+  const sheetName = slugify(sheet.name);
+
+  const outputFilename = excelFileData.extId
+    ? `${excelFileData.extId}_${paperName}_${filename}_${sheetName}.md`
+    : `${paperName}_${filename}_${sheetName}.md`;
+
+  return path.resolve(dir, outputFilename);
+}
 
 export type SheetReviewInput = {
   sheet: Sheet;
@@ -23,10 +38,7 @@ export type SheetReviewInput = {
   numOccurrencesByNumericValue: Map<number, number>;
 };
 
-export function reviewSheetResults(
-  input: SheetReviewInput,
-  promptIndex: number,
-): void {
+export function reviewSheetResults(input: SheetReviewInput): void {
   const {
     sheet,
     excelFileData,
@@ -68,9 +80,7 @@ export function reviewSheetResults(
     return;
   }
 
-  const outputFilePath = path.resolve(
-    `tmp/prompts_${slugify(excelFileData.articleName)}_${promptIndex}.md`,
-  );
+  const outputFilePath = getOutputFilePath(excelFileData, sheet);
 
   const prompt = createPrompt(excelFileData, {
     sheet,
