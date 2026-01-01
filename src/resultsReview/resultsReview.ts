@@ -13,6 +13,10 @@ import {
   maxNumRowsToAnalyze,
 } from "../config/config";
 import { wrapInCodeBlock } from "../utils/markdown";
+import {
+  reviewResultsWithCache,
+  ReviewResultsResponse,
+} from "../ai/geminiService";
 
 function getOutputFilePath(excelFileData: ExcelFileData, sheet: Sheet): string {
   const dir = "tmp/review-prompt";
@@ -38,7 +42,14 @@ export type SheetReviewInput = {
   numOccurrencesByNumericValue: Map<number, number>;
 };
 
-export function reviewSheetResults(input: SheetReviewInput): void {
+export type SheetReviewResult = ReviewResultsResponse & {
+  sheetName: string;
+  excelFileName: string;
+};
+
+export async function reviewSheetResults(
+  input: SheetReviewInput,
+): Promise<SheetReviewResult | null> {
   const {
     sheet,
     excelFileData,
@@ -77,10 +88,8 @@ export function reviewSheetResults(input: SheetReviewInput): void {
     filteredDuplicateRows.length === 0 &&
     filteredDuplicateColumnSequences.length === 0
   ) {
-    return;
+    return null;
   }
-
-  const outputFilePath = getOutputFilePath(excelFileData, sheet);
 
   const prompt = createPrompt(excelFileData, {
     sheet,
@@ -90,7 +99,29 @@ export function reviewSheetResults(input: SheetReviewInput): void {
     duplicateColumnSequences: filteredDuplicateColumnSequences,
   });
 
+  // Write prompt to file for debugging/reference
+  const outputFilePath = getOutputFilePath(excelFileData, sheet);
   fs.writeFileSync(outputFilePath, prompt, "utf8");
+
+  // Call the Gemini API with caching
+  const result = await reviewResultsWithCache({
+    prompt,
+    sheetName: sheet.name,
+    dryadDatasetId: excelFileData.dryadDatasetId,
+    dryadExcelFileId: excelFileData.dryadExcelFileId,
+  });
+
+  console.log(`\n📊 Review result for '${sheet.name}':`);
+  console.log(`   Suspicion score: ${result.suspicionScore}/10`);
+  console.log(`   Impact score: ${result.impactScore}/10`);
+  console.log(`   Explanation: ${result.explanation}`);
+  console.log(`   False positive theory: ${result.falsePositiveTheory}`);
+
+  return {
+    ...result,
+    sheetName: sheet.name,
+    excelFileName: excelFileData.excelFileName,
+  };
 }
 
 const createPrompt = (

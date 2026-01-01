@@ -48,10 +48,10 @@ function getSheetSuspicionScore(
  * Sorts by suspicion rank within file first (to prevent one file from taking all slots),
  * then by overall suspicion score.
  */
-function reviewMostSuspiciousResults(
+async function reviewMostSuspiciousResults(
   excelFileAnalyses: ExcelFileAnalysis[],
   excelFilesByFilename: Record<string, ExcelFileData>,
-): void {
+): Promise<void> {
   const allSheetData: SheetAnalysisData[] = [];
 
   // Build sheet-level analysis data for all sheets
@@ -136,7 +136,7 @@ function reviewMostSuspiciousResults(
       .join("\n")}`,
   );
 
-  sheetsToReview.forEach((sheetData) => {
+  for (const sheetData of sheetsToReview) {
     const reviewInput: SheetReviewInput = {
       sheet: sheetData.sheet,
       excelFileData: sheetData.excelFileData,
@@ -147,8 +147,8 @@ function reviewMostSuspiciousResults(
         sheetData.duplicateValuesResult.numOccurrencesByNumericValue,
     };
 
-    reviewSheetResults(reviewInput);
-  });
+    await reviewSheetResults(reviewInput);
+  }
 }
 
 export async function analyzeDataset(
@@ -167,7 +167,10 @@ export async function analyzeDataset(
     excelFileAnalyses.push(excelFileAnalysis);
   }
 
-  reviewMostSuspiciousResults(excelFileAnalyses, selectedExcelFilesByFilename);
+  await reviewMostSuspiciousResults(
+    excelFileAnalyses,
+    selectedExcelFilesByFilename,
+  );
 
   return excelFileAnalyses;
 }

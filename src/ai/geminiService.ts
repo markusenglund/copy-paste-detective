@@ -6,9 +6,13 @@ import { config } from "../config/env";
 import type { PromptTemplateParams } from "./promptTemplate";
 import { generateColumnCategorizationPrompt } from "./promptTemplate";
 import {
-  findByHash,
-  insertResult,
+  findByHash as findColumnCategorizationByHash,
+  insertResult as insertColumnCategorizationResult,
 } from "../repositories/aiColumnCategorizationResults/aiColumnCategorizationResultsRepository";
+import {
+  findByHash as findReviewResultByHash,
+  insertResult as insertReviewResult,
+} from "../repositories/aiReviewResults/aiReviewResultsRepository";
 
 // Internal schema for parsing raw Gemini API response (uses prompt field names)
 const geminiResponseSchema = z.object({
@@ -33,14 +37,14 @@ const throttle = pThrottle({
   strict: true,
 });
 
-const model = "gemini-2.5-flash-lite";
+const screenColumnsModel = "gemini-2.5-flash-lite";
 
 async function screenColumnsGeminiInternal(
   prompt: string,
 ): Promise<ScreenColumnsResponse> {
   try {
     const response = await geminiClient.models.generateContent({
-      model,
+      model: screenColumnsModel,
       contents: prompt,
       config: {
         temperature: 0,
@@ -114,7 +118,9 @@ export async function screenColumnsWithCache(
   params: ScreenColumnsWithCacheParams,
 ): Promise<ScreenColumnsResponse> {
   const prompt = generateColumnCategorizationPrompt(params);
-  const hash = createHash("md5").update(`${prompt}${model}`).digest("hex");
+  const hash = createHash("md5")
+    .update(`${prompt}${screenColumnsModel}`)
+    .digest("hex");
 
   const canCache =
     params.dryadDatasetId !== undefined &&
@@ -122,7 +128,7 @@ export async function screenColumnsWithCache(
 
   // Check for cached result (only if we have database IDs)
   if (canCache) {
-    const cached = await findByHash(hash);
+    const cached = await findColumnCategorizationByHash(hash);
     if (cached) {
       console.log(`Found cached AI result for '${params.excelFileName}'`);
       return {
@@ -138,15 +144,152 @@ export async function screenColumnsWithCache(
 
   // Store in database (only if we have database IDs)
   if (canCache) {
-    await insertResult({
+    await insertColumnCategorizationResult({
       dryadDatasetId: params.dryadDatasetId!,
       dryadExcelFileId: params.dryadExcelFileId!,
       sheetName: params.sheetName,
       prompt,
-      model,
+      model: screenColumnsModel,
       motivation: result.motivation,
       includedColumnNames: result.includedColumnNames,
       excludedColumnNames: result.excludedColumnNames,
+      hash,
+    });
+  }
+
+  return result;
+}
+
+// ============ Review Results ============
+
+// Schema for parsing review results from Gemini API
+const reviewResultsResponseSchema = z.object({
+  explanation: z.string(),
+  falsePositiveTheory: z.string(),
+  suspicionScore: z.number().int().min(1).max(10),
+  impactScore: z.number().int().min(1).max(10),
+});
+
+export type ReviewResultsResponse = z.infer<typeof reviewResultsResponseSchema>;
+
+const reviewResultsModel = "gemini-2.5-flash";
+async function reviewResultsGeminiInternal(
+  prompt: string,
+): Promise<ReviewResultsResponse> {
+  try {
+    const response = await geminiClient.models.generateContent({
+      model: reviewResultsModel,
+      contents: prompt,
+      config: {
+        temperature: 0,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            explanation: {
+              type: Type.STRING,
+              description: "Best explanation for the duplicates",
+            },
+            falsePositiveTheory: {
+              type: Type.STRING,
+              description:
+                "Theory for how this could be a false positive with an innocent explanation",
+            },
+            suspicionScore: {
+              type: Type.INTEGER,
+              description:
+                "Suspiciousness score from 1 to 10 expressing the probability of real issues (1 = certain false positive, 10 = 100% real issue)",
+            },
+            impactScore: {
+              type: Type.INTEGER,
+              description:
+                "Impact score from 1 to 10 expressing how seriously the issue might impact the paper's conclusions (1 = no impact, 10 = conclusions entirely untrustworthy)",
+            },
+          },
+          required: [
+            "explanation",
+            "falsePositiveTheory",
+            "suspicionScore",
+            "impactScore",
+          ],
+        },
+      },
+    });
+
+    if (!response.text) {
+      throw new Error("No text received from Gemini API");
+    }
+
+    // Parse and validate the structured JSON response
+    const parsed = JSON.parse(response.text);
+    return reviewResultsResponseSchema.parse(parsed);
+  } catch (error) {
+    console.error("Error calling Gemini API for review:", error);
+    throw new Error(
+      `Failed to review results: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
+
+// Throttled version of the review results Gemini API call
+const reviewResultsGemini = throttle(reviewResultsGeminiInternal);
+
+// Context needed for caching review results in the database
+export type ReviewResultsWithCacheParams = {
+  prompt: string;
+  dryadDatasetId?: number;
+  dryadExcelFileId?: number;
+  sheetName: string;
+};
+
+/**
+ * Higher-order function that wraps the review results Gemini API call with database caching.
+ * - Computes a hash from prompt + model
+ * - If database IDs are available: checks DB for cached result
+ * - If hit: returns cached data
+ * - If miss: calls throttled Gemini API, stores result (if IDs available), returns it
+ */
+export async function reviewResultsWithCache(
+  params: ReviewResultsWithCacheParams,
+): Promise<ReviewResultsResponse> {
+  const { prompt, sheetName } = params;
+  const hash = createHash("md5")
+    .update(`${prompt}${reviewResultsModel}`)
+    .digest("hex");
+
+  const canCache =
+    params.dryadDatasetId !== undefined &&
+    params.dryadExcelFileId !== undefined;
+
+  // Check for cached result (only if we have database IDs)
+  if (canCache) {
+    const cached = await findReviewResultByHash(hash);
+    if (cached) {
+      console.log(`Found cached review result for sheet '${sheetName}'`);
+      return {
+        explanation: cached.explanation,
+        falsePositiveTheory: cached.falsePositiveTheory,
+        suspicionScore: cached.suspicionScore,
+        impactScore: cached.impactScore,
+      };
+    }
+  }
+
+  // Call the throttled Gemini API
+  const result = await reviewResultsGemini(prompt);
+
+  // Store in database (only if we have database IDs)
+  if (canCache) {
+    await insertReviewResult({
+      dryadDatasetId: params.dryadDatasetId!,
+      dryadExcelFileId: params.dryadExcelFileId!,
+      sheetName,
+      prompt,
+      model: reviewResultsModel,
+      explanation: result.explanation,
+      falsePositiveTheory: result.falsePositiveTheory,
+      suspicionScore: result.suspicionScore,
+      impactScore: result.impactScore,
       hash,
     });
   }
