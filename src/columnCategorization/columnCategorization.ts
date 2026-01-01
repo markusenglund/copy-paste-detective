@@ -13,7 +13,7 @@ import {
 import { detectNaturalLogarithm, LogarithmMatch } from "../utils/logarithm";
 import { EnhancedCell } from "../entities/EnhancedCell";
 import { ExcelFileData } from "../types/ExcelFileData";
-import { screenColumnsGemini } from "../ai/geminiService";
+import { screenColumnsWithCache } from "../ai/geminiService";
 
 type CalculatedColumnProfile = {
   isRepeatingFraction: boolean;
@@ -72,22 +72,33 @@ async function getAiColumnProfiles(
     .slice(sheet.firstDataRowIndex, sheet.firstDataRowIndex + 2)
     .map((row) => row.map((cell) => String(cell.value || "")));
 
-  const screenColumnsResult = await screenColumnsGemini({
+  const screenColumnsResult = await screenColumnsWithCache({
     paperName: excelFileData.articleName,
     excelFileName: excelFileData.excelFileName,
     readmeContent: excelFileData.dataDescription,
     columnNames,
     columnData: sampleData,
+    sheetName: sheet.name,
+    dryadDatasetId: excelFileData.dryadDatasetId,
+    dryadExcelFileId: excelFileData.dryadExcelFileId,
   });
 
-  console.log(`[${sheet.name}] Unique columns:`, screenColumnsResult.unique);
-  console.log(`[${sheet.name}] Shared columns:`, screenColumnsResult.shared);
+  console.log(
+    `[${sheet.name}] Included columns:`,
+    screenColumnsResult.includedColumnNames,
+  );
+  console.log(
+    `[${sheet.name}] Excluded columns:`,
+    screenColumnsResult.excludedColumnNames,
+  );
   console.log(`[${sheet.name}] motivation:`, screenColumnsResult.motivation);
 
   const aiColumnProfile: AiColumnProfile[] = sheet
     .getColumns()
     .map((column) => ({
-      isIncludedInAnalysis: screenColumnsResult.unique.includes(column.name),
+      isIncludedInAnalysis: screenColumnsResult.includedColumnNames.includes(
+        column.name,
+      ),
     }));
 
   return aiColumnProfile;

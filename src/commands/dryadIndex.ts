@@ -1,5 +1,9 @@
 import { Command } from "@commander-js/extra-typings";
-import { db } from "../dryad/datasetsDb";
+import { getAllExtIds } from "../repositories/datasets/datasetsRepository";
+import {
+  getLastPageIndexed,
+  setLastPageIndexed,
+} from "../repositories/indexingState/indexingStateRepository";
 import { indexDatasetPage } from "../dryad/indexDatasetPage";
 import { listDatasets } from "../dryad/listDatasets";
 import pMap from "p-map";
@@ -11,9 +15,8 @@ program
   .description("Fetch metadata about excel files from datadryad.org")
   .version("0.1.0")
   .action(async () => {
-    const alreadyIndexedDatasetIds = new Set(
-      db.data.datasets.map((dataset) => dataset.extId),
-    );
+    const alreadyIndexedDatasetIds = await getAllExtIds();
+    const lastPageIndexed = await getLastPageIndexed();
 
     // Check how many pages we have left to index
     const firstDatasetPage = await listDatasets({ page: 1, perPage: 20 });
@@ -21,12 +24,10 @@ program
       firstDatasetPage.total / firstDatasetPage.count,
     );
     const pagesToIndex = Array.from(
-      { length: totalPages - (db.data.lastPageIndexed ?? 0) },
-      (_, i) => (db.data.lastPageIndexed ?? 0) + 1 + i,
+      { length: totalPages - (lastPageIndexed ?? 0) },
+      (_, i) => (lastPageIndexed ?? 0) + 1 + i,
     );
-    const firstPageToIndex = db.data.lastPageIndexed
-      ? db.data.lastPageIndexed + 1
-      : 1;
+    const firstPageToIndex = lastPageIndexed ? lastPageIndexed + 1 : 1;
     console.log(`Starting indexing from page ${firstPageToIndex}`);
     await pMap(
       pagesToIndex,
@@ -38,13 +39,13 @@ program
           console.log(`Page ${page} indexed too fast, waiting to avoid 429...`);
           await new Promise((resolve) => setTimeout(resolve, 25000 - elapsed));
         }
-        db.data.lastPageIndexed = page;
-        await db.write();
+        await setLastPageIndexed(page);
       },
       { concurrency: 2 },
     );
+    const finalLastPageIndexed = await getLastPageIndexed();
     console.log(
-      `Finished indexing ${pagesToIndex.length} pages, last indexed page: ${db.data.lastPageIndexed}`,
+      `Finished indexing ${pagesToIndex.length} pages, last indexed page: ${finalLastPageIndexed}`,
     );
   });
 

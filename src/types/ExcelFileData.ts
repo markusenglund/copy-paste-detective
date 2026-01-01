@@ -7,4 +7,7 @@ export interface ExcelFileData {
   abstract?: string;
   dataDescription: string;
   extId?: string;
+  // Database IDs for caching (only available when loaded from Dryad index)
+  dryadDatasetId?: number;
+  dryadExcelFileId?: number;
 }

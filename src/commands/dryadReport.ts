@@ -1,7 +1,10 @@
 import { Command } from "@commander-js/extra-typings";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
-import { db as datasetsDb } from "../dryad/datasetsDb";
-import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
+import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
+import {
+  getJournalsByIssnMap,
+  formatIssn,
+} from "../repositories/journals/journalsRepository";
 
 const program = new Command();
 
@@ -10,22 +13,24 @@ program
   .description("Print a list of analyzed datasets ranked by suspicion level.")
   .version("0.1.0")
   .action(async () => {
-    const analyzedDatasets = datasetsDb.data.datasets.filter(
-      ({ status }) => status === "analyzed",
-    );
-    const analyzedDatasetByExtId = new Map(
-      analyzedDatasets.map((dataset) => [dataset.extId, dataset]),
+    // Get all completed (downloaded) datasets
+    const completedDatasets =
+      await getDatasetsByDownloadStatusWithFiles("completed");
+    const datasetByExtId = new Map(
+      completedDatasets.map((dataset) => [dataset.extId, dataset]),
     );
 
-    const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
+    const journalByIssn = await getJournalsByIssnMap();
 
     const analysisResults = analysisResultsDb.data.results;
+
+    // Filter to only include datasets that have been analyzed
     const datasets = Object.entries(analysisResults)
-      .filter(([extId]) => analyzedDatasetByExtId.has(Number(extId)))
+      .filter(([extId]) => datasetByExtId.has(Number(extId)))
       .map(([extId, datasetResult]) => {
-        const dataset = analyzedDatasetByExtId.get(Number(extId));
-        const journalData = dataset?.journalIssn
-          ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+        const dataset = datasetByExtId.get(Number(extId));
+        const journal = dataset?.journalIssn
+          ? journalByIssn.get(formatIssn(dataset.journalIssn))
           : null;
         const files = Object.entries(datasetResult).map(
           ([fileName, fileResult]) => ({
@@ -44,7 +49,7 @@ program
           extId,
           files,
           mostSuspiciousFile,
-          journalData,
+          journal,
         };
       })
       .toSorted(
@@ -59,8 +64,8 @@ program
         fileName: dataset.mostSuspiciousFile.fileName.slice(0, 50),
         highestEntropyScore:
           dataset.mostSuspiciousFile.highestEntropyScore.toFixed(2),
-        journalScore: dataset.journalData?.scimagoJournalScore,
-        journal: dataset.journalData?.title?.slice(0, 32),
+        journalScore: dataset.journal?.sjrScore,
+        journal: dataset.journal?.title?.slice(0, 32),
       })),
     );
   });

@@ -1,12 +1,15 @@
 import { Command } from "@commander-js/extra-typings";
-import { db as datasetDb } from "../dryad/datasetsDb";
+import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
 import { analyzeDataset } from "../detection/analyzeDataset";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
 import { parseIntArgument } from "../utils/command";
-import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
+import {
+  getJournalsByIssnMap,
+  formatIssn,
+} from "../repositories/journals/journalsRepository";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
 
@@ -19,11 +22,18 @@ program
   .argument("[count]", "Number of datasets to analyze", parseIntArgument, 100)
 
   .action(async (count) => {
-    const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
+    const journalByIssn = await getJournalsByIssnMap();
 
-    const datasets = datasetDb.data.datasets;
-    const downloadedDatasets = datasets
-      .filter((dataset) => dataset.status === "downloaded")
+    // Get datasets that have been downloaded (downloadStatus === "completed")
+    const allDownloadedDatasets =
+      await getDatasetsByDownloadStatusWithFiles("completed");
+
+    // Filter out datasets that have already been analyzed
+    const alreadyAnalyzedExtIds = new Set(
+      Object.keys(analysisResultsDb.data.results).map(Number),
+    );
+    const downloadedDatasets = allDownloadedDatasets
+      .filter((dataset) => !alreadyAnalyzedExtIds.has(dataset.extId))
       .toSorted((a, b) => {
         return (
           new Date(b.dryadPublicationDate).getTime() -
@@ -34,16 +44,16 @@ program
     const numDatasetsToAnalyze = Math.min(count, downloadedDatasets.length);
 
     console.log(
-      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are marked as downloaded.`,
+      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are marked as downloaded (${alreadyAnalyzedExtIds.size} already analyzed).`,
     );
 
     // For each dataset, log the journal name, journal score and title
     for (const dataset of downloadedDatasets.slice(0, numDatasetsToAnalyze)) {
-      const journalData = dataset.journalIssn
-        ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+      const journal = dataset.journalIssn
+        ? journalByIssn.get(formatIssn(dataset.journalIssn))
         : null;
       console.log(
-        `[${dataset.extId}] ${journalData?.title} (${journalData?.scimagoJournalScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+        `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
       );
     }
 
@@ -63,7 +73,7 @@ program
         j++
       ) {
         const excelFile = dataset.excelFiles[j];
-        if (excelFile.status !== "downloaded") {
+        if (excelFile.downloadStatus !== "completed") {
           console.log(
             `[${i}] Skipping file ${j} (${excelFile.filename}) - not downloaded`,
           );
@@ -108,8 +118,6 @@ program
       }
 
       await analysisResultsDb.write();
-      dataset.status = "analyzed";
-      await datasetDb.write();
       console.log(
         `Dataset ${dataset.extId} (${i}) analyzed and results saved.`,
       );

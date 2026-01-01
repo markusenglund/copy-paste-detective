@@ -1,22 +1,42 @@
 import * as csv from "@fast-csv/parse";
 import fs from "fs";
-import { JournalSchema, type Journal } from "./scimagoJournalSchema";
 import path from "path";
 import { fileURLToPath } from "url";
+import {
+  insertJournals,
+  getJournalCount,
+  formatIssn,
+} from "../repositories/journals/journalsRepository";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const scimagoCsvPath = path.join(__dirname, "sjr-2024.csv");
+const scimagoCsvPath = path.join(__dirname, "../scimago/sjr-2024.csv");
 
-export async function loadScimagoIssnJournalMap(): Promise<
-  Map<string, Journal>
-> {
-  const journals = await new Promise<Journal[]>((resolve, reject) => {
-    const results: Journal[] = [];
+type ParsedJournal = {
+  scimagoJournalRank: number;
+  title: string;
+  issns: string[];
+  sjrScore: number | null;
+  avgCitations: number | null;
+  fields: string[];
+  publisher: string | null;
+};
 
-    const fixedCsv = fixMalformedQuotes(
-      fs.readFileSync(scimagoCsvPath, "utf8"),
-    );
+async function importJournalsFromCsv() {
+  // Check if journals already exist
+  const existingCount = await getJournalCount();
+  if (existingCount > 0) {
+    console.log(`Database already contains ${existingCount} journals. Skipping import.`);
+    console.log("To re-import, clear the journals table first.");
+    process.exit(0);
+  }
+
+  console.log(`Reading journals from ${scimagoCsvPath}...`);
+
+  const journals = await new Promise<ParsedJournal[]>((resolve, reject) => {
+    const results: ParsedJournal[] = [];
+
+    const fixedCsv = fixMalformedQuotes(fs.readFileSync(scimagoCsvPath, "utf8"));
 
     const stream = csv.parseString(fixedCsv, {
       headers: (headers) => {
@@ -35,53 +55,39 @@ export async function loadScimagoIssnJournalMap(): Promise<
     stream
       .on("error", (err) => reject(err))
       .on("data", (row: Record<string, string>) => {
-        const journal = {
+        const rawIssns = row["Issn"]
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+
+        const journal: ParsedJournal = {
           scimagoJournalRank: toInt(row["Rank"]),
           title: row["Title"],
-          issns: row["Issn"]
-            .split(",")
-            .map((s) => s.trim())
-            .filter((s) => s.length > 0),
-          scimagoJournalScore: toFloatEU(row["SJR"]),
-          avgNumCitations: toFloatEU(row["Citations / Doc. (2years)"]),
+          issns: rawIssns.map(formatIssn),
+          sjrScore: toFloatEU(row["SJR"]) ?? null,
+          avgCitations: toFloatEU(row["Citations / Doc. (2years)"]) ?? null,
           fields: toStringArray(row["Areas"]),
+          publisher: row["Publisher"] || null,
         };
-        const parsed = JournalSchema.parse(journal);
-        results.push(parsed);
+        results.push(journal);
       })
       .on("end", () => resolve(results));
   });
 
-  const journalByIssn = new Map<string, Journal>();
-  for (const journal of journals) {
-    for (const issn of journal.issns) {
-      journalByIssn.set(normalizeIssn(issn), journal);
-    }
+  console.log(`Parsed ${journals.length} journals from CSV.`);
+
+  // Insert in batches
+  const batchSize = 500;
+  let insertedCount = 0;
+
+  for (let i = 0; i < journals.length; i += batchSize) {
+    const batch = journals.slice(i, i + batchSize);
+    await insertJournals(batch);
+    insertedCount += batch.length;
+    console.log(`Inserted ${insertedCount}/${journals.length} journals...`);
   }
-  return journalByIssn;
-}
 
-let journalsCachePromise: Promise<Map<string, Journal>> | null = null;
-
-export async function getScimagoIssnJournalMap(): Promise<
-  Map<string, Journal>
-> {
-  if (!journalsCachePromise) {
-    journalsCachePromise = loadScimagoIssnJournalMap();
-  }
-  return journalsCachePromise;
-}
-
-export async function getJournalByIssn(
-  issn: string,
-): Promise<Journal | undefined> {
-  const normalizedIssn = normalizeIssn(issn);
-  const journalByIssn = await getScimagoIssnJournalMap();
-  return journalByIssn.get(normalizedIssn);
-}
-
-export function normalizeIssn(v: string): string {
-  return v.replace(/[^0-9Xx]/g, "").toUpperCase();
+  console.log(`Successfully imported ${insertedCount} journals into the database.`);
 }
 
 function fixMalformedQuotes(input: string): string {
@@ -141,3 +147,14 @@ function toStringArray(value: string): string[] {
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 }
+
+importJournalsFromCsv()
+  .then(() => {
+    console.log("Done!");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("Import failed:", error);
+    process.exit(1);
+  });
+

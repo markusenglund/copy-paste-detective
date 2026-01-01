@@ -7,3 +7,4 @@ data
 .~lock.*#
 tmp
 .cache
+drizzle/meta

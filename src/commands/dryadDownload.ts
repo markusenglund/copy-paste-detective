@@ -1,8 +1,17 @@
 import { Command } from "@commander-js/extra-typings";
-import { db } from "../dryad/datasetsDb";
+import {
+  getDatasetsByDownloadStatusWithFiles,
+  updateDatasetDownloadStatus,
+  DryadDatasetWithFiles,
+} from "../repositories/datasets/datasetsRepository";
+import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelFilesRepository";
+import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument } from "../utils/command";
-import { getScimagoIssnJournalMap, normalizeIssn } from "../scimago/journal";
+import {
+  getJournalsByIssnMap,
+  formatIssn,
+} from "../repositories/journals/journalsRepository";
 
 const program = new Command();
 
@@ -14,19 +23,18 @@ program
   .version("0.1.0")
   .argument("[count]", "Number of datasets to download", parseIntArgument, 100)
   .action(async (count) => {
-    const scimagoIssnJournalMap = await getScimagoIssnJournalMap();
+    const journalByIssn = await getJournalsByIssnMap();
 
-    const datasets = db.data.datasets;
+    const datasets = await getDatasetsByDownloadStatusWithFiles("not_started");
     const maxFileSize = 10_000_000; // 10MB
 
     const latestIndexedDatasets = datasets
-      .filter((dataset) => dataset.status === "indexed")
       .filter((dataset) => {
-        const journalData = dataset.journalIssn
-          ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+        const journal = dataset.journalIssn
+          ? journalByIssn.get(formatIssn(dataset.journalIssn))
           : null;
         return ["Medicine", "Psychology", "Neuroscience"].find((field) =>
-          journalData?.fields.includes(field),
+          journal?.fields.includes(field),
         );
       })
       .filter((dataset) => {
@@ -49,22 +57,10 @@ program
         return true;
       })
       .toSorted((a, b) => {
-        // Filter by highest SJR score
-        // const journalData = a.journalIssn
-        //   ? scimagoIssnJournalMap.get(normalizeIssn(a.journalIssn))
-        //   : null;
-        // const bJournalData = b.journalIssn
-        //   ? scimagoIssnJournalMap.get(normalizeIssn(b.journalIssn))
-        //   : null;
-        // const aSjrScore = journalData?.scimagoJournalScore ?? 0;
-        // const bSjrScore = bJournalData?.scimagoJournalScore ?? 0;
-        // if (aSjrScore === bSjrScore) {
         return (
           new Date(b.dryadPublicationDate).getTime() -
           new Date(a.dryadPublicationDate).getTime()
         );
-        // }
-        // return bSjrScore - aSjrScore;
       });
 
     console.log(
@@ -73,12 +69,12 @@ program
 
     for (const dataset of latestIndexedDatasets.slice(0, count)) {
       // Log the journal name, journal score and title
-      const journalData = dataset.journalIssn
-        ? scimagoIssnJournalMap.get(normalizeIssn(dataset.journalIssn))
+      const journal = dataset.journalIssn
+        ? journalByIssn.get(formatIssn(dataset.journalIssn))
         : null;
       //  Log the publishing date also
       console.log(
-        `[${dataset.extId}] ${journalData?.title} (${journalData?.scimagoJournalScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+        `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
       );
     }
 
@@ -97,13 +93,14 @@ program
         if (excelFile.size < maxFileSize) {
           try {
             await downloadFile({
-              fileId: excelFile.fileId,
+              fileId: excelFile.extFileId,
               filename: excelFile.filename,
               datasetId: dataset.extId,
             });
-            excelFile.status = "downloaded";
+            await updateExcelFileDownloadStatus(excelFile.id, "completed");
           } catch (err) {
             console.error(err);
+            await updateExcelFileDownloadStatus(excelFile.id, "failed");
             numFailedDownloads += 1;
           }
         }
@@ -111,21 +108,24 @@ program
       if (dataset.readmeFile) {
         try {
           await downloadFile({
-            fileId: dataset.readmeFile.fileId,
+            fileId: dataset.readmeFile.extFileId,
             filename: dataset.readmeFile.filename,
             datasetId: dataset.extId,
           });
-          dataset.readmeFile.status = "downloaded";
+          await updateReadmeFileDownloadStatus(
+            dataset.readmeFile.id,
+            "completed",
+          );
         } catch (err) {
           console.error(err);
+          await updateReadmeFileDownloadStatus(dataset.readmeFile.id, "failed");
         }
       }
       if (numFailedDownloads === dataset.excelFiles.length) {
-        dataset.status = "failed";
+        await updateDatasetDownloadStatus(dataset.extId, "failed");
       } else {
-        dataset.status = "downloaded";
+        await updateDatasetDownloadStatus(dataset.extId, "completed");
       }
-      await db.write();
     }
   });
 

@@ -3,11 +3,11 @@ import path from "path";
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
-import { DryadDataset } from "../dryad/DryadDataset";
+import { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
 
 export function loadExcelFileFromDryadIndex(
-  dataset: DryadDataset,
+  dataset: DryadDatasetWithFiles,
   fileIndex: number = 0,
 ): ExcelFileData {
   // Validate file index range
@@ -51,6 +51,9 @@ export function loadExcelFileFromDryadIndex(
     excelFileName: selectedFile.filename,
     articleName: dataset.title,
     dataDescription,
-    abstract: dataset.abstract,
+    abstract: dataset.abstract ?? undefined,
+    extId: String(dataset.extId),
+    dryadDatasetId: dataset.id,
+    dryadExcelFileId: selectedFile.id,
   };
 }
