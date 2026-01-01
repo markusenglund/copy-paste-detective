@@ -53,5 +53,7 @@ export function loadExcelFileFromDryadIndex(
     dataDescription,
     abstract: dataset.abstract ?? undefined,
     extId: String(dataset.extId),
+    dryadDatasetId: dataset.id,
+    dryadExcelFileId: selectedFile.id,
   };
 }

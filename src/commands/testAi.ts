@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
-import { screenColumnsGemini } from "../ai/geminiService";
+import { screenColumnsWithCache } from "../ai/geminiService";
 
 interface SheetTestCase {
   sheetName: string;
@@ -316,22 +316,25 @@ program
           .map((row) => row.map((cell) => String(cell.value || "")));
 
         // Get AI categorization for this specific sheet
-        const actualCategorization = await screenColumnsGemini({
+        const actualCategorization = await screenColumnsWithCache({
           paperName: excelFileData.articleName,
           excelFileName: excelFileData.excelFileName,
           readmeContent: excelFileData.dataDescription,
           columnNames: sheet.columnNames,
           columnData: sampleData,
+          sheetName: sheet.name,
         });
-        const uniqueColumnSet = new Set(actualCategorization.unique);
+        const includedColumnSet = new Set(
+          actualCategorization.includedColumnNames,
+        );
         const missingColumns =
           sheetTestCase.expectedCategorization.mustBeIncluded.filter(
-            (col) => !uniqueColumnSet.has(col),
+            (col) => !includedColumnSet.has(col),
           );
 
         const unexpectedColumns =
           sheetTestCase.expectedCategorization.mustNotBeIncluded.filter((col) =>
-            uniqueColumnSet.has(col),
+            includedColumnSet.has(col),
           );
 
         console.log(

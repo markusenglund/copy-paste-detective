@@ -13,6 +13,7 @@ export { downloadStatusEnum } from "../db/shared/enums";
 export type { DownloadStatus } from "../db/shared/enums";
 
 // Schemas
+export { aiColumnCategorizationResults } from "./aiColumnCategorizationResults/schema";
 export { dryadDatasets } from "./datasets/schema";
 export { dryadExcelFiles } from "./excelFiles/schema";
 export { dryadReadmeFiles } from "./readmeFiles/schema";
