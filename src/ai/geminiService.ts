@@ -15,10 +15,14 @@ import {
 } from "../repositories/aiReviewResults/aiReviewResultsRepository";
 
 // Internal schema for parsing raw Gemini API response (uses prompt field names)
+const columnCategorizationSchema = z.object({
+  columnName: z.string(),
+  category: z.enum(["unique", "shared"]),
+});
+
 const geminiResponseSchema = z.object({
   motivation: z.string(),
-  unique: z.array(z.string()),
-  shared: z.array(z.string()),
+  columns: z.array(columnCategorizationSchema),
 });
 
 // Public response type with renamed fields
@@ -52,24 +56,24 @@ async function screenColumnsGeminiInternal(
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            motivation: {
-              type: Type.STRING,
-            },
-            unique: {
+            motivation: { type: Type.STRING },
+            columns: {
               type: Type.ARRAY,
               items: {
-                type: Type.STRING,
-              },
-            },
-            shared: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.STRING,
+                type: Type.OBJECT,
+                properties: {
+                  columnName: { type: Type.STRING },
+                  category: {
+                    type: Type.STRING,
+                    enum: ["unique", "shared"],
+                  },
+                },
+                required: ["columnName", "category"],
               },
             },
           },
-          propertyOrdering: ["unique", "shared"],
-          required: ["unique", "shared"],
+          propertyOrdering: ["motivation", "columns"],
+          required: ["motivation", "columns"],
         },
       },
     });
@@ -77,19 +81,36 @@ async function screenColumnsGeminiInternal(
     if (!response.text) {
       throw new Error("No text received from Gemini API");
     }
+    let rawResult: z.infer<typeof geminiResponseSchema>;
+    try {
+      // Parse and validate the structured JSON response
+      const parsed = JSON.parse(response.text);
+      rawResult = geminiResponseSchema.parse(parsed);
+    } catch (error) {
+      console.error("Error parsing Gemini API response:", error);
+      console.error("Response:", response.text);
+      console.error("Prompt:", prompt);
+      throw new Error(
+        `Failed to parse Gemini API response: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
 
-    // Parse and validate the structured JSON response
-    const parsed = JSON.parse(response.text);
-    const rawResult = geminiResponseSchema.parse(parsed);
+    // Transform columns array into included/excluded arrays
+    const includedColumnNames = rawResult.columns
+      .filter((col) => col.category === "unique")
+      .map((col) => col.columnName);
+    const excludedColumnNames = rawResult.columns
+      .filter((col) => col.category === "shared")
+      .map((col) => col.columnName);
 
-    // Map to the new field names
     return {
       motivation: rawResult.motivation,
-      includedColumnNames: rawResult.unique,
-      excludedColumnNames: rawResult.shared,
+      includedColumnNames,
+      excludedColumnNames,
     };
   } catch (error) {
     console.error("Error calling Gemini API:", error);
+    console.error("Prompt:", prompt);
     throw new Error(
       `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -130,7 +151,7 @@ export async function screenColumnsWithCache(
   if (canCache) {
     const cached = await findColumnCategorizationByHash(hash);
     if (cached) {
-      console.log(`Found cached AI result for '${params.excelFileName}'`);
+      console.log(`Found cached AI result for '${params.sheetName}'`);
       return {
         motivation: cached.motivation,
         includedColumnNames: cached.includedColumnNames,
