@@ -43,40 +43,56 @@ const throttle = pThrottle({
 
 const screenColumnsModel = "gemini-2.5-flash";
 
+const screenColumnsResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    motivation: { type: Type.STRING },
+    columns: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          columnName: { type: Type.STRING },
+          category: {
+            type: Type.STRING,
+            enum: ["unique", "shared"],
+          },
+        },
+        required: ["columnName", "category"],
+      },
+    },
+  },
+  propertyOrdering: ["motivation", "columns"],
+  required: ["motivation", "columns"],
+} as const;
+
+type ScreenColumnsParams = {
+  model: string;
+  contents: string;
+  config: {
+    temperature: number;
+    responseMimeType: "application/json";
+    responseSchema: typeof screenColumnsResponseSchema;
+  };
+};
+
+function buildScreenColumnsParams(prompt: string): ScreenColumnsParams {
+  return {
+    model: screenColumnsModel,
+    contents: prompt,
+    config: {
+      temperature: 0,
+      responseMimeType: "application/json",
+      responseSchema: screenColumnsResponseSchema,
+    },
+  };
+}
+
 async function screenColumnsGeminiInternal(
-  prompt: string,
+  params: ScreenColumnsParams,
 ): Promise<ScreenColumnsResponse> {
   try {
-    const response = await geminiClient.models.generateContent({
-      model: screenColumnsModel,
-      contents: prompt,
-      config: {
-        temperature: 0,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            motivation: { type: Type.STRING },
-            columns: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  columnName: { type: Type.STRING },
-                  category: {
-                    type: Type.STRING,
-                    enum: ["unique", "shared"],
-                  },
-                },
-                required: ["columnName", "category"],
-              },
-            },
-          },
-          propertyOrdering: ["motivation", "columns"],
-          required: ["motivation", "columns"],
-        },
-      },
-    });
+    const response = await geminiClient.models.generateContent(params);
 
     if (!response.text) {
       throw new Error("No text received from Gemini API");
@@ -89,7 +105,7 @@ async function screenColumnsGeminiInternal(
     } catch (error) {
       console.error("Error parsing Gemini API response:", error);
       console.error("Response:", response.text);
-      console.error("Prompt:", prompt);
+      console.error("Prompt:", params.contents);
       throw new Error(
         `Failed to parse Gemini API response: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -110,7 +126,7 @@ async function screenColumnsGeminiInternal(
     };
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    console.error("Prompt:", prompt);
+    console.error("Prompt:", params.contents);
     throw new Error(
       `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -130,7 +146,8 @@ export type ScreenColumnsWithCacheParams = PromptTemplateParams & {
 /**
  * Higher-order function that wraps the Gemini API call with database caching.
  * - Generates the prompt from params
- * - Computes a hash from prompt + model
+ * - Builds the full Gemini API params object
+ * - Computes a hash from the full params object (model, prompt, config)
  * - If database IDs are available: checks DB for cached result
  * - If hit: returns cached data
  * - If miss: calls throttled Gemini API, stores result (if IDs available), returns it
@@ -139,8 +156,9 @@ export async function screenColumnsWithCache(
   params: ScreenColumnsWithCacheParams,
 ): Promise<ScreenColumnsResponse> {
   const prompt = generateColumnCategorizationPrompt(params);
+  const geminiParams = buildScreenColumnsParams(prompt);
   const hash = createHash("md5")
-    .update(`${prompt}${screenColumnsModel}`)
+    .update(JSON.stringify(geminiParams))
     .digest("hex");
 
   const canCache =
@@ -161,7 +179,7 @@ export async function screenColumnsWithCache(
   }
 
   // Call the throttled Gemini API
-  const result = await screenColumnsGemini(prompt);
+  const result = await screenColumnsGemini(geminiParams);
 
   // Store in database (only if we have database IDs)
   if (canCache) {
@@ -194,48 +212,65 @@ const reviewResultsResponseSchema = z.object({
 export type ReviewResultsResponse = z.infer<typeof reviewResultsResponseSchema>;
 
 const reviewResultsModel = "gemini-2.5-flash";
+
+const reviewResultsGeminiSchema = {
+  type: Type.OBJECT,
+  properties: {
+    explanation: {
+      type: Type.STRING,
+      description: "Best explanation for the duplicates",
+    },
+    falsePositiveTheory: {
+      type: Type.STRING,
+      description:
+        "Theory for how this could be a false positive with an innocent explanation",
+    },
+    suspicionScore: {
+      type: Type.INTEGER,
+      description:
+        "Suspiciousness score from 1 to 10 expressing the probability of real issues (1 = certain false positive, 10 = 100% real issue)",
+    },
+    impactScore: {
+      type: Type.INTEGER,
+      description:
+        "Impact score from 1 to 10 expressing how seriously the issue might impact the paper's conclusions (1 = no impact, 10 = conclusions entirely untrustworthy)",
+    },
+  },
+  required: [
+    "explanation",
+    "falsePositiveTheory",
+    "suspicionScore",
+    "impactScore",
+  ],
+} as const;
+
+type ReviewResultsParams = {
+  model: string;
+  contents: string;
+  config: {
+    temperature: number;
+    responseMimeType: "application/json";
+    responseSchema: typeof reviewResultsGeminiSchema;
+  };
+};
+
+function buildReviewResultsParams(prompt: string): ReviewResultsParams {
+  return {
+    model: reviewResultsModel,
+    contents: prompt,
+    config: {
+      temperature: 0,
+      responseMimeType: "application/json",
+      responseSchema: reviewResultsGeminiSchema,
+    },
+  };
+}
+
 async function reviewResultsGeminiInternal(
-  prompt: string,
+  params: ReviewResultsParams,
 ): Promise<ReviewResultsResponse> {
   try {
-    const response = await geminiClient.models.generateContent({
-      model: reviewResultsModel,
-      contents: prompt,
-      config: {
-        temperature: 0,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            explanation: {
-              type: Type.STRING,
-              description: "Best explanation for the duplicates",
-            },
-            falsePositiveTheory: {
-              type: Type.STRING,
-              description:
-                "Theory for how this could be a false positive with an innocent explanation",
-            },
-            suspicionScore: {
-              type: Type.INTEGER,
-              description:
-                "Suspiciousness score from 1 to 10 expressing the probability of real issues (1 = certain false positive, 10 = 100% real issue)",
-            },
-            impactScore: {
-              type: Type.INTEGER,
-              description:
-                "Impact score from 1 to 10 expressing how seriously the issue might impact the paper's conclusions (1 = no impact, 10 = conclusions entirely untrustworthy)",
-            },
-          },
-          required: [
-            "explanation",
-            "falsePositiveTheory",
-            "suspicionScore",
-            "impactScore",
-          ],
-        },
-      },
-    });
+    const response = await geminiClient.models.generateContent(params);
 
     if (!response.text) {
       throw new Error("No text received from Gemini API");
@@ -265,7 +300,8 @@ export type ReviewResultsWithCacheParams = {
 
 /**
  * Higher-order function that wraps the review results Gemini API call with database caching.
- * - Computes a hash from prompt + model
+ * - Builds the full Gemini API params object
+ * - Computes a hash from the full params object (model, prompt, config)
  * - If database IDs are available: checks DB for cached result
  * - If hit: returns cached data
  * - If miss: calls throttled Gemini API, stores result (if IDs available), returns it
@@ -274,8 +310,9 @@ export async function reviewResultsWithCache(
   params: ReviewResultsWithCacheParams,
 ): Promise<ReviewResultsResponse> {
   const { prompt, sheetName } = params;
+  const geminiParams = buildReviewResultsParams(prompt);
   const hash = createHash("md5")
-    .update(`${prompt}${reviewResultsModel}`)
+    .update(JSON.stringify(geminiParams))
     .digest("hex");
 
   const canCache =
@@ -297,7 +334,7 @@ export async function reviewResultsWithCache(
   }
 
   // Call the throttled Gemini API
-  const result = await reviewResultsGemini(prompt);
+  const result = await reviewResultsGemini(geminiParams);
 
   // Store in database (only if we have database IDs)
   if (canCache) {
