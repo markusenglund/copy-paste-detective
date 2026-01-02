@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
 
@@ -33,5 +33,40 @@ export async function insertResult(data: {
     .values(data)
     .returning();
   return inserted;
+}
+
+/**
+ * Get the latest AI review for each unique sheet, grouped by dataset ID.
+ * A unique sheet is identified by (dryadExcelFileId, sheetName).
+ * Returns a Map where keys are dryadDatasetId and values are arrays of the latest reviews for each sheet.
+ */
+export async function getLatestReviewsPerSheet(): Promise<
+  Map<number, AiReviewResultRow[]>
+> {
+  // Fetch all reviews ordered by createdAt descending
+  const allReviews = await db
+    .select()
+    .from(aiReviewResults)
+    .orderBy(desc(aiReviewResults.createdAt));
+
+  // Group by unique sheet (dryadExcelFileId + sheetName) and keep only the latest
+  const latestBySheet = new Map<string, AiReviewResultRow>();
+  for (const review of allReviews) {
+    const sheetKey = `${review.dryadExcelFileId}:${review.sheetName}`;
+    // Since we're ordered by createdAt desc, the first one we encounter is the latest
+    if (!latestBySheet.has(sheetKey)) {
+      latestBySheet.set(sheetKey, review);
+    }
+  }
+
+  // Group latest reviews by dryadDatasetId
+  const reviewsByDatasetId = new Map<number, AiReviewResultRow[]>();
+  for (const review of latestBySheet.values()) {
+    const existing = reviewsByDatasetId.get(review.dryadDatasetId) ?? [];
+    existing.push(review);
+    reviewsByDatasetId.set(review.dryadDatasetId, existing);
+  }
+
+  return reviewsByDatasetId;
 }
 
