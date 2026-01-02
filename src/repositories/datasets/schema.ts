@@ -6,7 +6,7 @@ import {
   bigint,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { downloadStatusEnum } from "../../db/shared/enums";
+import { analysisStatusEnum, downloadStatusEnum } from "../../db/shared/enums";
 
 export const dryadDatasets = pgTable("dryad_datasets", {
   id: serial("id").primaryKey(),
@@ -24,7 +24,9 @@ export const dryadDatasets = pgTable("dryad_datasets", {
   downloadStatus: downloadStatusEnum("download_status")
     .notNull()
     .default("not_started"),
+  analysisStatus: analysisStatusEnum("analysis_status")
+    .notNull()
+    .default("not_analyzed"),
   indexedTimestamp: timestamp("indexed_timestamp").notNull(),
   updatedTimestamp: timestamp("updated_timestamp").notNull(),
 });
-

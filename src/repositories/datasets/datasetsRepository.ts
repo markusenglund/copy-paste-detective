@@ -1,6 +1,6 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { DownloadStatus } from "../../db/shared/enums";
+import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
 import { dryadReadmeFiles } from "../readmeFiles/schema";
@@ -175,6 +175,92 @@ export async function updateDatasetDownloadStatusByCurrentStatus(
     .set({ downloadStatus: newStatus, updatedTimestamp: new Date() })
     .where(eq(dryadDatasets.downloadStatus, currentStatus));
   return result.rowCount ?? 0;
+}
+
+// ============ Analysis Status ============
+
+export async function getDatasetsByAnalysisStatus(
+  status: AnalysisStatus,
+): Promise<DryadDatasetRow[]> {
+  return db
+    .select()
+    .from(dryadDatasets)
+    .where(eq(dryadDatasets.analysisStatus, status));
+}
+
+export async function getDatasetsByAnalysisStatusWithFiles(
+  analysisStatus: AnalysisStatus,
+): Promise<DryadDatasetWithFiles[]> {
+  const datasets = await getDatasetsByAnalysisStatus(analysisStatus);
+  const result: DryadDatasetWithFiles[] = [];
+
+  for (const dataset of datasets) {
+    const excelFiles = await db
+      .select()
+      .from(dryadExcelFiles)
+      .where(eq(dryadExcelFiles.dryadDatasetId, dataset.id));
+
+    const readmeFiles = await db
+      .select()
+      .from(dryadReadmeFiles)
+      .where(eq(dryadReadmeFiles.dryadDatasetId, dataset.id))
+      .limit(1);
+
+    result.push({
+      ...dataset,
+      excelFiles,
+      readmeFile: readmeFiles[0] ?? null,
+    });
+  }
+
+  return result;
+}
+
+export async function getDownloadedNotAnalyzedDatasetsWithFiles(): Promise<
+  DryadDatasetWithFiles[]
+> {
+  const datasets = await db
+    .select()
+    .from(dryadDatasets)
+    .where(
+      and(
+        eq(dryadDatasets.downloadStatus, "completed"),
+        eq(dryadDatasets.analysisStatus, "not_analyzed"),
+      ),
+    );
+
+  const result: DryadDatasetWithFiles[] = [];
+
+  for (const dataset of datasets) {
+    const excelFiles = await db
+      .select()
+      .from(dryadExcelFiles)
+      .where(eq(dryadExcelFiles.dryadDatasetId, dataset.id));
+
+    const readmeFiles = await db
+      .select()
+      .from(dryadReadmeFiles)
+      .where(eq(dryadReadmeFiles.dryadDatasetId, dataset.id))
+      .limit(1);
+
+    result.push({
+      ...dataset,
+      excelFiles,
+      readmeFile: readmeFiles[0] ?? null,
+    });
+  }
+
+  return result;
+}
+
+export async function updateDatasetAnalysisStatus(
+  extId: number,
+  status: AnalysisStatus,
+): Promise<void> {
+  await db
+    .update(dryadDatasets)
+    .set({ analysisStatus: status, updatedTimestamp: new Date() })
+    .where(eq(dryadDatasets.extId, extId));
 }
 
 // ============ Stats ============

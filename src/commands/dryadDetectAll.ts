@@ -1,5 +1,8 @@
 import { Command } from "@commander-js/extra-typings";
-import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
+import {
+  getDownloadedNotAnalyzedDatasetsWithFiles,
+  updateDatasetAnalysisStatus,
+} from "../repositories/datasets/datasetsRepository";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
@@ -24,27 +27,20 @@ program
   .action(async (count) => {
     const journalByIssn = await getJournalsByIssnMap();
 
-    // Get datasets that have been downloaded (downloadStatus === "completed")
-    const allDownloadedDatasets =
-      await getDatasetsByDownloadStatusWithFiles("completed");
-
-    // Filter out datasets that have already been analyzed
-    const alreadyAnalyzedExtIds = new Set(
-      Object.keys(analysisResultsDb.data.results).map(Number),
-    );
-    const downloadedDatasets = allDownloadedDatasets
-      .filter((dataset) => !alreadyAnalyzedExtIds.has(dataset.extId))
-      .toSorted((a, b) => {
-        return (
-          new Date(b.dryadPublicationDate).getTime() -
-          new Date(a.dryadPublicationDate).getTime()
-        );
-      });
+    // Get datasets that have been downloaded but not yet analyzed
+    const downloadedDatasets = (
+      await getDownloadedNotAnalyzedDatasetsWithFiles()
+    ).toSorted((a, b) => {
+      return (
+        new Date(b.dryadPublicationDate).getTime() -
+        new Date(a.dryadPublicationDate).getTime()
+      );
+    });
 
     const numDatasetsToAnalyze = Math.min(count, downloadedDatasets.length);
 
     console.log(
-      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are marked as downloaded (${alreadyAnalyzedExtIds.size} already analyzed).`,
+      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are downloaded and not yet analyzed.`,
     );
 
     // For each dataset, log the journal name, journal score and title
@@ -86,41 +82,74 @@ program
         excelFilesData.push(excelFileData);
       }
 
-      // Analyze all files in the dataset together
-      const allStrategies = Object.values(StrategyName);
-      const analyses = await analyzeDataset(excelFilesData, allStrategies);
+      try {
+        // Analyze all files in the dataset together
+        const allStrategies = Object.values(StrategyName);
+        const { analyses, wasFlaggedForReview, aiReviewCompleted } =
+          await analyzeDataset(excelFilesData, allStrategies);
 
-      // Save results from each analysis
-      for (const analysis of analyses) {
-        const duplicateRows =
-          analysis.results[StrategyName.DuplicateRows]?.duplicateRows || [];
-        const duplicateRowEntropyScores = duplicateRows
-          .map((row) => row.matrixSizeAdjustedEntropyScore)
-          .slice(0, 20);
-        const repeatedColumnSequences =
-          analysis.results[StrategyName.RepeatedColumnSequences]?.sequences ||
-          [];
-        const columnSequencesEntropyScores = repeatedColumnSequences
-          .map((seq) => seq.matrixSizeAdjustedEntropyScore)
-          .slice(0, 20);
+        // Save results from each analysis to JSON (backward compatibility)
+        for (const analysis of analyses) {
+          const duplicateRows =
+            analysis.results[StrategyName.DuplicateRows]?.duplicateRows || [];
+          const duplicateRowEntropyScores = duplicateRows
+            .map((row) => row.matrixSizeAdjustedEntropyScore)
+            .slice(0, 20);
+          const repeatedColumnSequences =
+            analysis.results[StrategyName.RepeatedColumnSequences]?.sequences ||
+            [];
+          const columnSequencesEntropyScores = repeatedColumnSequences
+            .map((seq) => seq.matrixSizeAdjustedEntropyScore)
+            .slice(0, 20);
 
-        const analysisResults: AnalysisResults = {
-          filename: analysis.excelFileName,
-          duplicateRowEntropyScores,
-          columnSequencesEntropyScores,
-          analysisVersion: "2025.07.04",
-        };
-        analysisResultsDb.data.results[dataset.extId][analysis.excelFileName] =
-          analysisResults;
-        console.log(
-          `Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId} (${i}).`,
+          const analysisResults: AnalysisResults = {
+            filename: analysis.excelFileName,
+            duplicateRowEntropyScores,
+            columnSequencesEntropyScores,
+            analysisVersion: "2025.07.04",
+          };
+          analysisResultsDb.data.results[dataset.extId][
+            analysis.excelFileName
+          ] = analysisResults;
+          console.log(
+            `Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId} (${i}).`,
+          );
+        }
+
+        await analysisResultsDb.write();
+
+        // Update analysis status based on the result
+        if (!wasFlaggedForReview) {
+          await updateDatasetAnalysisStatus(
+            dataset.extId,
+            "not_flagged_for_review",
+          );
+          console.log(
+            `Dataset ${dataset.extId} (${i}) analyzed - no suspicious findings requiring AI review.`,
+          );
+        } else if (aiReviewCompleted) {
+          await updateDatasetAnalysisStatus(dataset.extId, "reviewed_by_ai");
+          console.log(
+            `Dataset ${dataset.extId} (${i}) analyzed and AI review completed.`,
+          );
+        } else {
+          // Was flagged but AI review didn't complete (shouldn't happen normally)
+          await updateDatasetAnalysisStatus(
+            dataset.extId,
+            "flagged_for_review",
+          );
+          console.log(
+            `Dataset ${dataset.extId} (${i}) flagged for AI review but review incomplete.`,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `Error analyzing dataset ${dataset.extId} (${i}):`,
+          error,
         );
+        await updateDatasetAnalysisStatus(dataset.extId, "failed");
+        console.log(`Dataset ${dataset.extId} (${i}) marked as failed.`);
       }
-
-      await analysisResultsDb.write();
-      console.log(
-        `Dataset ${dataset.extId} (${i}) analyzed and results saved.`,
-      );
     }
 
     process.exit(0);

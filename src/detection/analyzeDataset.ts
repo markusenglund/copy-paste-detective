@@ -13,7 +13,18 @@ import { DuplicateRow } from "../entities/DuplicateRow";
 import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
 import { Sheet } from "../entities/Sheet";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
-import { DuplicateValuesResult } from "../types";
+import { DuplicateValuesResult, SuspicionLevel } from "../types";
+
+export type AnalyzeDatasetResult = {
+  analyses: ExcelFileAnalysis[];
+  wasFlaggedForReview: boolean;
+  aiReviewCompleted: boolean;
+};
+
+type ReviewResult = {
+  sheetsQualifiedForReview: number;
+  sheetsReviewed: number;
+};
 
 type SheetAnalysisData = {
   sheet: Sheet;
@@ -44,14 +55,33 @@ function getSheetSuspicionScore(
 }
 
 /**
+ * Check if a sheet has any Medium or High suspicion level findings.
+ * This determines if a sheet qualifies for AI review.
+ */
+function hasMediumOrHighFindings(
+  duplicateRows: DuplicateRow[],
+  duplicateColumnSequences: RepeatedColumnSequence[],
+): boolean {
+  const hasMediumHighRows = duplicateRows.some((row) =>
+    [SuspicionLevel.Medium, SuspicionLevel.High].includes(row.suspicionLevel),
+  );
+  const hasMediumHighSequences = duplicateColumnSequences.some((seq) =>
+    [SuspicionLevel.Medium, SuspicionLevel.High].includes(seq.suspicionLevel),
+  );
+  return hasMediumHighRows || hasMediumHighSequences;
+}
+
+/**
  * Find the most suspicious sheets across all analyzed files and review them.
  * Sorts by suspicion rank within file first (to prevent one file from taking all slots),
  * then by overall suspicion score.
+ *
+ * Returns information about how many sheets qualified for review and how many were reviewed.
  */
 async function reviewMostSuspiciousResults(
   excelFileAnalyses: ExcelFileAnalysis[],
   excelFilesByFilename: Record<string, ExcelFileData>,
-): Promise<void> {
+): Promise<ReviewResult> {
   const allSheetData: SheetAnalysisData[] = [];
 
   // Build sheet-level analysis data for all sheets
@@ -125,8 +155,20 @@ async function reviewMostSuspiciousResults(
       return b.suspicionScore - a.suspicionScore;
     });
 
+  // Count sheets that qualify for AI review (have Medium/High findings)
+  const sheetsQualifiedForReview = sortedSheets.filter((data) =>
+    hasMediumOrHighFindings(data.duplicateRows, data.duplicateColumnSequences),
+  ).length;
+
   // Take top N sheets and review them
-  const sheetsToReview = sortedSheets.slice(0, maxAiReviewsPerDataset);
+  const sheetsToReview = sortedSheets
+    .filter((data) =>
+      hasMediumOrHighFindings(
+        data.duplicateRows,
+        data.duplicateColumnSequences,
+      ),
+    )
+    .slice(0, maxAiReviewsPerDataset);
 
   console.log(
     `Reviewing ${sheetsToReview.length} sheets: ${sheetsToReview
@@ -136,6 +178,7 @@ async function reviewMostSuspiciousResults(
       .join("\n")}`,
   );
 
+  let sheetsReviewed = 0;
   for (const sheetData of sheetsToReview) {
     const reviewInput: SheetReviewInput = {
       sheet: sheetData.sheet,
@@ -147,14 +190,22 @@ async function reviewMostSuspiciousResults(
         sheetData.duplicateValuesResult.numOccurrencesByNumericValue,
     };
 
-    await reviewSheetResults(reviewInput);
+    const result = await reviewSheetResults(reviewInput);
+    if (result !== null) {
+      sheetsReviewed++;
+    }
   }
+
+  return {
+    sheetsQualifiedForReview,
+    sheetsReviewed,
+  };
 }
 
 export async function analyzeDataset(
   excelFiles: ExcelFileData[],
   strategies: StrategyName[],
-): Promise<ExcelFileAnalysis[]> {
+): Promise<AnalyzeDatasetResult> {
   const selectedExcelFilesByFilename = Object.fromEntries(
     excelFiles
       .slice(0, maxExcelFilesPerDataset)
@@ -167,10 +218,22 @@ export async function analyzeDataset(
     excelFileAnalyses.push(excelFileAnalysis);
   }
 
-  await reviewMostSuspiciousResults(
+  const reviewResult = await reviewMostSuspiciousResults(
     excelFileAnalyses,
     selectedExcelFilesByFilename,
   );
 
-  return excelFileAnalyses;
+  // Calculate how many sheets we attempted to review (limited by maxAiReviewsPerDataset)
+  const sheetsAttempted = Math.min(
+    reviewResult.sheetsQualifiedForReview,
+    maxAiReviewsPerDataset,
+  );
+
+  return {
+    analyses: excelFileAnalyses,
+    wasFlaggedForReview: reviewResult.sheetsQualifiedForReview > 0,
+    // AI review is complete if all attempted reviews succeeded
+    aiReviewCompleted:
+      sheetsAttempted > 0 && reviewResult.sheetsReviewed === sheetsAttempted,
+  };
 }
