@@ -41,7 +41,7 @@ const throttle = pThrottle({
   strict: true,
 });
 
-const screenColumnsModel = "gemini-2.5-flash";
+const screenColumnsModel = "gemini-2.5-flash-lite";
 
 const screenColumnsResponseSchema = {
   type: Type.OBJECT,
@@ -211,7 +211,7 @@ const reviewResultsResponseSchema = z.object({
 
 export type ReviewResultsResponse = z.infer<typeof reviewResultsResponseSchema>;
 
-const reviewResultsModel = "gemini-2.5-flash";
+const reviewResultsModel = "gemini-3-flash-preview";
 
 const reviewResultsGeminiSchema = {
   type: Type.OBJECT,

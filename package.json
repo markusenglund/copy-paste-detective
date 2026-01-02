@@ -6,6 +6,7 @@
   "scripts": {
     "detect": "tsx -r dotenv/config src/commands/detect",
     "test-ai": "tsx -r dotenv/config src/commands/testAi",
+    "list-gemini-models": "tsx -r dotenv/config src/commands/listGeminiModels",
     "dryad-index": "tsx -r dotenv/config src/commands/dryadIndex",
     "dryad-download": "tsx -r dotenv/config src/commands/dryadDownload",
     "dryad-status": "tsx -r dotenv/config src/commands/dryadStatus",
@@ -43,7 +44,7 @@
   "dependencies": {
     "@commander-js/extra-typings": "^13.1.0",
     "@fast-csv/parse": "^5.0.5",
-    "@google/genai": "^1.4.0",
+    "@google/genai": "^1.34.0",
     "commander": "^13.1.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.45.1",

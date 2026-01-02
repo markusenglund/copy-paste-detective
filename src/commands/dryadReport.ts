@@ -56,7 +56,9 @@ program
         (a, b) =>
           b.mostSuspiciousFile.highestEntropyScore -
           a.mostSuspiciousFile.highestEntropyScore,
-      );
+      )
+      .slice(0, 100);
+
     console.log(`Found ${datasets.length} analyzed datasets.`);
     console.table(
       datasets.map((dataset) => ({
