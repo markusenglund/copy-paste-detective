@@ -445,8 +445,6 @@ Rows ${sequence2StartRowNumber} to ${sequence2StartRowNumber + numDuplicateSeque
 
 ${sequence2MarkdownTable}
 
-The tables were truncated to ${numDuplicateSequenceRowsInTable} for brevity.
-
 They share the following values:
 ${duplicateColumnSequence.values
   .slice(0, 100) // Prevent showing ludicrously long sequences of numbers
@@ -463,6 +461,7 @@ ${duplicateColumnSequence.values
 `;
     if (values.length > numDuplicateSequenceRowsInTable) {
       section += `
+The tables were truncated to ${numDuplicateSequenceRowsInTable} rows for brevity.
 `;
     }
   }

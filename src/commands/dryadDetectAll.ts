@@ -122,6 +122,8 @@ program
         `Dataset ${dataset.extId} (${i}) analyzed and results saved.`,
       );
     }
+
+    process.exit(0);
   });
 
 program.parse();
