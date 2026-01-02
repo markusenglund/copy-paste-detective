@@ -1,6 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
-import pThrottle from "p-throttle";
 import { createHash } from "crypto";
 import { config } from "../config/env";
 import type { PromptTemplateParams } from "./promptTemplate";
@@ -33,13 +32,6 @@ export type ScreenColumnsResponse = {
 };
 
 const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
-
-// The limit is officially 15 requests per minute but we have to give it some buffer
-const throttle = pThrottle({
-  limit: 10,
-  interval: 60000, // 1 minute
-  strict: true,
-});
 
 const screenColumnsModel = "gemini-2.5-flash-lite";
 
@@ -88,7 +80,7 @@ function buildScreenColumnsParams(prompt: string): ScreenColumnsParams {
   };
 }
 
-async function screenColumnsGeminiInternal(
+async function screenColumnsGemini(
   params: ScreenColumnsParams,
 ): Promise<ScreenColumnsResponse> {
   try {
@@ -133,9 +125,6 @@ async function screenColumnsGeminiInternal(
   }
 }
 
-// Throttled version of the Gemini API call
-const screenColumnsGemini = throttle(screenColumnsGeminiInternal);
-
 // Context needed for caching in the database (optional when not using Dryad index)
 export type ScreenColumnsWithCacheParams = PromptTemplateParams & {
   dryadDatasetId?: number;
@@ -150,7 +139,7 @@ export type ScreenColumnsWithCacheParams = PromptTemplateParams & {
  * - Computes a hash from the full params object (model, prompt, config)
  * - If database IDs are available: checks DB for cached result
  * - If hit: returns cached data
- * - If miss: calls throttled Gemini API, stores result (if IDs available), returns it
+ * - If miss: stores result (if IDs available), returns it
  */
 export async function screenColumnsWithCache(
   params: ScreenColumnsWithCacheParams,
@@ -178,7 +167,6 @@ export async function screenColumnsWithCache(
     }
   }
 
-  // Call the throttled Gemini API
   const result = await screenColumnsGemini(geminiParams);
 
   // Store in database (only if we have database IDs)
@@ -259,14 +247,14 @@ function buildReviewResultsParams(prompt: string): ReviewResultsParams {
     model: reviewResultsModel,
     contents: prompt,
     config: {
-      temperature: 0,
+      temperature: 1,
       responseMimeType: "application/json",
       responseSchema: reviewResultsGeminiSchema,
     },
   };
 }
 
-async function reviewResultsGeminiInternal(
+async function reviewResultsGemini(
   params: ReviewResultsParams,
 ): Promise<ReviewResultsResponse> {
   try {
@@ -287,9 +275,6 @@ async function reviewResultsGeminiInternal(
   }
 }
 
-// Throttled version of the review results Gemini API call
-const reviewResultsGemini = throttle(reviewResultsGeminiInternal);
-
 // Context needed for caching review results in the database
 export type ReviewResultsWithCacheParams = {
   prompt: string;
@@ -304,7 +289,7 @@ export type ReviewResultsWithCacheParams = {
  * - Computes a hash from the full params object (model, prompt, config)
  * - If database IDs are available: checks DB for cached result
  * - If hit: returns cached data
- * - If miss: calls throttled Gemini API, stores result (if IDs available), returns it
+ * - If miss: stores result (if IDs available), returns it
  */
 export async function reviewResultsWithCache(
   params: ReviewResultsWithCacheParams,
@@ -333,7 +318,6 @@ export async function reviewResultsWithCache(
     }
   }
 
-  // Call the throttled Gemini API
   const result = await reviewResultsGemini(geminiParams);
 
   // Store in database (only if we have database IDs)
