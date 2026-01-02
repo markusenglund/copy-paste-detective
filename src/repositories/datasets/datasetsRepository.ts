@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
@@ -225,7 +225,7 @@ export async function getDownloadedNotAnalyzedDatasetsWithFiles(): Promise<
     .where(
       and(
         eq(dryadDatasets.downloadStatus, "completed"),
-        eq(dryadDatasets.analysisStatus, "not_analyzed"),
+        inArray(dryadDatasets.analysisStatus, ["not_analyzed", "failed"]),
       ),
     );
 
@@ -289,4 +289,3 @@ export async function getDatasetCountByStatus(): Promise<
 
   return counts;
 }
-
