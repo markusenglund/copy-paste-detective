@@ -52,7 +52,7 @@ Apply these rules when categorizing columns:
 
 1.  Geographic coordinates (Latitude, Longitude, etc.) should usually be considered \`shared\` unless you're certain they are unique to each specific row.
 2.  IDs should be considered \`shared\`, as they are not really data.
-3.  You're expected to always find at least one unique column.
+3.  When in doubt, categorize the column as \`unique\`.
 
 **Example Scenario:**
 

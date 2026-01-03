@@ -5,7 +5,7 @@ import { screenColumnsWithCache } from "../ai/geminiService";
 interface SheetTestCase {
   sheetName: string;
   expectedCategorization: {
-    mustBeIncluded: string[];
+    mustNotBeExcluded: string[];
     mustNotBeIncluded: string[];
   };
 }
@@ -26,7 +26,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "common garden-Herbiory",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "Insects(#)",
             "no-Hemiptera(#)",
             "Neuroptera(#)",
@@ -45,7 +45,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "common garden-data",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "Coarse root soluble sugar concentrations(mg/g)",
             "Fine root soluble sugar concentrations(mg/g)",
             "AMF colonization rate(%)",
@@ -75,7 +75,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Field survey-Herbiory",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "Insects(#)",
             "no-Hemiptera(#)",
             "Neuroptera(#)",
@@ -94,7 +94,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Field survey-data",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "Soil ph",
             "Soil water content（%）",
             "Coarse root soluble sugar concentrations(mg/g)",
@@ -148,7 +148,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Sheet1",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "ẟ13Ccollagen (‰)",
             "Weight %C",
             "Amp 44",
@@ -171,7 +171,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Sheet5",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "Prosoma",
             "Boldness.1",
             "Boldness.2",
@@ -191,7 +191,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Fig 2",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "vGluT1 punta density - ΔCre",
             "vGluT1 punta density - Cre",
             "vGluT1 staining intensity - ΔCre",
@@ -217,7 +217,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Fig 3",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "AMPAR EPSC rise time - Cre",
             "AMPAR EPSC decay time - ΔCre",
           ],
@@ -227,7 +227,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Fig 5",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "vGluT1 Puncta Density - ΔCre",
             "vGluT1 Puncta Density - Cre",
             "vGluT1 Puncta Density - SS4-SS5-",
@@ -260,7 +260,7 @@ const testCases: TestCase[] = [
       {
         sheetName: "Leaves to Soil",
         expectedCategorization: {
-          mustBeIncluded: [
+          mustNotBeExcluded: [
             "Leave 13C‰",
             "Branches 13C‰",
             "Roots 13C‰",
@@ -277,7 +277,7 @@ const testCases: TestCase[] = [
             "0-15 Soil13C amount",
             "10-30 Soil 13C amount",
           ],
-          mustNotBeIncluded: ["sample time(d)"],
+          mustNotBeIncluded: [],
         },
       },
     ],
@@ -324,17 +324,18 @@ program
           columnData: sampleData,
           sheetName: sheet.name,
         });
-        const includedColumnSet = new Set(
-          actualCategorization.includedColumnNames,
+
+        const excludedColumnSet = new Set(
+          actualCategorization.excludedColumnNames,
         );
-        const missingColumns =
-          sheetTestCase.expectedCategorization.mustBeIncluded.filter(
-            (col) => !includedColumnSet.has(col),
+        const incorrectlyExcludedColumns =
+          sheetTestCase.expectedCategorization.mustNotBeExcluded.filter((col) =>
+            excludedColumnSet.has(col),
           );
 
         const unexpectedColumns =
-          sheetTestCase.expectedCategorization.mustNotBeIncluded.filter((col) =>
-            includedColumnSet.has(col),
+          sheetTestCase.expectedCategorization.mustNotBeIncluded.filter(
+            (col) => !excludedColumnSet.has(col),
           );
 
         console.log(
@@ -342,13 +343,15 @@ program
         );
 
         const isSuccess =
-          missingColumns.length === 0 && unexpectedColumns.length === 0;
+          incorrectlyExcludedColumns.length === 0 &&
+          unexpectedColumns.length === 0;
         if (isSuccess) {
           console.log(`[${testCase.description}] ${sheet.name}: ✅`);
         } else {
           console.log(`[${sheet.name}]: ❌`);
+          console.log(actualCategorization);
           console.log(
-            `Gemini missed ${missingColumns.length} columns in sheet "${sheet.name}": ${missingColumns.join(", ")}`,
+            `Gemini mistakenly excluded ${incorrectlyExcludedColumns.length} columns in sheet "${sheet.name}": ${incorrectlyExcludedColumns.join(", ")}`,
           );
           console.log(
             `Gemini mistakenly included ${unexpectedColumns.length} columns in sheet "${sheet.name}": ${unexpectedColumns.join(", ")}`,

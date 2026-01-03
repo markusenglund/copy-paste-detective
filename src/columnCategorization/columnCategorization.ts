@@ -96,7 +96,7 @@ async function getAiColumnProfiles(
   const aiColumnProfile: AiColumnProfile[] = sheet
     .getColumns()
     .map((column) => ({
-      isIncludedInAnalysis: screenColumnsResult.includedColumnNames.includes(
+      isIncludedInAnalysis: !screenColumnsResult.excludedColumnNames.includes(
         column.name,
       ),
     }));
