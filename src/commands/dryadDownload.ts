@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import {
-  getDatasetsByDownloadStatusWithFiles,
+  getDatasetsForDownload,
   getDatasetWithFiles,
   updateDatasetDownloadStatus,
   type DryadDatasetWithFiles,
@@ -9,10 +9,6 @@ import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelF
 import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument } from "../utils/command";
-import {
-  getJournalsByIssnMap,
-  formatIssn,
-} from "../repositories/journals/journalsRepository";
 
 const program = new Command();
 
@@ -27,8 +23,9 @@ program
   .action(async (count, options) => {
     const maxFileSize = 10_000_000; // 10MB
     let datasetsToDownload: DryadDatasetWithFiles[];
-
+    console.log("Dryad download");
     if (options.id) {
+      console.log("Options id:", options.id);
       // Get single dataset by ID, put in array
       const extId = parseInt(options.id, 10);
       if (isNaN(extId)) {
@@ -42,62 +39,44 @@ program
       }
       datasetsToDownload = [dataset];
     } else {
-      // Existing filtering logic to build the list
-      const journalByIssn = await getJournalsByIssnMap();
-      const datasets =
-        await getDatasetsByDownloadStatusWithFiles("not_started");
+      console.log("Fetching datasets for download...");
+      const datasets = await getDatasetsForDownload(count);
+      console.log(`Fetched ${datasets.length} candidate datasets`);
 
-      const latestIndexedDatasets = datasets
-        .filter((dataset) => {
-          const journal = dataset.journalIssn
-            ? journalByIssn.get(formatIssn(dataset.journalIssn))
-            : null;
-          return ["Medicine", "Psychology", "Neuroscience"].find((field) =>
-            journal?.fields.includes(field),
-          );
-        })
-        .filter((dataset) => {
-          const containsUsageNotesOrReadme =
-            dataset.readmeFile || dataset.usageNotes;
+      // Separate datasets by whether they have downloadable files
+      const downloadable: DryadDatasetWithFiles[] = [];
+      const skipped: DryadDatasetWithFiles[] = [];
 
-          if (!containsUsageNotesOrReadme) {
-            return false; // Skip datasets without README or usage notes
-          }
+      for (const dataset of datasets) {
+        const hasDownloadableFile = dataset.excelFiles.some(
+          (file) => file.size <= maxFileSize,
+        );
+        if (hasDownloadableFile) {
+          downloadable.push(dataset);
+        } else {
+          skipped.push(dataset);
+        }
+      }
 
-          if (dataset.excelFiles.length > 3) {
-            return false; // Skip datasets with more than 3 Excel files
-          }
-          const onlyContainsLargeExcelFiles = dataset.excelFiles.every(
-            (file) => file.size > maxFileSize,
-          );
-          if (onlyContainsLargeExcelFiles) {
-            return false;
-          }
-          return true;
-        })
-        .toSorted((a, b) => {
-          return (
-            new Date(b.dryadPublicationDate).getTime() -
-            new Date(a.dryadPublicationDate).getTime()
-          );
-        });
+      // Mark skipped datasets (all files too large)
+      for (const dataset of skipped) {
+        console.log(
+          `Skipping dataset ${dataset.extId} - all files exceed ${maxFileSize / 1_000_000}MB`,
+        );
+        await updateDatasetDownloadStatus(dataset.extId, "skipped");
+      }
 
       console.log(
-        `Found ${latestIndexedDatasets.length} datasets that fulfil the criteria for download (out of ${datasets.length}).`,
+        `Found ${downloadable.length} datasets to download, ${skipped.length} skipped`,
       );
 
-      for (const dataset of latestIndexedDatasets.slice(0, count)) {
-        // Log the journal name, journal score and title
-        const journal = dataset.journalIssn
-          ? journalByIssn.get(formatIssn(dataset.journalIssn))
-          : null;
-        //  Log the publishing date also
+      for (const dataset of downloadable) {
         console.log(
-          `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+          `[${dataset.extId}] "${dataset.title}" - ${dataset.dryadPublicationDate}`,
         );
       }
 
-      datasetsToDownload = latestIndexedDatasets.slice(0, count);
+      datasetsToDownload = downloadable;
     }
 
     // Single download loop for all cases

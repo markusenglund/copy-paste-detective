@@ -18,8 +18,10 @@ program
   .version("0.1.0")
   .action(async () => {
     // Get all completed (downloaded) datasets
-    const completedDatasets =
-      await getDatasetsByDownloadStatusWithFiles("completed");
+    const completedDatasets = await getDatasetsByDownloadStatusWithFiles(
+      "completed",
+      10000,
+    );
     const datasetByExtId = new Map(
       completedDatasets.map((dataset) => [dataset.extId, dataset]),
     );

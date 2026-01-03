@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
@@ -96,30 +96,114 @@ export async function getAllDatasetsWithFiles(): Promise<
 
 export async function getDatasetsByDownloadStatusWithFiles(
   status: DownloadStatus,
+  limit: number,
 ): Promise<DryadDatasetWithFiles[]> {
-  const datasets = await getDatasetsByDownloadStatus(status);
-  const result: DryadDatasetWithFiles[] = [];
+  const datasets = await db
+    .select()
+    .from(dryadDatasets)
+    .where(eq(dryadDatasets.downloadStatus, status))
+    .limit(limit);
 
-  for (const dataset of datasets) {
-    const excelFiles = await db
-      .select()
-      .from(dryadExcelFiles)
-      .where(eq(dryadExcelFiles.dryadDatasetId, dataset.id));
+  if (datasets.length === 0) return [];
 
-    const readmeFiles = await db
-      .select()
-      .from(dryadReadmeFiles)
-      .where(eq(dryadReadmeFiles.dryadDatasetId, dataset.id))
-      .limit(1);
+  const datasetIds = datasets.map((d) => d.id);
 
-    result.push({
-      ...dataset,
-      excelFiles,
-      readmeFile: readmeFiles[0] ?? null,
-    });
-  }
+  // Single query for all excel files
+  const allExcelFiles = await db
+    .select()
+    .from(dryadExcelFiles)
+    .where(inArray(dryadExcelFiles.dryadDatasetId, datasetIds));
 
-  return result;
+  // Single query for all readme files
+  const allReadmeFiles = await db
+    .select()
+    .from(dryadReadmeFiles)
+    .where(inArray(dryadReadmeFiles.dryadDatasetId, datasetIds));
+
+  // Group files by dataset ID in JS
+  const excelFilesByDatasetId = Map.groupBy(
+    allExcelFiles,
+    (f) => f.dryadDatasetId,
+  );
+  const readmeFilesByDatasetId = Map.groupBy(
+    allReadmeFiles,
+    (f) => f.dryadDatasetId,
+  );
+
+  return datasets.map((dataset) => ({
+    ...dataset,
+    excelFiles: excelFilesByDatasetId.get(dataset.id) ?? [],
+    readmeFile: readmeFilesByDatasetId.get(dataset.id)?.[0] ?? null,
+  }));
+}
+
+/**
+ * Get datasets ready for download with filters applied in SQL:
+ * - downloadStatus = 'not_started'
+ * - has usageNotes OR has a readme file
+ * - has <= 3 excel files
+ * - ordered by publication date (newest first)
+ */
+export async function getDatasetsForDownload(
+  limit: number,
+): Promise<DryadDatasetWithFiles[]> {
+  // Subquery: check if readme file exists
+  const hasReadmeFile = sql<boolean>`EXISTS (
+    SELECT 1 FROM dryad_readme_files 
+    WHERE dryad_readme_files.dryad_dataset_id = dryad_datasets.id
+  )`;
+
+  // Subquery: count excel files <= 3
+  const excelFileCount = sql<number>`(
+    SELECT COUNT(*) FROM dryad_excel_files 
+    WHERE dryad_excel_files.dryad_dataset_id = dryad_datasets.id
+  )`;
+  console.log("Before query");
+  const datasets = await db
+    .select()
+    .from(dryadDatasets)
+    .where(
+      and(
+        eq(dryadDatasets.downloadStatus, "not_started"),
+        or(isNotNull(dryadDatasets.usageNotes), hasReadmeFile),
+        sql`${excelFileCount} <= 3`,
+      ),
+    )
+    .orderBy(desc(dryadDatasets.dryadPublicationDate))
+    .limit(limit);
+
+  console.log("Datasets:", datasets.length);
+  if (datasets.length === 0) return [];
+
+  const datasetIds = datasets.map((d) => d.id);
+
+  // Batch fetch excel files
+  const allExcelFiles = await db
+    .select()
+    .from(dryadExcelFiles)
+    .where(inArray(dryadExcelFiles.dryadDatasetId, datasetIds));
+
+  // Batch fetch readme files
+  const allReadmeFiles = await db
+    .select()
+    .from(dryadReadmeFiles)
+    .where(inArray(dryadReadmeFiles.dryadDatasetId, datasetIds));
+
+  // Group files by dataset ID
+  const excelFilesByDatasetId = Map.groupBy(
+    allExcelFiles,
+    (f) => f.dryadDatasetId,
+  );
+  const readmeFilesByDatasetId = Map.groupBy(
+    allReadmeFiles,
+    (f) => f.dryadDatasetId,
+  );
+
+  return datasets.map((dataset) => ({
+    ...dataset,
+    excelFiles: excelFilesByDatasetId.get(dataset.id) ?? [],
+    readmeFile: readmeFilesByDatasetId.get(dataset.id)?.[0] ?? null,
+  }));
 }
 
 export async function getAllExtIds(): Promise<Set<number>> {

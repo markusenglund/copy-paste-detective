@@ -5,6 +5,7 @@ export const downloadStatusEnum = pgEnum("download_status", [
   "in_progress",
   "failed",
   "completed",
+  "skipped",
 ]);
 
 export type DownloadStatus = (typeof downloadStatusEnum.enumValues)[number];

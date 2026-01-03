@@ -1,0 +1,2 @@
+CREATE INDEX "excel_files_dataset_id_idx" ON "dryad_excel_files" USING btree ("dryad_dataset_id");--> statement-breakpoint
+CREATE INDEX "readme_files_dataset_id_idx" ON "dryad_readme_files" USING btree ("dryad_dataset_id");
