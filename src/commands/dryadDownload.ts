@@ -1,8 +1,9 @@
 import { Command } from "@commander-js/extra-typings";
 import {
   getDatasetsByDownloadStatusWithFiles,
+  getDatasetWithFiles,
   updateDatasetDownloadStatus,
-  DryadDatasetWithFiles,
+  type DryadDatasetWithFiles,
 } from "../repositories/datasets/datasetsRepository";
 import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelFilesRepository";
 import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
@@ -22,64 +23,86 @@ program
   )
   .version("0.1.0")
   .argument("[count]", "Number of datasets to download", parseIntArgument, 100)
-  .action(async (count) => {
-    const journalByIssn = await getJournalsByIssnMap();
-
-    const datasets = await getDatasetsByDownloadStatusWithFiles("not_started");
+  .option("--id <extId>", "Download a specific dataset by its Dryad ID (extId)")
+  .action(async (count, options) => {
     const maxFileSize = 10_000_000; // 10MB
+    let datasetsToDownload: DryadDatasetWithFiles[];
 
-    const latestIndexedDatasets = datasets
-      .filter((dataset) => {
+    if (options.id) {
+      // Get single dataset by ID, put in array
+      const extId = parseInt(options.id, 10);
+      if (isNaN(extId)) {
+        console.error(`Invalid extId "${options.id}". Must be a number.`);
+        process.exit(1);
+      }
+      const dataset = await getDatasetWithFiles(extId);
+      if (!dataset) {
+        console.error(`Dataset with extId "${options.id}" not found.`);
+        process.exit(1);
+      }
+      datasetsToDownload = [dataset];
+    } else {
+      // Existing filtering logic to build the list
+      const journalByIssn = await getJournalsByIssnMap();
+      const datasets =
+        await getDatasetsByDownloadStatusWithFiles("not_started");
+
+      const latestIndexedDatasets = datasets
+        .filter((dataset) => {
+          const journal = dataset.journalIssn
+            ? journalByIssn.get(formatIssn(dataset.journalIssn))
+            : null;
+          return ["Medicine", "Psychology", "Neuroscience"].find((field) =>
+            journal?.fields.includes(field),
+          );
+        })
+        .filter((dataset) => {
+          const containsUsageNotesOrReadme =
+            dataset.readmeFile || dataset.usageNotes;
+
+          if (!containsUsageNotesOrReadme) {
+            return false; // Skip datasets without README or usage notes
+          }
+
+          if (dataset.excelFiles.length > 3) {
+            return false; // Skip datasets with more than 3 Excel files
+          }
+          const onlyContainsLargeExcelFiles = dataset.excelFiles.every(
+            (file) => file.size > maxFileSize,
+          );
+          if (onlyContainsLargeExcelFiles) {
+            return false;
+          }
+          return true;
+        })
+        .toSorted((a, b) => {
+          return (
+            new Date(b.dryadPublicationDate).getTime() -
+            new Date(a.dryadPublicationDate).getTime()
+          );
+        });
+
+      console.log(
+        `Found ${latestIndexedDatasets.length} datasets that fulfil the criteria for download (out of ${datasets.length}).`,
+      );
+
+      for (const dataset of latestIndexedDatasets.slice(0, count)) {
+        // Log the journal name, journal score and title
         const journal = dataset.journalIssn
           ? journalByIssn.get(formatIssn(dataset.journalIssn))
           : null;
-        return ["Medicine", "Psychology", "Neuroscience"].find((field) =>
-          journal?.fields.includes(field),
+        //  Log the publishing date also
+        console.log(
+          `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
         );
-      })
-      .filter((dataset) => {
-        const containsUsageNotesOrReadme =
-          dataset.readmeFile || dataset.usageNotes;
+      }
 
-        if (!containsUsageNotesOrReadme) {
-          return false; // Skip datasets without README or usage notes
-        }
-
-        if (dataset.excelFiles.length > 3) {
-          return false; // Skip datasets with more than 3 Excel files
-        }
-        const onlyContainsLargeExcelFiles = dataset.excelFiles.every(
-          (file) => file.size > maxFileSize,
-        );
-        if (onlyContainsLargeExcelFiles) {
-          return false;
-        }
-        return true;
-      })
-      .toSorted((a, b) => {
-        return (
-          new Date(b.dryadPublicationDate).getTime() -
-          new Date(a.dryadPublicationDate).getTime()
-        );
-      });
-
-    console.log(
-      `Found ${latestIndexedDatasets.length} datasets that fulfil the criteria for download (out of ${datasets.length}).`,
-    );
-
-    for (const dataset of latestIndexedDatasets.slice(0, count)) {
-      // Log the journal name, journal score and title
-      const journal = dataset.journalIssn
-        ? journalByIssn.get(formatIssn(dataset.journalIssn))
-        : null;
-      //  Log the publishing date also
-      console.log(
-        `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
-      );
+      datasetsToDownload = latestIndexedDatasets.slice(0, count);
     }
 
-    for (let i = 0; i < Math.min(count, latestIndexedDatasets.length); i++) {
-      const dataset = latestIndexedDatasets[i];
+    // Single download loop for all cases
+    for (let i = 0; i < datasetsToDownload.length; i++) {
+      const dataset = datasetsToDownload[i];
       console.log(
         `[${i}] Downloading dataset ${dataset.extId} from ${dataset.dryadPublicationDate} ("${dataset.title}")`,
       );
