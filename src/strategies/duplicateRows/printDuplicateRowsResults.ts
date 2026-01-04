@@ -12,7 +12,7 @@ export function printDuplicateRowsResults({
 
   const sortedDuplicateRows = duplicateRows
     .toSorted((a, b) => b.rowEntropyScore - a.rowEntropyScore)
-    .slice(0, 100); // Show top 20 most suspicious pairs
+    .slice(0, 20); // Show top 20 most suspicious pairs
 
   const tableData = sortedDuplicateRows.map((duplicateRow) => {
     // Format shared values for display (show first few if many)

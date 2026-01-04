@@ -199,7 +199,7 @@ const reviewResultsResponseSchema = z.object({
 
 export type ReviewResultsResponse = z.infer<typeof reviewResultsResponseSchema>;
 
-const reviewResultsModel = "gemini-3-flash-preview";
+const reviewResultsModel = "gemini-3-pro-preview";
 
 const reviewResultsGeminiSchema = {
   type: Type.OBJECT,
