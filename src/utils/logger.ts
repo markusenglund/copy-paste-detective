@@ -1,11 +1,10 @@
 import pino from "pino";
+import pinoPretty from "pino-pretty";
 
-export const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      ignore: "pid,hostname",
-    },
-  },
-});
+export const logger = pino(
+  pinoPretty({
+    colorize: true,
+    ignore: "pid,hostname",
+    sync: true,
+  }),
+);
