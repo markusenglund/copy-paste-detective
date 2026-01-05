@@ -173,7 +173,7 @@ export async function getDatasetsForDownload(
     .orderBy(desc(dryadDatasets.dryadPublicationDate))
     .limit(limit);
 
-  logger.info("Datasets:", datasets.length);
+  logger.info(`Datasets: ${datasets.length}`);
   if (datasets.length === 0) return [];
 
   const datasetIds = datasets.map((d) => d.id);

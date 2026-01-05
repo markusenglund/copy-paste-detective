@@ -155,7 +155,7 @@ importJournalsFromCsv()
     process.exit(0);
   })
   .catch((error) => {
-    logger.error("Import failed:", error);
+    logger.error(`Import failed: ${error}`);
     process.exit(1);
   });
 

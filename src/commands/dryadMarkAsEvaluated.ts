@@ -33,7 +33,7 @@ program
     logger.info(
       "Downloaded datasets are tracked in PostgreSQL, analysis results in analysisResultsDb.",
     );
-    logger.info("\nAnalyzed dataset IDs:", analyzedExtIds.join(", "));
+    logger.info(`\nAnalyzed dataset IDs: ${analyzedExtIds.join(", ")}`);
   });
 
 program.parse();

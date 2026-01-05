@@ -84,15 +84,13 @@ async function getAiColumnProfiles(
     dryadExcelFileId: excelFileData.dryadExcelFileId,
   });
 
-  logger.info(
-    `[${sheet.name}] Included columns:`,
-    screenColumnsResult.includedColumnNames,
+  logger.debug(
+    `[${sheet.name}] Included columns: ${screenColumnsResult.includedColumnNames.join(", ")}`,
   );
-  logger.info(
-    `[${sheet.name}] Excluded columns:`,
-    screenColumnsResult.excludedColumnNames,
+  logger.debug(
+    `[${sheet.name}] Excluded columns: ${screenColumnsResult.excludedColumnNames.join(", ")}`,
   );
-  logger.info(`[${sheet.name}] motivation:`, screenColumnsResult.motivation);
+  logger.debug(`[${sheet.name}] motivation: ${screenColumnsResult.motivation}`);
 
   const aiColumnProfile: AiColumnProfile[] = sheet
     .getColumns()

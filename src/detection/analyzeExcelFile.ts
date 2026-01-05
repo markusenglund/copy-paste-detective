@@ -33,7 +33,7 @@ export async function analyzeExcelFile(
   strategies: StrategyName[],
   excelFileData: ExcelFileData,
 ): Promise<ExcelFileAnalysis> {
-  logger.info("🔍 Running strategies:", strategies.join(", "));
+  logger.info(`🔍 Running strategies: ${strategies.join(", ")}`);
   const { sheets } = excelFileData;
   logger.info(
     `Found ${sheets.length} sheet(s): ${sheets.map((s) => s.name).join(", ")}`,

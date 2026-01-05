@@ -96,9 +96,9 @@ async function screenColumnsGemini(
       const parsed = JSON.parse(response.text);
       rawResult = geminiResponseSchema.parse(parsed);
     } catch (error) {
-      logger.error("Error parsing Gemini API response:", error);
-      logger.error("Response:", response.text);
-      logger.error("Prompt:", params.contents);
+      logger.error(`Error parsing Gemini API response: ${error}`);
+      logger.error(`Response: ${response.text}`);
+      logger.error(`Prompt: ${params.contents}`);
       throw new Error(
         `Failed to parse Gemini API response: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -118,8 +118,8 @@ async function screenColumnsGemini(
       excludedColumnNames,
     };
   } catch (error) {
-    logger.error("Error calling Gemini API:", error);
-    logger.error("Prompt:", params.contents);
+    logger.error(`Error calling Gemini API: ${error}`);
+    logger.error(`Prompt: ${params.contents}`);
     throw new Error(
       `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -269,7 +269,7 @@ async function reviewResultsGemini(
     const parsed = JSON.parse(response.text);
     return reviewResultsResponseSchema.parse(parsed);
   } catch (error) {
-    logger.error("Error calling Gemini API for review:", error);
+    logger.error(`Error calling Gemini API for review: ${error}`);
     throw new Error(
       `Failed to review results: ${error instanceof Error ? error.message : "Unknown error"}`,
     );

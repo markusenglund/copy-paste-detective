@@ -33,7 +33,7 @@ program
     try {
       excelFileData = loadExcelFileFromFolder(folder, fileIndex);
     } catch (error) {
-      logger.error("❌ Failed to load Excel file from folder:", error);
+      logger.error(`❌ Failed to load Excel file from folder: ${error}`);
       process.exit(1);
     }
 

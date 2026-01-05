@@ -26,7 +26,7 @@ program
     let datasetsToDownload: DryadDatasetWithFiles[];
     logger.info("Dryad download");
     if (options.id) {
-      logger.info("Options id:", options.id);
+      logger.info(`Options id: ${options.id}`);
       // Get single dataset by ID, put in array
       const extId = parseInt(options.id, 10);
       if (isNaN(extId)) {
