@@ -175,8 +175,8 @@ describe("Plant responses to light competition", () => {
         categorizedColumnsBySheet,
         duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
-      expect(result.duplicateRows[0]?.sharedValues).toBeUndefined(); // Gives a helpful output
-      expect(result.duplicateRows).toHaveLength(0);
+      expect(result.duplicateRows[0]?.rowEntropyScore).toBeLessThan(20);
+      expect(result.duplicateRows).toHaveLength(1);
     });
   });
 });

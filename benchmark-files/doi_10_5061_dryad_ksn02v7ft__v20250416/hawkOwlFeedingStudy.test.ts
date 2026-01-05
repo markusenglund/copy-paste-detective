@@ -11,6 +11,7 @@ import {
   categorizeColumns,
   CategorizedColumn,
 } from "../../src/columnCategorization/columnCategorization";
+import { findDuplicateValues } from "../../src/detection/findDuplicateValues";
 
 describe("Hawk Owl Feeding Study", () => {
   let excelFileData: ExcelFileData;
@@ -112,9 +113,18 @@ describe("Hawk Owl Feeding Study", () => {
 
   describe("Individual Numbers Strategy", () => {
     it("should NOT report Q103 and Q155 as duplicates", () => {
+      const duplicateValuesResultsBySheet = new Map<
+        string,
+        DuplicateValuesResult
+      >();
+      const duplicateValuesResults = findDuplicateValues(
+        sheets[0],
+        categorizedColumnsBySheet.get(sheets[0].name)!,
+      );
+      duplicateValuesResultsBySheet.set(sheets[0].name, duplicateValuesResults);
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
-        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
+        duplicateValuesResultsBySheet,
       });
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
@@ -131,9 +141,18 @@ describe("Hawk Owl Feeding Study", () => {
     });
 
     it("should report F54 and F55 as a High suspicion duplicate pair", () => {
+      const duplicateValuesResultsBySheet = new Map<
+        string,
+        DuplicateValuesResult
+      >();
+      const duplicateValuesResults = findDuplicateValues(
+        sheets[0],
+        categorizedColumnsBySheet.get(sheets[0].name)!,
+      );
+      duplicateValuesResultsBySheet.set(sheets[0].name, duplicateValuesResults);
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
-        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
+        duplicateValuesResultsBySheet,
       });
 
       // Find the duplicate value that contains both F54 and F55

@@ -9,10 +9,15 @@ import {
   categorizeColumns,
   CategorizedColumn,
 } from "../../src/columnCategorization/columnCategorization";
+import { findDuplicateValues } from "../../src/detection/findDuplicateValues";
 
 describe("Dual Drivers of Plant Invasions - Common garden", () => {
   let excelFileData: ExcelFileData;
   const categorizedColumnsBySheet = new Map<string, CategorizedColumn[]>();
+  const duplicateValuesResultsBySheet = new Map<
+    string,
+    DuplicateValuesResult
+  >();
 
   beforeAll(async () => {
     // Load the actual Dryad dataset
@@ -78,6 +83,13 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
       }));
       categorizedColumnsBySheet.set(sheet.name, columns);
     }
+    for (const sheet of excelFileData.sheets) {
+      const duplicateValuesResults = findDuplicateValues(
+        sheet,
+        categorizedColumnsBySheet.get(sheet.name)!,
+      );
+      duplicateValuesResultsBySheet.set(sheet.name, duplicateValuesResults);
+    }
   });
 
   describe("Duplicate rows strategy", () => {
@@ -128,9 +140,8 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate value 106.9391 in S354, S358 & S242", async () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
-        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
+        duplicateValuesResultsBySheet,
       });
-
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
       expect(result.duplicateValues).toBeDefined();
@@ -153,7 +164,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate value 154.5642 in S15 & S353", async () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
-        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
+        duplicateValuesResultsBySheet,
       });
 
       // Find the duplicate value 154.5642
@@ -173,7 +184,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate value 118.8588 in S85 & S193", async () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
-        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
+        duplicateValuesResultsBySheet,
       });
 
       // Find the duplicate value 118.8588
