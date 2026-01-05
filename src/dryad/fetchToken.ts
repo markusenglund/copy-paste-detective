@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { config } from "../config/env";
 import { JSONFilePreset } from "lowdb/node";
+import { logger } from "../utils/logger";
 
 const tokenResponseSchema = z.object({
   access_token: z.string(),
@@ -23,7 +24,7 @@ export async function fetchToken(): Promise<string> {
     null,
   );
   if (db.data) {
-    console.log("Using json cached token");
+    logger.info("Using json cached token");
     accessToken = db.data.access_token;
     return accessToken;
   }
@@ -47,7 +48,7 @@ export async function fetchToken(): Promise<string> {
   // Cache the token
   db.data = parsedToken;
   await db.write();
-  console.log("Fetched and cached new token");
+  logger.info("Fetched and cached new token");
   accessToken = parsedToken.access_token;
   return accessToken;
 }

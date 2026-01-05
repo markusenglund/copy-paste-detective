@@ -7,6 +7,7 @@ import {
   getJournalCount,
   formatIssn,
 } from "../repositories/journals/journalsRepository";
+import { logger } from "../utils/logger";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,12 +27,12 @@ async function importJournalsFromCsv() {
   // Check if journals already exist
   const existingCount = await getJournalCount();
   if (existingCount > 0) {
-    console.log(`Database already contains ${existingCount} journals. Skipping import.`);
-    console.log("To re-import, clear the journals table first.");
+    logger.info(`Database already contains ${existingCount} journals. Skipping import.`);
+    logger.info("To re-import, clear the journals table first.");
     process.exit(0);
   }
 
-  console.log(`Reading journals from ${scimagoCsvPath}...`);
+  logger.info(`Reading journals from ${scimagoCsvPath}...`);
 
   const journals = await new Promise<ParsedJournal[]>((resolve, reject) => {
     const results: ParsedJournal[] = [];
@@ -74,7 +75,7 @@ async function importJournalsFromCsv() {
       .on("end", () => resolve(results));
   });
 
-  console.log(`Parsed ${journals.length} journals from CSV.`);
+  logger.info(`Parsed ${journals.length} journals from CSV.`);
 
   // Insert in batches
   const batchSize = 500;
@@ -84,10 +85,10 @@ async function importJournalsFromCsv() {
     const batch = journals.slice(i, i + batchSize);
     await insertJournals(batch);
     insertedCount += batch.length;
-    console.log(`Inserted ${insertedCount}/${journals.length} journals...`);
+    logger.info(`Inserted ${insertedCount}/${journals.length} journals...`);
   }
 
-  console.log(`Successfully imported ${insertedCount} journals into the database.`);
+  logger.info(`Successfully imported ${insertedCount} journals into the database.`);
 }
 
 function fixMalformedQuotes(input: string): string {
@@ -150,11 +151,11 @@ function toStringArray(value: string): string[] {
 
 importJournalsFromCsv()
   .then(() => {
-    console.log("Done!");
+    logger.info("Done!");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("Import failed:", error);
+    logger.error("Import failed:", error);
     process.exit(1);
   });
 

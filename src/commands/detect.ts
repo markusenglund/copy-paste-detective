@@ -4,6 +4,7 @@ import { StrategyName } from "../types/strategies";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
 import { parseIntArgument, parseStrategies } from "../utils/command";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -26,22 +27,22 @@ program
     Object.values(StrategyName),
   )
   .action(async (folder, fileIndex, options) => {
-    console.time("Total execution time");
+    const startTime = Date.now();
 
     let excelFileData: ExcelFileData;
     try {
       excelFileData = loadExcelFileFromFolder(folder, fileIndex);
     } catch (error) {
-      console.error("❌ Failed to load Excel file from folder:", error);
+      logger.error("❌ Failed to load Excel file from folder:", error);
       process.exit(1);
     }
 
-    console.log(
+    logger.info(
       `📄 Selected file '${excelFileData.excelFileName}' (index ${fileIndex}) from folder: '${folder}'`,
     );
 
     await analyzeDataset([excelFileData], options.strategies);
-    console.timeEnd("Total execution time");
+    logger.info(`Total execution time: ${Date.now() - startTime}ms`);
   });
 
 program.parse();

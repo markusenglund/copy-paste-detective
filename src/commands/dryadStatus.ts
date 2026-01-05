@@ -8,6 +8,7 @@ import {
   getTotalExcelFileSize,
 } from "../repositories/excelFiles/excelFilesRepository";
 import { formatSize } from "../utils/formatSize";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -19,27 +20,27 @@ program
     const datasets = await getAllDatasetsWithFiles();
     const excelFileCount = await getTotalExcelFileCount();
 
-    console.log(
+    logger.info(
       `Database contains ${datasets.length} datasets with ${excelFileCount} total Excel files.`,
     );
 
     const statusCounts = await getDatasetCountByStatus();
-    console.log("Datasets by download status:");
+    logger.info("Datasets by download status:");
     for (const [status, count] of Object.entries(statusCounts)) {
       if (count > 0) {
-        console.log(`- ${status}: ${count} datasets`);
+        logger.info(`- ${status}: ${count} datasets`);
       }
     }
 
     const totalSize = await getTotalExcelFileSize();
     const averageSize = excelFileCount > 0 ? totalSize / excelFileCount : 0;
-    console.log(`Average Excel file size: ${formatSize(averageSize)}`);
-    console.log(`Total size of all Excel files: ${formatSize(totalSize)}`);
+    logger.info(`Average Excel file size: ${formatSize(averageSize)}`);
+    logger.info(`Total size of all Excel files: ${formatSize(totalSize)}`);
 
     const datasetsWithReadme = datasets.filter(
       (dataset) => dataset.readmeFile !== null,
     );
-    console.log(
+    logger.info(
       `Found ${datasetsWithReadme.length} datasets with a README file.`,
     );
 
@@ -47,7 +48,7 @@ program
       (dataset) =>
         dataset.readmeFile !== null || dataset.usageNotes !== null,
     );
-    console.log(
+    logger.info(
       `Found ${datasetsWithReadmeOrUsageNotes.length} datasets with a README file or usage notes.`,
     );
 
@@ -61,7 +62,7 @@ program
         );
       },
     );
-    console.log(
+    logger.info(
       `A total of ${excelFilesThatFitCriteria.length} Excel files fit the criteria (max 4 files per dataset, size < 10MB).`,
     );
   });

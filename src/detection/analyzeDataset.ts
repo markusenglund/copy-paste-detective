@@ -14,6 +14,7 @@ import { RepeatedColumnSequence } from "../entities/RepeatedColumnSequence";
 import { Sheet } from "../entities/Sheet";
 import { CategorizedColumn } from "../columnCategorization/columnCategorization";
 import { DuplicateValuesResult, SuspicionLevel } from "../types";
+import { logger } from "../utils/logger";
 
 export type AnalyzeDatasetResult = {
   analyses: ExcelFileAnalysis[];
@@ -170,7 +171,7 @@ async function reviewMostSuspiciousResults(
     )
     .slice(0, maxAiReviewsPerDataset);
 
-  console.log(
+  logger.info(
     `Reviewing ${sheetsToReview.length} sheets: ${sheetsToReview
       .map((s) => {
         return `'${s.sheet.name}' from file '${s.excelFileData.excelFileName}' (suspicion score: ${s.suspicionScore.toFixed(2)})`;

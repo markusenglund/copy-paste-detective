@@ -5,6 +5,7 @@ import { insertExcelFiles } from "../repositories/excelFiles/excelFilesRepositor
 import { insertReadmeFile } from "../repositories/readmeFiles/readmeFilesRepository";
 import { Dataset, ForbiddenDataset } from "./schemas";
 import Mutex from "p-mutex";
+import { logger } from "../utils/logger";
 
 const listDatasetsMutex = new Mutex();
 
@@ -23,11 +24,11 @@ export async function indexDatasetPage(
           "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
       ),
   );
-  console.log(`Fetched ${extDryadDatasets.length} datasets`);
+  logger.info(`Fetched ${extDryadDatasets.length} datasets`);
   let numDatasetsWithExcelFiles = 0;
   for (const extDataset of extDryadDatasets) {
     if (alreadyIndexedDatasetIds.has(extDataset.id)) {
-      console.log(`Dataset ${extDataset.id} already indexed, skipping...`);
+      logger.info(`Dataset ${extDataset.id} already indexed, skipping...`);
       continue;
     }
 
@@ -46,7 +47,7 @@ export async function indexDatasetPage(
       )
       .filter((file) => {
         if (!file._links["stash:download"]) {
-          console.warn(
+          logger.warn(
             `File ${file.path} from dataset ${extDataset.id} has no download link, skipping...`,
           );
           return false;
@@ -106,12 +107,12 @@ export async function indexDatasetPage(
     }
 
     numDatasetsWithExcelFiles++;
-    console.log(
+    logger.info(
       `Inserted dataset ${insertedDataset.extId} with ${extDryadExcelFiles.length} Excel files: ${extDryadExcelFiles.map((file) => file.path).join(", ")} Title: '${insertedDataset.title}'`,
     );
   }
 
-  console.log(
+  logger.info(
     `Finished indexing page ${currentPage} out of ${Math.ceil(data.total / data.count)}. ${numDatasetsWithExcelFiles} datasets with Excel files found out of ${data.count}.`,
   );
 }

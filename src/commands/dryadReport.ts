@@ -9,6 +9,7 @@ import {
   getJournalsByIssnMap,
   formatIssn,
 } from "../repositories/journals/journalsRepository";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -118,7 +119,7 @@ program
 
     const topDatasets = sortedDatasets.slice(0, 100);
 
-    console.log(`Found ${topDatasets.length} analyzed datasets.`);
+    logger.info(`Found ${topDatasets.length} analyzed datasets.`);
     console.table(
       topDatasets.map((dataset) => ({
         extId: dataset.extId,

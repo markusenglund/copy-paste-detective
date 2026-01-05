@@ -17,6 +17,7 @@ import {
 } from "../repositories/journals/journalsRepository";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -41,7 +42,7 @@ program
 
     const numDatasetsToAnalyze = Math.min(count, downloadedDatasets.length);
 
-    console.log(
+    logger.info(
       `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are downloaded and not yet analyzed.`,
     );
 
@@ -50,7 +51,7 @@ program
       const journal = dataset.journalIssn
         ? journalByIssn.get(formatIssn(dataset.journalIssn))
         : null;
-      console.log(
+      logger.info(
         `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
       );
     }
@@ -60,7 +61,7 @@ program
     await pMap(
       downloadedDatasets.slice(0, numDatasetsToAnalyze),
       async (dataset, i) => {
-        console.log(
+        logger.info(
           `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
         );
 
@@ -74,12 +75,12 @@ program
         ) {
           const excelFile = dataset.excelFiles[j];
           if (excelFile.downloadStatus !== "completed") {
-            console.log(
+            logger.info(
               `[${i}] Skipping file ${j} (${excelFile.filename}) - not downloaded`,
             );
             continue;
           }
-          console.log(
+          logger.info(
             `[${i}] Loading file ${j}: ${excelFile.filename} (${excelFile.size} bytes)`,
           );
           const excelFileData = loadExcelFileFromDryadIndex(dataset, j);
@@ -119,7 +120,7 @@ program
               analysisResultsDb.data.results[dataset.extId][
                 analysis.excelFileName
               ] = analysisResults;
-              console.log(
+              logger.info(
                 `[${i}] Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId}.`,
               );
             }
@@ -133,12 +134,12 @@ program
               dataset.extId,
               "not_flagged_for_review",
             );
-            console.log(
+            logger.info(
               `[${i}] Dataset ${dataset.extId} analyzed - no suspicious findings requiring AI review.`,
             );
           } else if (aiReviewCompleted) {
             await updateDatasetAnalysisStatus(dataset.extId, "reviewed_by_ai");
-            console.log(
+            logger.info(
               `[${i}] Dataset ${dataset.extId} analyzed and AI review completed.`,
             );
           } else {
@@ -147,17 +148,16 @@ program
               dataset.extId,
               "flagged_for_review",
             );
-            console.log(
+            logger.info(
               `[${i}] Dataset ${dataset.extId} flagged for AI review but review incomplete.`,
             );
           }
         } catch (error) {
-          console.error(
-            `[${i}] Error analyzing dataset ${dataset.extId}:`,
-            error,
+          logger.error(
+            `[${i}] Error analyzing dataset ${dataset.extId}: ${error}`,
           );
           await updateDatasetAnalysisStatus(dataset.extId, "failed");
-          console.log(`[${i}] Dataset ${dataset.extId} marked as failed.`);
+          logger.info(`[${i}] Dataset ${dataset.extId} marked as failed.`);
         }
       },
       { concurrency: 5 },

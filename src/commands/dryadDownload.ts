@@ -9,6 +9,7 @@ import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelF
 import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument } from "../utils/command";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -23,25 +24,25 @@ program
   .action(async (count, options) => {
     const maxFileSize = 10_000_000; // 10MB
     let datasetsToDownload: DryadDatasetWithFiles[];
-    console.log("Dryad download");
+    logger.info("Dryad download");
     if (options.id) {
-      console.log("Options id:", options.id);
+      logger.info("Options id:", options.id);
       // Get single dataset by ID, put in array
       const extId = parseInt(options.id, 10);
       if (isNaN(extId)) {
-        console.error(`Invalid extId "${options.id}". Must be a number.`);
+        logger.error(`Invalid extId "${options.id}". Must be a number.`);
         process.exit(1);
       }
       const dataset = await getDatasetWithFiles(extId);
       if (!dataset) {
-        console.error(`Dataset with extId "${options.id}" not found.`);
+        logger.error(`Dataset with extId "${options.id}" not found.`);
         process.exit(1);
       }
       datasetsToDownload = [dataset];
     } else {
-      console.log("Fetching datasets for download...");
+      logger.info("Fetching datasets for download...");
       const datasets = await getDatasetsForDownload(count);
-      console.log(`Fetched ${datasets.length} candidate datasets`);
+      logger.info(`Fetched ${datasets.length} candidate datasets`);
 
       // Separate datasets by whether they have downloadable files
       const downloadable: DryadDatasetWithFiles[] = [];
@@ -60,18 +61,18 @@ program
 
       // Mark skipped datasets (all files too large)
       for (const dataset of skipped) {
-        console.log(
+        logger.info(
           `Skipping dataset ${dataset.extId} - all files exceed ${maxFileSize / 1_000_000}MB`,
         );
         await updateDatasetDownloadStatus(dataset.extId, "skipped");
       }
 
-      console.log(
+      logger.info(
         `Found ${downloadable.length} datasets to download, ${skipped.length} skipped`,
       );
 
       for (const dataset of downloadable) {
-        console.log(
+        logger.info(
           `[${dataset.extId}] "${dataset.title}" - ${dataset.dryadPublicationDate}`,
         );
       }
@@ -82,10 +83,10 @@ program
     // Single download loop for all cases
     for (let i = 0; i < datasetsToDownload.length; i++) {
       const dataset = datasetsToDownload[i];
-      console.log(
+      logger.info(
         `[${i}] Downloading dataset ${dataset.extId} from ${dataset.dryadPublicationDate} ("${dataset.title}")`,
       );
-      console.log(
+      logger.info(
         `${dataset.excelFiles.length} Excel files found:\n ${dataset.excelFiles.map((file) => file.filename).join("\n")}`,
       );
 
@@ -101,7 +102,7 @@ program
             });
             await updateExcelFileDownloadStatus(excelFile.id, "completed");
           } catch (err) {
-            console.error(err);
+            logger.error(err);
             await updateExcelFileDownloadStatus(excelFile.id, "failed");
             numFailedDownloads += 1;
           }
@@ -119,7 +120,7 @@ program
             "completed",
           );
         } catch (err) {
-          console.error(err);
+          logger.error(err);
           await updateReadmeFileDownloadStatus(dataset.readmeFile.id, "failed");
         }
       }

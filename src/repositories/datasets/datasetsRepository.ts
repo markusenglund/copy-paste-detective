@@ -6,6 +6,7 @@ import { dryadExcelFiles } from "../excelFiles/schema";
 import { dryadReadmeFiles } from "../readmeFiles/schema";
 import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 import type { DryadReadmeFileRow } from "../readmeFiles/readmeFilesRepository";
+import { logger } from "../../utils/logger";
 
 // Re-export types for convenience
 export type DryadDatasetRow = typeof dryadDatasets.$inferSelect;
@@ -158,7 +159,7 @@ export async function getDatasetsForDownload(
     SELECT COUNT(*) FROM dryad_excel_files 
     WHERE dryad_excel_files.dryad_dataset_id = dryad_datasets.id
   )`;
-  console.log("Before query");
+  logger.info("Before query");
   const datasets = await db
     .select()
     .from(dryadDatasets)
@@ -172,7 +173,7 @@ export async function getDatasetsForDownload(
     .orderBy(desc(dryadDatasets.dryadPublicationDate))
     .limit(limit);
 
-  console.log("Datasets:", datasets.length);
+  logger.info("Datasets:", datasets.length);
   if (datasets.length === 0) return [];
 
   const datasetIds = datasets.map((d) => d.id);

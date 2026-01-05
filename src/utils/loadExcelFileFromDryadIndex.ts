@@ -5,6 +5,7 @@ import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
+import { logger } from "./logger";
 
 export function loadExcelFileFromDryadIndex(
   dataset: DryadDatasetWithFiles,
@@ -31,7 +32,7 @@ export function loadExcelFileFromDryadIndex(
       const sheet = new Sheet(workbookSheet, sheetName);
       sheets.push(sheet);
     } catch (err) {
-      console.log(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
+      logger.info(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
     }
   });
   let dataDescription: string | undefined;

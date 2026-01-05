@@ -1,6 +1,7 @@
 import { RepeatedColumnSequencesResult } from "../../types/strategies";
 import { RepeatedColumnSequence } from "../../entities/RepeatedColumnSequence";
 import { levelToSymbol } from "../../utils/output";
+import { logger } from "../../utils/logger";
 
 function formatSequencesForDisplay(
   repeatedSequences: RepeatedColumnSequence[],
@@ -41,10 +42,10 @@ function formatSequencesForDisplay(
 export function printRepeatedColumnSequencesResults({
   sequences,
 }: RepeatedColumnSequencesResult): void {
-  console.log(`\nRepeated sequences:`);
+  logger.info(`\nRepeated sequences:`);
 
   if (sequences.length === 0) {
-    console.log("No repeated sequences were found.");
+    logger.info("No repeated sequences were found.");
     return;
   }
 

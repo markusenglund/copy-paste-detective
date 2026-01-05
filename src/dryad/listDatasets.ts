@@ -2,6 +2,7 @@ import { URLSearchParams } from "node:url";
 import { DatasetResponseSchema, type DatasetResponse } from "./schemas";
 import { fetchToken } from "./fetchToken";
 import pRetry from "p-retry";
+import { logger } from "../utils/logger";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 type Params = {
@@ -12,7 +13,7 @@ export async function listDatasets({
   page,
   perPage,
 }: Params): Promise<DatasetResponse> {
-  console.log(`Fetching page ${page} of datasets from Dryad...`);
+  logger.info(`Fetching page ${page} of datasets from Dryad...`);
 
   const accessToken = await fetchToken();
   const searchQueryParams = new URLSearchParams({
@@ -39,15 +40,15 @@ export async function listDatasets({
     {
       retries: 1,
       onFailedAttempt: (error) => {
-        console.warn(`${error.message}, retrying once...`);
+        logger.warn(`${error.message}, retrying once...`);
       },
     },
   );
 
   const zodResult = DatasetResponseSchema.safeParse(responseData);
   if (!zodResult.success) {
-    console.warn(`Zod validation failed for ${url}`);
-    console.warn(JSON.stringify(responseData, null, 2));
+    logger.warn(`Zod validation failed for ${url}`);
+    logger.warn(JSON.stringify(responseData, null, 2));
     throw zodResult.error;
   }
   return zodResult.data;

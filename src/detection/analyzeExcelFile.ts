@@ -14,6 +14,7 @@ import {
 } from "../columnCategorization/columnCategorization";
 import { findDuplicateValues } from "./findDuplicateValues";
 import { DuplicateValuesResult } from "../types";
+import { logger } from "../utils/logger";
 
 export type ExcelFileAnalysisResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -32,9 +33,9 @@ export async function analyzeExcelFile(
   strategies: StrategyName[],
   excelFileData: ExcelFileData,
 ): Promise<ExcelFileAnalysis> {
-  console.log("🔍 Running strategies:", strategies.join(", "));
+  logger.info("🔍 Running strategies:", strategies.join(", "));
   const { sheets } = excelFileData;
-  console.log(
+  logger.info(
     `Found ${sheets.length} sheet(s): ${sheets.map((s) => s.name).join(", ")}`,
   );
 
@@ -63,12 +64,12 @@ export async function analyzeExcelFile(
 
   // 1. Run duplicateRows first if requested
   if (strategies.includes(StrategyName.DuplicateRows)) {
-    console.log(`\n🔍 Running ${StrategyName.DuplicateRows} strategy...`);
+    logger.info(`\n🔍 Running ${StrategyName.DuplicateRows} strategy...`);
     duplicateRowsResult = await duplicateRowsStrategy.execute(excelFileData, {
       categorizedColumnsBySheet,
       duplicateValuesResultsBySheet,
     });
-    console.log(
+    logger.info(
       `✅ ${StrategyName.DuplicateRows} completed in ${duplicateRowsResult.executionTime.toFixed(2)}ms`,
     );
     duplicateRowsStrategy.printResults(duplicateRowsResult);
@@ -77,14 +78,14 @@ export async function analyzeExcelFile(
 
   // 2. Run repeatedColumnSequences second if requested
   if (strategies.includes(StrategyName.RepeatedColumnSequences)) {
-    console.log(
+    logger.info(
       `\n🔍 Running ${StrategyName.RepeatedColumnSequences} strategy...`,
     );
     const result = await repeatedColumnSequencesStrategy.execute(
       excelFileData,
       { categorizedColumnsBySheet, duplicateValuesResultsBySheet },
     );
-    console.log(
+    logger.info(
       `✅ ${StrategyName.RepeatedColumnSequences} completed in ${result.executionTime.toFixed(2)}ms`,
     );
     repeatedColumnSequencesStrategy.printResults(result);
@@ -93,7 +94,7 @@ export async function analyzeExcelFile(
 
   // 3. Run individualNumbers last if requested, with duplicate rows results
   if (strategies.includes(StrategyName.IndividualNumbers)) {
-    console.log(`\n🔍 Running ${StrategyName.IndividualNumbers} strategy...`);
+    logger.info(`\n🔍 Running ${StrategyName.IndividualNumbers} strategy...`);
     const individualNumbersDependencies = {
       categorizedColumnsBySheet,
       previousResults: duplicateRowsResult ? [duplicateRowsResult] : [],
@@ -103,7 +104,7 @@ export async function analyzeExcelFile(
       excelFileData,
       individualNumbersDependencies,
     );
-    console.log(
+    logger.info(
       `✅ ${StrategyName.IndividualNumbers} completed in ${result.executionTime.toFixed(2)}ms`,
     );
     individualNumbersStrategy.printResults(result);

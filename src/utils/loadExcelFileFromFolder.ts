@@ -5,6 +5,7 @@ import { Sheet } from "../entities/Sheet";
 import { MetadataSchema } from "../types/metadata";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
+import { logger } from "./logger";
 
 export function loadExcelFileFromFolder(
   datasetFolder: string,
@@ -35,7 +36,7 @@ export function loadExcelFileFromFolder(
       const sheet = new Sheet(workbookSheet, sheetName);
       sheets.push(sheet);
     } catch (err) {
-      console.log(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
+      logger.info(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
     }
   });
 

@@ -7,6 +7,7 @@ import {
 import { indexDatasetPage } from "../dryad/indexDatasetPage";
 import { listDatasets } from "../dryad/listDatasets";
 import pMap from "p-map";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -28,7 +29,7 @@ program
       (_, i) => (lastPageIndexed ?? 0) + 1 + i,
     );
     const firstPageToIndex = lastPageIndexed ? lastPageIndexed + 1 : 1;
-    console.log(`Starting indexing from page ${firstPageToIndex}`);
+    logger.info(`Starting indexing from page ${firstPageToIndex}`);
     await pMap(
       pagesToIndex,
       async (page) => {
@@ -36,7 +37,7 @@ program
         await indexDatasetPage(page, alreadyIndexedDatasetIds);
         const elapsed = Date.now() - startTime;
         if (elapsed < 25000) {
-          console.log(`Page ${page} indexed too fast, waiting to avoid 429...`);
+          logger.info(`Page ${page} indexed too fast, waiting to avoid 429...`);
           await new Promise((resolve) => setTimeout(resolve, 25000 - elapsed));
         }
         await setLastPageIndexed(page);
@@ -44,7 +45,7 @@ program
       { concurrency: 2 },
     );
     const finalLastPageIndexed = await getLastPageIndexed();
-    console.log(
+    logger.info(
       `Finished indexing ${pagesToIndex.length} pages, last indexed page: ${finalLastPageIndexed}`,
     );
   });

@@ -1,6 +1,7 @@
 import { IndividualNumbersResult } from "../../types/strategies";
 import { DuplicateValue } from "../../entities/DuplicateValue";
 import { levelToSymbol } from "../../utils/output";
+import { logger } from "../../utils/logger";
 
 function formatDuplicatesForDisplay(duplicates: DuplicateValue[]): Array<{
   level: string;
@@ -27,10 +28,10 @@ function formatDuplicatesForDisplay(duplicates: DuplicateValue[]): Array<{
 export function printIndividualNumbersResults({
   duplicateValues,
 }: IndividualNumbersResult): void {
-  console.log(`\nSuspicious duplicate numbers:`);
+  logger.info(`\nSuspicious duplicate numbers:`);
 
   if (duplicateValues.length === 0) {
-    console.log("No suspicious duplicate numbers found.");
+    logger.info("No suspicious duplicate numbers found.");
     return;
   }
 
@@ -40,7 +41,7 @@ export function printIndividualNumbersResults({
   console.table(humanReadableDuplicates);
 
   if (duplicateValues.length > 10) {
-    console.log(
+    logger.info(
       `\nShowing top 10 of ${duplicateValues.length} suspicious duplicates.`,
     );
   }

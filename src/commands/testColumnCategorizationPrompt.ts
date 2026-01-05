@@ -1,6 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
 import { screenColumnsWithCache } from "../ai/geminiService";
+import { logger } from "../utils/logger";
 
 interface SheetTestCase {
   sheetName: string;
@@ -306,7 +307,7 @@ program
         );
 
         if (!sheet) {
-          console.error(
+          logger.error(
             `Sheet "${sheetTestCase.sheetName}" not found in Excel file`,
           );
           continue;
@@ -338,7 +339,7 @@ program
             (col) => !excludedColumnSet.has(col),
           );
 
-        console.log(
+        logger.info(
           `${testCase.description} motivation: ${actualCategorization.motivation}`,
         );
 
@@ -346,14 +347,14 @@ program
           incorrectlyExcludedColumns.length === 0 &&
           unexpectedColumns.length === 0;
         if (isSuccess) {
-          console.log(`[${testCase.description}] ${sheet.name}: ✅`);
+          logger.info(`[${testCase.description}] ${sheet.name}: ✅`);
         } else {
-          console.log(`[${sheet.name}]: ❌`);
-          console.log(actualCategorization);
-          console.log(
+          logger.info(`[${sheet.name}]: ❌`);
+          logger.info(actualCategorization);
+          logger.info(
             `Gemini mistakenly excluded ${incorrectlyExcludedColumns.length} columns in sheet "${sheet.name}": ${incorrectlyExcludedColumns.join(", ")}`,
           );
-          console.log(
+          logger.info(
             `Gemini mistakenly included ${unexpectedColumns.length} columns in sheet "${sheet.name}": ${unexpectedColumns.join(", ")}`,
           );
         }

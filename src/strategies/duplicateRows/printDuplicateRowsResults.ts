@@ -1,12 +1,13 @@
 import { DuplicateRowsResult } from "../../types/strategies";
 import { calculateBaseNumberEntropy } from "../../utils/entropy";
 import { levelToSymbol } from "../../utils/output";
+import { logger } from "../../utils/logger";
 
 export function printDuplicateRowsResults({
   duplicateRows,
 }: DuplicateRowsResult): void {
   if (duplicateRows.length === 0) {
-    console.log(`\n✅ No duplicate rows found in unique columns!`);
+    logger.info(`\n✅ No duplicate rows found in unique columns!`);
     return;
   }
 
@@ -49,7 +50,7 @@ export function printDuplicateRowsResults({
     };
   });
 
-  console.log(
+  logger.info(
     `\nDuplicate rows (${duplicateRows.length} total, showing top ${tableData.length}):`,
   );
   console.table(tableData);

@@ -12,6 +12,7 @@ import {
   findByHash as findReviewResultByHash,
   insertResult as insertReviewResult,
 } from "../repositories/aiReviewResults/aiReviewResultsRepository";
+import { logger } from "../utils/logger";
 
 // Internal schema for parsing raw Gemini API response (uses prompt field names)
 const columnCategorizationSchema = z.object({
@@ -95,9 +96,9 @@ async function screenColumnsGemini(
       const parsed = JSON.parse(response.text);
       rawResult = geminiResponseSchema.parse(parsed);
     } catch (error) {
-      console.error("Error parsing Gemini API response:", error);
-      console.error("Response:", response.text);
-      console.error("Prompt:", params.contents);
+      logger.error("Error parsing Gemini API response:", error);
+      logger.error("Response:", response.text);
+      logger.error("Prompt:", params.contents);
       throw new Error(
         `Failed to parse Gemini API response: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
@@ -117,8 +118,8 @@ async function screenColumnsGemini(
       excludedColumnNames,
     };
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    console.error("Prompt:", params.contents);
+    logger.error("Error calling Gemini API:", error);
+    logger.error("Prompt:", params.contents);
     throw new Error(
       `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -158,7 +159,7 @@ export async function screenColumnsWithCache(
   if (canCache) {
     const cached = await findColumnCategorizationByHash(hash);
     if (cached) {
-      console.log(`Found cached AI result for '${params.sheetName}'`);
+      logger.info(`Found cached AI result for '${params.sheetName}'`);
       return {
         motivation: cached.motivation,
         includedColumnNames: cached.includedColumnNames,
@@ -268,7 +269,7 @@ async function reviewResultsGemini(
     const parsed = JSON.parse(response.text);
     return reviewResultsResponseSchema.parse(parsed);
   } catch (error) {
-    console.error("Error calling Gemini API for review:", error);
+    logger.error("Error calling Gemini API for review:", error);
     throw new Error(
       `Failed to review results: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
@@ -308,7 +309,7 @@ export async function reviewResultsWithCache(
   if (canCache) {
     const cached = await findReviewResultByHash(hash);
     if (cached) {
-      console.log(`Found cached review result for sheet '${sheetName}'`);
+      logger.info(`Found cached review result for sheet '${sheetName}'`);
       return {
         explanation: cached.explanation,
         falsePositiveTheory: cached.falsePositiveTheory,

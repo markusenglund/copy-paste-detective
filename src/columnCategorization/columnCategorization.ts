@@ -14,6 +14,7 @@ import { detectNaturalLogarithm, LogarithmMatch } from "../utils/logarithm";
 import { EnhancedCell } from "../entities/EnhancedCell";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { screenColumnsWithCache } from "../ai/geminiService";
+import { logger } from "../utils/logger";
 
 type CalculatedColumnProfile = {
   isRepeatingFraction: boolean;
@@ -49,7 +50,7 @@ export async function categorizeColumns(
     }));
     return categorizedColumns;
   }
-  console.log(
+  logger.info(
     `[${sheet.name}] Getting AI column profiles for ${sheet.getColumns().length} columns`,
   );
 
@@ -83,15 +84,15 @@ async function getAiColumnProfiles(
     dryadExcelFileId: excelFileData.dryadExcelFileId,
   });
 
-  console.log(
+  logger.info(
     `[${sheet.name}] Included columns:`,
     screenColumnsResult.includedColumnNames,
   );
-  console.log(
+  logger.info(
     `[${sheet.name}] Excluded columns:`,
     screenColumnsResult.excludedColumnNames,
   );
-  console.log(`[${sheet.name}] motivation:`, screenColumnsResult.motivation);
+  logger.info(`[${sheet.name}] motivation:`, screenColumnsResult.motivation);
 
   const aiColumnProfile: AiColumnProfile[] = sheet
     .getColumns()

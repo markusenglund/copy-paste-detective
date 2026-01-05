@@ -1,6 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -21,18 +22,18 @@ program
       .filter((extId) => completedExtIds.has(extId));
 
     if (analyzedExtIds.length === 0) {
-      console.log("No analyzed datasets found.");
+      logger.info("No analyzed datasets found.");
       return;
     }
 
-    console.log(`Found ${analyzedExtIds.length} analyzed datasets.`);
-    console.log(
+    logger.info(`Found ${analyzedExtIds.length} analyzed datasets.`);
+    logger.info(
       "Note: With the new database schema, download status and analysis status are tracked separately.",
     );
-    console.log(
+    logger.info(
       "Downloaded datasets are tracked in PostgreSQL, analysis results in analysisResultsDb.",
     );
-    console.log("\nAnalyzed dataset IDs:", analyzedExtIds.join(", "));
+    logger.info("\nAnalyzed dataset IDs:", analyzedExtIds.join(", "));
   });
 
 program.parse();

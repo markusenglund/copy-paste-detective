@@ -17,6 +17,7 @@ import {
   reviewResultsWithCache,
   ReviewResultsResponse,
 } from "../ai/geminiService";
+import { logger } from "../utils/logger";
 
 function getOutputFilePath(excelFileData: ExcelFileData, sheet: Sheet): string {
   const dir = "tmp/review-prompt";
@@ -111,11 +112,11 @@ export async function reviewSheetResults(
     dryadExcelFileId: excelFileData.dryadExcelFileId,
   });
 
-  console.log(`\n📊 Review result for '${sheet.name}':`);
-  console.log(`   Suspicion score: ${result.suspicionScore}/10`);
-  console.log(`   Impact score: ${result.impactScore}/10`);
-  console.log(`   Explanation: ${result.explanation}`);
-  console.log(`   False positive theory: ${result.falsePositiveTheory}`);
+  logger.info(`\n📊 Review result for '${sheet.name}':`);
+  logger.info(`   Suspicion score: ${result.suspicionScore}/10`);
+  logger.info(`   Impact score: ${result.impactScore}/10`);
+  logger.info(`   Explanation: ${result.explanation}`);
+  logger.info(`   False positive theory: ${result.falsePositiveTheory}`);
 
   return {
     ...result,

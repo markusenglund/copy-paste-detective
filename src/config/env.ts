@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { z } from "zod";
+import { logger } from "../utils/logger";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -20,13 +21,13 @@ function validateEnv(): EnvSchema {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
-    console.error("Environment validation failed:");
+    logger.error("Environment validation failed:");
     if (error instanceof z.ZodError) {
       error.errors.forEach((err) => {
-        console.error(`- ${err.path.join(".")}: ${err.message}`);
+        logger.error(`- ${err.path.join(".")}: ${err.message}`);
       });
     }
-    console.error(
+    logger.error(
       "Please create a .env file based on .env.dist and set the required variables.",
     );
     process.exit(1);

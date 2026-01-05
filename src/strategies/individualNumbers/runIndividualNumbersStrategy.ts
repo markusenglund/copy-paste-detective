@@ -7,6 +7,7 @@ import {
 import { ExcelFileData } from "../../types/ExcelFileData";
 import { DuplicateValue } from "../../entities/DuplicateValue";
 import { DuplicateCellPair } from "../../entities/DuplicateCellPair";
+import { logger } from "../../utils/logger";
 
 function areAllCellPairsAlreadyReported(
   duplicateValue: DuplicateValue,
@@ -56,7 +57,7 @@ export function runIndividualNumbersStrategy(
   const allDuplicateValues: DuplicateValue[] = [];
 
   for (const sheet of excelFileData.sheets) {
-    console.log(
+    logger.info(
       `[${sheet.name}] Found ${sheet.numNumericCells} numeric values`,
     );
 

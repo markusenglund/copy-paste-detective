@@ -1,6 +1,7 @@
 import { fetchToken } from "./fetchToken";
 import { FilesResponseSchema, type FilesResponse } from "./schemas";
 import pRetry from "p-retry";
+import { logger } from "../utils/logger";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 type Params = {
@@ -29,7 +30,7 @@ export async function listFiles({
       });
 
       if (!response.ok) {
-        console.warn(
+        logger.warn(
           `Failed to fetch file list at ${url} - ${response.status} ${response.statusText}`,
         );
         if (response.status === 404) {
@@ -48,7 +49,7 @@ export async function listFiles({
     {
       retries: 1,
       onFailedAttempt: (error) => {
-        console.warn(`${error.message}, retrying once...`);
+        logger.warn(`${error.message}, retrying once...`);
       },
     },
   );

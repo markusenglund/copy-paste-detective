@@ -1,20 +1,21 @@
 import { GoogleGenAI } from "@google/genai";
 import { config } from "../config/env";
+import { logger } from "../utils/logger";
 
 const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
 async function listGeminiModels() {
-  console.log("Fetching available Gemini models...\n");
+  logger.info("Fetching available Gemini models...\n");
 
   const pager = await geminiClient.models.list();
 
   for await (const model of pager) {
-    console.log(`Model: ${model.name}`);
-    console.log(`  Display Name: ${model.displayName}`);
-    console.log(`  Supported Methods: ${model.supportedActions?.join(", ") || "N/A"}`);
-    console.log("");
+    logger.info(`Model: ${model.name}`);
+    logger.info(`  Display Name: ${model.displayName}`);
+    logger.info(`  Supported Methods: ${model.supportedActions?.join(", ") || "N/A"}`);
+    logger.info("");
   }
 }
 
-listGeminiModels().catch(console.error);
+listGeminiModels().catch((err) => logger.error(err));
 

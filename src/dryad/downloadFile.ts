@@ -2,6 +2,7 @@ import { createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fetchToken } from "./fetchToken";
+import { logger } from "../utils/logger";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 
@@ -25,7 +26,7 @@ export async function downloadFile({
   // Ensure the directory exists
   await mkdir(dirname(filePath), { recursive: true });
 
-  console.log(`Downloading file: ${filename} from ${url}`);
+  logger.info(`Downloading file: ${filename} from ${url}`);
   // Download the file
   const response = await fetch(url, {
     headers: {

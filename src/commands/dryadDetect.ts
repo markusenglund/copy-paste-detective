@@ -6,6 +6,7 @@ import { parseIntArgument, parseStrategies } from "../utils/command";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { analyzeDataset } from "../detection/analyzeDataset";
 import { ExcelFileData } from "../types/ExcelFileData";
+import { logger } from "../utils/logger";
 
 const program = new Command();
 
@@ -27,13 +28,13 @@ program
   .action(async (datasetExtId, fileIndex, options) => {
     const dataset = await getDatasetWithFiles(datasetExtId);
     if (!dataset) {
-      console.error(
+      logger.error(
         `Dataset with extId ${datasetExtId} not found in the database.`,
       );
       process.exit(1);
     }
     if (dataset.downloadStatus !== "completed") {
-      console.error(
+      logger.error(
         `Dataset with extId ${datasetExtId} is not downloaded. Status: ${dataset.downloadStatus}`,
       );
       process.exit(1);
@@ -53,12 +54,12 @@ program
     ) {
       const dryadExcelFile = dryadExcelFiles[i];
       if (dryadExcelFile.downloadStatus !== "completed") {
-        console.error(
+        logger.error(
           `Excel file at index ${i} is not downloaded. Status: ${dryadExcelFile.downloadStatus}`,
         );
         continue;
       }
-      console.log(
+      logger.info(
         `Analyzing ${dryadExcelFile.filename} from dataset ${dataset.extId} from ${dataset.dryadPublicationDate} (${dryadExcelFile.size} bytes) - "${dataset.title}"`,
       );
       const excelFileData = loadExcelFileFromDryadIndex(dataset, i);

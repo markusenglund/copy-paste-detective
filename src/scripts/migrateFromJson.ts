@@ -8,6 +8,7 @@ import {
   dryadIndexingState,
 } from "../repositories";
 import { DryadDataset } from "../dryad/DryadDataset";
+import { logger } from "../utils/logger";
 
 type JsonData = {
   lastPageIndexed: number | null;
@@ -51,16 +52,16 @@ async function migrateFromJson() {
     "datasets.json",
   );
 
-  console.log(`Reading JSON data from ${jsonPath}...`);
+  logger.info(`Reading JSON data from ${jsonPath}...`);
   const jsonContent = fs.readFileSync(jsonPath, "utf-8");
   const data: JsonData = JSON.parse(jsonContent);
 
-  console.log(`Found ${data.datasets.length} datasets to migrate.`);
-  console.log(`lastPageIndexed: ${data.lastPageIndexed}`);
+  logger.info(`Found ${data.datasets.length} datasets to migrate.`);
+  logger.info(`lastPageIndexed: ${data.lastPageIndexed}`);
 
   // Migrate lastPageIndexed
   if (data.lastPageIndexed !== null) {
-    console.log("Migrating indexing state...");
+    logger.info("Migrating indexing state...");
     await db.insert(dryadIndexingState).values({
       lastPageIndexed: data.lastPageIndexed,
     });
@@ -121,21 +122,21 @@ async function migrateFromJson() {
     }
 
     processedCount += batch.length;
-    console.log(
+    logger.info(
       `Migrated ${processedCount}/${data.datasets.length} datasets...`,
     );
   }
 
-  console.log("Migration completed successfully!");
+  logger.info("Migration completed successfully!");
 }
 
 migrateFromJson()
   .then(() => {
-    console.log("Done!");
+    logger.info("Done!");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("Migration failed:", error);
+    logger.error("Migration failed:", error);
     process.exit(1);
   });
 
