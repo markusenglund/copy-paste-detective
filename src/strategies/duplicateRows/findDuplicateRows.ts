@@ -4,6 +4,7 @@ import { Sheet } from "../../entities/Sheet";
 import { type EnhancedCell } from "../../entities/EnhancedCell";
 import { calculateNumberEntropy } from "../../utils/entropy";
 import { CategorizedColumn } from "../../columnCategorization/columnCategorization";
+import { logger } from "../../utils/logger";
 
 function compareRows(
   row1: EnhancedCell[],
@@ -52,8 +53,9 @@ export function findDuplicateRows(
   // Rows must have at least this many shared column values to be considered duplicates.
   const minSharedColumns = 2;
   // Bail out if we found >1000 duplicates to avoid performance issues
-
   const maxDuplicateRows = 1000;
+  // Rows require at least one value with fewer than this many occurrences to be considered duplicates.
+  const maxOccurrencesOfValue = 200;
   const duplicateRows: DuplicateRow[] = [];
 
   // Get numeric columns that should be unique
@@ -65,6 +67,8 @@ export function findDuplicateRows(
   if (uniqueColumnIndices.length === 0) {
     return { duplicateRows: [] };
   }
+
+  logger.trace(`Building value-to-rows indices for each numeric unique column`);
 
   // Build value-to-rows indices for each numeric unique column
   const rowsByHighEntropyValueByColumn = new Map<
@@ -99,12 +103,22 @@ export function findDuplicateRows(
     }
   }
 
+  logger.trace(
+    `Comparing rows with shared values and adding them to duplicateRows`,
+  );
+
   // Compare rows with shared values and add them to duplicateRows
   const alreadyComparedRowPairs = new Set<string>();
   for (const [_colIndex, valueMap] of rowsByHighEntropyValueByColumn) {
+    logger.trace(
+      `Comparing rows with shared values for column: ${_colIndex} (of ${rowsByHighEntropyValueByColumn.size}) which has ${valueMap.size} unique high-entropyvalues`,
+    );
     for (const [_value, rowSet] of valueMap) {
-      if (rowSet.size > 1) {
+      if (rowSet.size > 1 && rowSet.size <= maxOccurrencesOfValue) {
         const rowArray = Array.from(rowSet);
+        logger.trace(
+          `Comparing ${rowArray.length} rows with shared value ${_value}`,
+        );
         for (let i = 0; i < rowArray.length; i++) {
           for (let j = i + 1; j < rowArray.length; j++) {
             if (duplicateRows.length > maxDuplicateRows) {
@@ -141,6 +155,8 @@ export function findDuplicateRows(
       }
     }
   }
+
+  logger.trace(`Sorting duplicate rows by entropy score and shared count`);
 
   // Sort by entropy score (highest first) then by shared count
   duplicateRows.sort((a, b) => {
