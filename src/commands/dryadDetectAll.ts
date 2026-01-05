@@ -1,4 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
+import pMap from "p-map";
+import Mutex from "p-mutex";
 import {
   getDownloadedNotAnalyzedDatasetsWithFiles,
   updateDatasetAnalysisStatus,
@@ -53,104 +55,113 @@ program
       );
     }
 
-    for (let i = 0; i < numDatasetsToAnalyze; i++) {
-      const dataset = downloadedDatasets[i];
-      console.log(
-        `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
-      );
-      analysisResultsDb.data.results[dataset.extId] = {};
+    const dbMutex = new Mutex();
 
-      // Load all downloaded Excel files for this dataset
-      const excelFilesData: ExcelFileData[] = [];
-
-      for (
-        let j = 0;
-        j < Math.min(dataset.excelFiles.length, maxExcelFilesPerDataset);
-        j++
-      ) {
-        const excelFile = dataset.excelFiles[j];
-        if (excelFile.downloadStatus !== "completed") {
-          console.log(
-            `[${i}] Skipping file ${j} (${excelFile.filename}) - not downloaded`,
-          );
-          continue;
-        }
+    await pMap(
+      downloadedDatasets.slice(0, numDatasetsToAnalyze),
+      async (dataset, i) => {
         console.log(
-          `[${i}] Loading file ${j}: ${excelFile.filename} (${excelFile.size} bytes)`,
+          `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
         );
-        const excelFileData = loadExcelFileFromDryadIndex(dataset, j);
-        excelFilesData.push(excelFileData);
-      }
 
-      try {
-        // Analyze all files in the dataset together
-        const allStrategies = Object.values(StrategyName);
-        const { analyses, wasFlaggedForReview, aiReviewCompleted } =
-          await analyzeDataset(excelFilesData, allStrategies);
+        // Load all downloaded Excel files for this dataset
+        const excelFilesData: ExcelFileData[] = [];
 
-        // Save results from each analysis to JSON (backward compatibility)
-        for (const analysis of analyses) {
-          const duplicateRows =
-            analysis.results[StrategyName.DuplicateRows]?.duplicateRows || [];
-          const duplicateRowEntropyScores = duplicateRows
-            .map((row) => row.matrixSizeAdjustedEntropyScore)
-            .slice(0, 20);
-          const repeatedColumnSequences =
-            analysis.results[StrategyName.RepeatedColumnSequences]?.sequences ||
-            [];
-          const columnSequencesEntropyScores = repeatedColumnSequences
-            .map((seq) => seq.matrixSizeAdjustedEntropyScore)
-            .slice(0, 20);
-
-          const analysisResults: AnalysisResults = {
-            filename: analysis.excelFileName,
-            duplicateRowEntropyScores,
-            columnSequencesEntropyScores,
-            analysisVersion: "2025.07.04",
-          };
-          analysisResultsDb.data.results[dataset.extId][
-            analysis.excelFileName
-          ] = analysisResults;
+        for (
+          let j = 0;
+          j < Math.min(dataset.excelFiles.length, maxExcelFilesPerDataset);
+          j++
+        ) {
+          const excelFile = dataset.excelFiles[j];
+          if (excelFile.downloadStatus !== "completed") {
+            console.log(
+              `[${i}] Skipping file ${j} (${excelFile.filename}) - not downloaded`,
+            );
+            continue;
+          }
           console.log(
-            `Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId} (${i}).`,
+            `[${i}] Loading file ${j}: ${excelFile.filename} (${excelFile.size} bytes)`,
           );
+          const excelFileData = loadExcelFileFromDryadIndex(dataset, j);
+          excelFilesData.push(excelFileData);
         }
 
-        await analysisResultsDb.write();
+        try {
+          // Analyze all files in the dataset together
+          const allStrategies = Object.values(StrategyName);
+          const { analyses, wasFlaggedForReview, aiReviewCompleted } =
+            await analyzeDataset(excelFilesData, allStrategies);
 
-        // Update analysis status based on the result
-        if (!wasFlaggedForReview) {
-          await updateDatasetAnalysisStatus(
-            dataset.extId,
-            "not_flagged_for_review",
+          // Save results from each analysis to JSON (backward compatibility)
+          // Protect JSON file writes with mutex
+          await dbMutex.withLock(async () => {
+            analysisResultsDb.data.results[dataset.extId] = {};
+            for (const analysis of analyses) {
+              const duplicateRows =
+                analysis.results[StrategyName.DuplicateRows]?.duplicateRows ||
+                [];
+              const duplicateRowEntropyScores = duplicateRows
+                .map((row) => row.matrixSizeAdjustedEntropyScore)
+                .slice(0, 20);
+              const repeatedColumnSequences =
+                analysis.results[StrategyName.RepeatedColumnSequences]
+                  ?.sequences || [];
+              const columnSequencesEntropyScores = repeatedColumnSequences
+                .map((seq) => seq.matrixSizeAdjustedEntropyScore)
+                .slice(0, 20);
+
+              const analysisResults: AnalysisResults = {
+                filename: analysis.excelFileName,
+                duplicateRowEntropyScores,
+                columnSequencesEntropyScores,
+                analysisVersion: "2025.07.04",
+              };
+              analysisResultsDb.data.results[dataset.extId][
+                analysis.excelFileName
+              ] = analysisResults;
+              console.log(
+                `[${i}] Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId}.`,
+              );
+            }
+
+            await analysisResultsDb.write();
+          });
+
+          // Update analysis status based on the result (SQL updates are safe without mutex)
+          if (!wasFlaggedForReview) {
+            await updateDatasetAnalysisStatus(
+              dataset.extId,
+              "not_flagged_for_review",
+            );
+            console.log(
+              `[${i}] Dataset ${dataset.extId} analyzed - no suspicious findings requiring AI review.`,
+            );
+          } else if (aiReviewCompleted) {
+            await updateDatasetAnalysisStatus(dataset.extId, "reviewed_by_ai");
+            console.log(
+              `[${i}] Dataset ${dataset.extId} analyzed and AI review completed.`,
+            );
+          } else {
+            // Was flagged but AI review didn't complete (shouldn't happen normally)
+            await updateDatasetAnalysisStatus(
+              dataset.extId,
+              "flagged_for_review",
+            );
+            console.log(
+              `[${i}] Dataset ${dataset.extId} flagged for AI review but review incomplete.`,
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[${i}] Error analyzing dataset ${dataset.extId}:`,
+            error,
           );
-          console.log(
-            `Dataset ${dataset.extId} (${i}) analyzed - no suspicious findings requiring AI review.`,
-          );
-        } else if (aiReviewCompleted) {
-          await updateDatasetAnalysisStatus(dataset.extId, "reviewed_by_ai");
-          console.log(
-            `Dataset ${dataset.extId} (${i}) analyzed and AI review completed.`,
-          );
-        } else {
-          // Was flagged but AI review didn't complete (shouldn't happen normally)
-          await updateDatasetAnalysisStatus(
-            dataset.extId,
-            "flagged_for_review",
-          );
-          console.log(
-            `Dataset ${dataset.extId} (${i}) flagged for AI review but review incomplete.`,
-          );
+          await updateDatasetAnalysisStatus(dataset.extId, "failed");
+          console.log(`[${i}] Dataset ${dataset.extId} marked as failed.`);
         }
-      } catch (error) {
-        console.error(
-          `Error analyzing dataset ${dataset.extId} (${i}):`,
-          error,
-        );
-        await updateDatasetAnalysisStatus(dataset.extId, "failed");
-        console.log(`Dataset ${dataset.extId} (${i}) marked as failed.`);
-      }
-    }
+      },
+      { concurrency: 5 },
+    );
 
     process.exit(0);
   });
