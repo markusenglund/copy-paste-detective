@@ -23,11 +23,13 @@ type ParsedJournal = {
   publisher: string | null;
 };
 
-async function importJournalsFromCsv() {
+async function importJournalsFromCsv(): Promise<void> {
   // Check if journals already exist
   const existingCount = await getJournalCount();
   if (existingCount > 0) {
-    logger.info(`Database already contains ${existingCount} journals. Skipping import.`);
+    logger.info(
+      `Database already contains ${existingCount} journals. Skipping import.`,
+    );
     logger.info("To re-import, clear the journals table first.");
     process.exit(0);
   }
@@ -37,7 +39,9 @@ async function importJournalsFromCsv() {
   const journals = await new Promise<ParsedJournal[]>((resolve, reject) => {
     const results: ParsedJournal[] = [];
 
-    const fixedCsv = fixMalformedQuotes(fs.readFileSync(scimagoCsvPath, "utf8"));
+    const fixedCsv = fixMalformedQuotes(
+      fs.readFileSync(scimagoCsvPath, "utf8"),
+    );
 
     const stream = csv.parseString(fixedCsv, {
       headers: (headers) => {
@@ -88,7 +92,9 @@ async function importJournalsFromCsv() {
     logger.info(`Inserted ${insertedCount}/${journals.length} journals...`);
   }
 
-  logger.info(`Successfully imported ${insertedCount} journals into the database.`);
+  logger.info(
+    `Successfully imported ${insertedCount} journals into the database.`,
+  );
 }
 
 function fixMalformedQuotes(input: string): string {
@@ -158,4 +164,3 @@ importJournalsFromCsv()
     logger.error(`Import failed: ${error}`);
     process.exit(1);
   });
-

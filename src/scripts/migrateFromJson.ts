@@ -44,13 +44,8 @@ function mapFileStatus(
   return oldStatus === "downloaded" ? "completed" : "not_started";
 }
 
-async function migrateFromJson() {
-  const jsonPath = path.join(
-    process.cwd(),
-    "data",
-    "dryad",
-    "datasets.json",
-  );
+async function migrateFromJson(): Promise<void> {
+  const jsonPath = path.join(process.cwd(), "data", "dryad", "datasets.json");
 
   logger.info(`Reading JSON data from ${jsonPath}...`);
   const jsonContent = fs.readFileSync(jsonPath, "utf-8");
@@ -139,4 +134,3 @@ migrateFromJson()
     logger.error(`Migration failed: ${error}`);
     process.exit(1);
   });
-

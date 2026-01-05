@@ -4,7 +4,7 @@ import { logger } from "../utils/logger";
 
 const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
-async function listGeminiModels() {
+async function listGeminiModels(): Promise<void> {
   logger.info("Fetching available Gemini models...\n");
 
   const pager = await geminiClient.models.list();
@@ -12,10 +12,11 @@ async function listGeminiModels() {
   for await (const model of pager) {
     logger.info(`Model: ${model.name}`);
     logger.info(`  Display Name: ${model.displayName}`);
-    logger.info(`  Supported Methods: ${model.supportedActions?.join(", ") || "N/A"}`);
+    logger.info(
+      `  Supported Methods: ${model.supportedActions?.join(", ") || "N/A"}`,
+    );
     logger.info("");
   }
 }
 
 listGeminiModels().catch((err) => logger.error(err));
-
