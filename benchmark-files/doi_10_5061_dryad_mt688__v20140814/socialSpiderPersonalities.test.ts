@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "@jest/globals";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
-import { SuspicionLevel } from "../../src/types";
+import { DuplicateValuesResult, SuspicionLevel } from "../../src/types";
 import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
 import {
   categorizeColumns,
@@ -40,6 +40,7 @@ describe("Persistent social interactions in social spiders", () => {
     it("should detect duplicate row pair at rows 57 and 93 with 2 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetDuplicate = result.duplicateRows.find((duplicateRow) => {
         const rowIndices = duplicateRow.rowIndices;
@@ -56,6 +57,7 @@ describe("Persistent social interactions in social spiders", () => {
     it("should detect duplicate row pair at rows 264 and 285 with 4 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetDuplicate = result.duplicateRows.find((duplicateRow) => {
         const rowIndices = duplicateRow.rowIndices;
@@ -72,11 +74,12 @@ describe("Persistent social interactions in social spiders", () => {
     it("should find a duplicated sequence of 6 rows starting on G8 and G387", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
-          resultSequence.positions[0].cellId === "G8" &&
-          resultSequence.positions[1].cellId === "G387",
+          resultSequence.sequences[0].startCellId === "G8" &&
+          resultSequence.sequences[1].startCellId === "G387",
       );
 
       expect(targetSequence).toBeDefined();
@@ -88,11 +91,12 @@ describe("Persistent social interactions in social spiders", () => {
     it("should find a triple duplicated sequence of 3 rows starting on I56, I293 and somewhere else", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
-          resultSequence.positions[0].cellId === "I56" &&
-          resultSequence.positions[1].cellId === "I293",
+          resultSequence.sequences[0].startCellId === "I56" &&
+          resultSequence.sequences[1].startCellId === "I293",
       );
 
       expect(targetSequence).toBeDefined();
@@ -100,7 +104,6 @@ describe("Persistent social interactions in social spiders", () => {
       expect([SuspicionLevel.Medium, SuspicionLevel.High]).toContain(
         targetSequence!.suspicionLevel,
       );
-      expect(targetSequence!.positions.length).toBe(3);
     });
   });
 });

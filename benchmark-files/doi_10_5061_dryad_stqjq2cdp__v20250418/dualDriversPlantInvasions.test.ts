@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "@jest/globals";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
 import { runIndividualNumbersStrategy } from "../../src/strategies/individualNumbers/runIndividualNumbersStrategy";
 import { StrategyName } from "../../src/types/strategies";
-import { SuspicionLevel } from "../../src/types";
+import { DuplicateValuesResult, SuspicionLevel } from "../../src/types";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import {
@@ -84,6 +84,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate row pair at rows 354 and 358 with 3 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Verify basic result structure
@@ -106,6 +107,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate row pair at rows 96 and 330 with 3 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Find the specific duplicate row pair (rows 96, 330 in 1-based indexing)
@@ -126,6 +128,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate value 106.9391 in S354, S358 & S242", async () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Verify basic result structure
@@ -150,6 +153,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate value 154.5642 in S15 & S353", async () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Find the duplicate value 154.5642
@@ -169,6 +173,7 @@ describe("Dual Drivers of Plant Invasions - Common garden", () => {
     it("should detect duplicate value 118.8588 in S85 & S193", async () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Find the duplicate value 118.8588
@@ -261,6 +266,7 @@ describe("Dual Drivers of Plant Invasions - Survey results", () => {
     it("Should detect duplicate row pairs at rows 173 and 220 with 8 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Verify basic result structure

@@ -10,6 +10,7 @@ import {
 } from "../../src/columnCategorization/columnCategorization";
 import { pick } from "lodash-es";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
+import { DuplicateValuesResult } from "../../src/types";
 
 describe("Plant responses to light competition", () => {
   describe("Column categorization", () => {
@@ -172,6 +173,7 @@ describe("Plant responses to light competition", () => {
     it("should not detect any duplicate rows", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       expect(result.duplicateRows[0]?.sharedValues).toBeUndefined(); // Gives a helpful output
       expect(result.duplicateRows).toHaveLength(0);

@@ -366,6 +366,7 @@ export async function getDatasetCountByStatus(): Promise<
     in_progress: 0,
     failed: 0,
     completed: 0,
+    skipped: 0,
   };
 
   for (const row of result) {

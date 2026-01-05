@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from "@jest/globals";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { runDuplicateRowsStrategy } from "../../src/strategies/duplicateRows/runDuplicateRowsStrategy";
-import { SuspicionLevel } from "../../src/types";
+import { DuplicateValuesResult, SuspicionLevel } from "../../src/types";
 import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeatedColumnSequences/runRepeatedColumnSequencesStrategy";
 import {
   categorizeColumns,
@@ -66,6 +66,7 @@ describe("Drought decreases carbon flux in bamboo", () => {
     it("should detect duplicate row pair at rows 61 and 64 with 7 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetDuplicate = result.duplicateRows.find((duplicateRow) => {
         const rowIndices = duplicateRow.rowIndices;
@@ -80,6 +81,7 @@ describe("Drought decreases carbon flux in bamboo", () => {
     it("should detect duplicate row pair at rows 138 and 147 with 2 matching columns", async () => {
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetDuplicate = result.duplicateRows.find((duplicateRow) => {
         const rowIndices = duplicateRow.rowIndices;
@@ -96,11 +98,12 @@ describe("Drought decreases carbon flux in bamboo", () => {
     it("should find a duplicated sequence of 6 rows starting on I119 and I128", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
-          resultSequence.positions[0].cellId === "I119" &&
-          resultSequence.positions[1].cellId === "I128",
+          resultSequence.sequences[0].startCellId === "I119" &&
+          resultSequence.sequences[1].startCellId === "I128",
       );
 
       expect(targetSequence).toBeDefined();
@@ -110,11 +113,12 @@ describe("Drought decreases carbon flux in bamboo", () => {
     it("should find a duplicated sequence of 6 rows starting on I137 and I146", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
-          resultSequence.positions[0].cellId === "I137" &&
-          resultSequence.positions[1].cellId === "I146",
+          resultSequence.sequences[0].startCellId === "I137" &&
+          resultSequence.sequences[1].startCellId === "I146",
       );
 
       expect(targetSequence).toBeDefined();
@@ -124,11 +128,12 @@ describe("Drought decreases carbon flux in bamboo", () => {
     it("should find a duplicated sequence of 6 rows starting on J119 and J128", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
-          resultSequence.positions[0].cellId === "J119" &&
-          resultSequence.positions[1].cellId === "J128",
+          resultSequence.sequences[0].startCellId === "J119" &&
+          resultSequence.sequences[1].startCellId === "J128",
       );
 
       expect(targetSequence).toBeDefined();
@@ -138,11 +143,12 @@ describe("Drought decreases carbon flux in bamboo", () => {
     it("should find a duplicated sequence of 6 rows starting on J137 and J146", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       const targetSequence = result.sequences.find(
         (resultSequence) =>
-          resultSequence.positions[0].cellId === "J137" &&
-          resultSequence.positions[1].cellId === "J146",
+          resultSequence.sequences[0].startCellId === "J137" &&
+          resultSequence.sequences[1].startCellId === "J146",
       );
 
       expect(targetSequence).toBeDefined();

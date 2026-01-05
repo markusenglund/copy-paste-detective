@@ -4,7 +4,7 @@ import { runRepeatedColumnSequencesStrategy } from "../../src/strategies/repeate
 import { runIndividualNumbersStrategy } from "../../src/strategies/individualNumbers/runIndividualNumbersStrategy";
 import { Sheet } from "../../src/entities/Sheet";
 import { StrategyName } from "../../src/types/strategies";
-import { SuspicionLevel } from "../../src/types";
+import { DuplicateValuesResult, SuspicionLevel } from "../../src/types";
 import { loadExcelFileFromFolder } from "../../src/utils/loadExcelFileFromFolder";
 import { ExcelFileData } from "../../src/types/ExcelFileData";
 import {
@@ -64,6 +64,7 @@ describe("Hawk Owl Feeding Study", () => {
 
       const result = await runDuplicateRowsStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Verify basic result structure
@@ -96,6 +97,7 @@ describe("Hawk Owl Feeding Study", () => {
     it("should find zero repeated sequences", async () => {
       const result = await runRepeatedColumnSequencesStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Verify basic result structure
@@ -112,6 +114,7 @@ describe("Hawk Owl Feeding Study", () => {
     it("should NOT report Q103 and Q155 as duplicates", () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
       // Verify basic result structure
       expect(result.name).toBe(StrategyName.IndividualNumbers);
@@ -130,6 +133,7 @@ describe("Hawk Owl Feeding Study", () => {
     it("should report F54 and F55 as a High suspicion duplicate pair", () => {
       const result = runIndividualNumbersStrategy(excelFileData, {
         categorizedColumnsBySheet,
+        duplicateValuesResultsBySheet: new Map<string, DuplicateValuesResult>(),
       });
 
       // Find the duplicate value that contains both F54 and F55
