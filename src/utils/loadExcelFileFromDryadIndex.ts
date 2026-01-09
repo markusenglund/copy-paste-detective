@@ -1,11 +1,12 @@
-import { readFileSync } from "fs";
 import path from "path";
+
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
 import { logger } from "./logger";
+import { readTextFile } from "./readTextFile";
 
 export function loadExcelFileFromDryadIndex(
   dataset: DryadDatasetWithFiles,
@@ -38,7 +39,7 @@ export function loadExcelFileFromDryadIndex(
   let dataDescription: string | undefined;
   if (dataset.readmeFile) {
     const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
-    dataDescription = readFileSync(readmePath, "utf-8");
+    dataDescription = readTextFile(readmePath);
   } else if (dataset.usageNotes) {
     dataDescription = dataset.usageNotes;
   } else {
