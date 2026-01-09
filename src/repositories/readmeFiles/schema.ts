@@ -20,4 +20,3 @@ export const dryadReadmeFiles = pgTable(
     datasetIdIdx: index("readme_files_dataset_id_idx").on(table.dryadDatasetId),
   }),
 );
-

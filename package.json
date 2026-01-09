@@ -14,6 +14,7 @@
     "dryad-detect-all": "tsx -r dotenv/config src/commands/dryadDetectAll",
     "dryad-report": "tsx -r dotenv/config src/commands/dryadReport",
     "dryad-mark-as-evaluated": "tsx -r dotenv/config src/commands/dryadMarkAsEvaluated",
+    "dryad-find-sheets-within-sheet": "tsx -r dotenv/config src/commands/dryadFindSheetsWithinSheet",
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

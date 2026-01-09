@@ -20,4 +20,3 @@ export const dryadExcelFiles = pgTable(
     datasetIdIdx: index("excel_files_dataset_id_idx").on(table.dryadDatasetId),
   }),
 );
-

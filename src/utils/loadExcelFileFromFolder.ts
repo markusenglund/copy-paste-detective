@@ -4,7 +4,11 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { MetadataSchema } from "../types/metadata";
 import { ExcelFileData } from "../types/ExcelFileData";
-import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
+import {
+  maxNumRowsToAnalyze,
+  maxSheetsPerExcelFile,
+  minNumDataRows,
+} from "../config/config";
 import { logger } from "./logger";
 
 export function loadExcelFileFromFolder(
@@ -33,7 +37,13 @@ export function loadExcelFileFromFolder(
   workbook.SheetNames.slice(0, maxSheetsPerExcelFile).forEach((sheetName) => {
     const workbookSheet = workbook.Sheets[sheetName];
     try {
-      const sheet = new Sheet(workbookSheet, sheetName);
+      const sheet = new Sheet(workbookSheet, sheetName, selectedFile.name);
+      if (sheet.numRows < minNumDataRows) {
+        logger.info(
+          `Skipping sheet '${sheetName}' because it has less than ${minNumDataRows} data rows`,
+        );
+        return;
+      }
       sheets.push(sheet);
     } catch (err) {
       logger.info(`Skipping sheet '${sheetName}' due to error: ${err.message}`);

@@ -10,7 +10,7 @@ function createMockSheet(
   data: (string | number | null)[][],
 ): Sheet {
   const worksheet = xlsx.utils.aoa_to_sheet(data);
-  const sheet = new Sheet(worksheet, sheetName);
+  const sheet = new Sheet(worksheet, sheetName, "test.xlsx");
   return sheet;
 }
 

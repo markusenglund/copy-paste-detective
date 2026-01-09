@@ -54,8 +54,8 @@ program
     ) {
       const dryadExcelFile = dryadExcelFiles[i];
       if (dryadExcelFile.downloadStatus !== "completed") {
-        logger.error(
-          `Excel file at index ${i} is not downloaded. Status: ${dryadExcelFile.downloadStatus}`,
+        logger.info(
+          `Excel file '${dryadExcelFile.filename}' is not downloaded. Status: ${dryadExcelFile.downloadStatus}`,
         );
         continue;
       }

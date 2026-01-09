@@ -12,8 +12,10 @@ program
   )
   .action(async () => {
     // Get all completed (downloaded) datasets
-    const completedDatasets =
-      await getDatasetsByDownloadStatusWithFiles("completed", 10000);
+    const completedDatasets = await getDatasetsByDownloadStatusWithFiles(
+      "completed",
+      10000,
+    );
     const completedExtIds = new Set(completedDatasets.map((d) => d.extId));
 
     // Get all analyzed dataset IDs from analysisResultsDb
