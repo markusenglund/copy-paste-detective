@@ -22,6 +22,7 @@ export class Sheet {
   public readonly range: xlsx.Range;
   private readonly workbookSheet: xlsx.WorkSheet;
   public hasSheetsWithinSheet: boolean;
+  public readonly firstSheetEndRowIndexExclusive?: number;
   public readonly excelFileName: string;
   constructor(
     workbookSheet: xlsx.WorkSheet,
@@ -55,6 +56,7 @@ export class Sheet {
       );
     }
     this.hasSheetsWithinSheet = hasSheetsWithinSheet;
+    this.firstSheetEndRowIndexExclusive = firstSheetEndRowIndexExclusive;
     this.invertedEnhancedMatrix = Sheet.invertEnhancedMatrix(
       this.enhancedMatrix,
     );
