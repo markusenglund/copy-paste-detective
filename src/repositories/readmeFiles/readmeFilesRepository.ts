@@ -34,4 +34,3 @@ export async function updateReadmeFileDownloadStatus(
     .set({ downloadStatus: status })
     .where(eq(dryadReadmeFiles.id, fileId));
 }
-

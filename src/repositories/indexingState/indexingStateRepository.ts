@@ -20,4 +20,3 @@ export async function setLastPageIndexed(page: number): Promise<void> {
       .where(eq(dryadIndexingState.id, existing[0].id));
   }
 }
-

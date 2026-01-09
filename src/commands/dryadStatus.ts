@@ -45,8 +45,7 @@ program
     );
 
     const datasetsWithReadmeOrUsageNotes = datasets.filter(
-      (dataset) =>
-        dataset.readmeFile !== null || dataset.usageNotes !== null,
+      (dataset) => dataset.readmeFile !== null || dataset.usageNotes !== null,
     );
     logger.info(
       `Found ${datasetsWithReadmeOrUsageNotes.length} datasets with a README file or usage notes.`,

@@ -80,4 +80,3 @@ export async function getTotalExcelFileSize(): Promise<number> {
     .from(dryadExcelFiles);
   return Number(result[0]?.sum ?? 0);
 }
-

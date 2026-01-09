@@ -28,10 +28,7 @@ export async function insertResult(data: {
   impactScore: number;
   hash: string;
 }): Promise<AiReviewResultRow> {
-  const [inserted] = await db
-    .insert(aiReviewResults)
-    .values(data)
-    .returning();
+  const [inserted] = await db.insert(aiReviewResults).values(data).returning();
   return inserted;
 }
 
@@ -69,4 +66,3 @@ export async function getLatestReviewsPerSheet(): Promise<
 
   return reviewsByDatasetId;
 }
-

@@ -21,4 +21,3 @@ export const aiReviewResults = pgTable("ai_review_results", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
-

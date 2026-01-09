@@ -4,4 +4,3 @@ export const dryadIndexingState = pgTable("dryad_indexing_state", {
   id: serial("id").primaryKey(),
   lastPageIndexed: integer("last_page_indexed"),
 });
-

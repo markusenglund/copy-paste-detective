@@ -1,4 +1,11 @@
-import { pgTable, serial, text, integer, real, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  real,
+  index,
+} from "drizzle-orm/pg-core";
 
 export const journals = pgTable(
   "journals",
@@ -14,4 +21,3 @@ export const journals = pgTable(
   },
   (table) => [index("journals_issns_idx").using("gin", table.issns)],
 );
-

@@ -37,7 +37,7 @@ export function loadExcelFileFromFolder(
   workbook.SheetNames.slice(0, maxSheetsPerExcelFile).forEach((sheetName) => {
     const workbookSheet = workbook.Sheets[sheetName];
     try {
-      const sheet = new Sheet(workbookSheet, sheetName);
+      const sheet = new Sheet(workbookSheet, sheetName, selectedFile.name);
       if (sheet.numRows < minNumDataRows) {
         logger.info(
           `Skipping sheet '${sheetName}' because it has less than ${minNumDataRows} data rows`,

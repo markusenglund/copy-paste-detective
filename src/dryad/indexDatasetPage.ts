@@ -86,7 +86,9 @@ export async function indexDatasetPage(
     await insertExcelFiles(
       extDryadExcelFiles.map((file) => ({
         dryadDatasetId: insertedDataset.id,
-        extFileId: Number(file._links["stash:download"]!.href.split("/").at(-2)),
+        extFileId: Number(
+          file._links["stash:download"]!.href.split("/").at(-2),
+        ),
         filename: file.path,
         size: file.size,
         downloadStatus: "not_started" as const,

@@ -19,7 +19,7 @@ describe("Header parsing", () => {
     const workbook = xlsx.readFile(excelFilePath);
     const sheetName = "Sheet1";
     const workbookSheet = workbook.Sheets[sheetName];
-    sheet = new Sheet(workbookSheet, sheetName);
+    sheet = new Sheet(workbookSheet, sheetName, excelFilePath);
   });
 
   it("Identifies the correct header rows and first data row", () => {
