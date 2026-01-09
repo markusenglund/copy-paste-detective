@@ -4,7 +4,11 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
-import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
+import {
+  maxNumRowsToAnalyze,
+  maxSheetsPerExcelFile,
+  minNumDataRows,
+} from "../config/config";
 import { logger } from "./logger";
 import { readTextFile } from "./readTextFile";
 
@@ -31,7 +35,12 @@ export function loadExcelFileFromDryadIndex(
     const workbookSheet = workbook.Sheets[sheetName];
     try {
       const sheet = new Sheet(workbookSheet, sheetName);
-
+      if (sheet.numRows < minNumDataRows) {
+        logger.info(
+          `Skipping sheet '${sheetName}' because it has less than ${minNumDataRows} data rows`,
+        );
+        return;
+      }
       sheets.push(sheet);
     } catch (err) {
       logger.info(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
