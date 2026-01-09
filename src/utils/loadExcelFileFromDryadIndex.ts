@@ -31,6 +31,7 @@ export function loadExcelFileFromDryadIndex(
     const workbookSheet = workbook.Sheets[sheetName];
     try {
       const sheet = new Sheet(workbookSheet, sheetName);
+
       sheets.push(sheet);
     } catch (err) {
       logger.info(`Skipping sheet '${sheetName}' due to error: ${err.message}`);

@@ -1,6 +1,8 @@
 import xlsx from "xlsx";
 import { EnhancedCell } from "./EnhancedCell";
 import { Column } from "./Column";
+import { maxNumColumnsToAnalyze } from "../config/config";
+import { logger } from "../utils/logger";
 
 type MergedRange = {
   startRow: number;
@@ -19,6 +21,7 @@ export class Sheet {
   public readonly mergedRanges: MergedRange[];
   public readonly range: xlsx.Range;
   private readonly workbookSheet: xlsx.WorkSheet;
+  public hasSheetsWithinSheet: boolean;
 
   constructor(workbookSheet: xlsx.WorkSheet, sheetName: string) {
     // Store original worksheet for format access
@@ -35,6 +38,18 @@ export class Sheet {
     if (this.enhancedMatrix.length === 0) {
       throw new Error(`Sheet is empty!`);
     }
+    const { hasSheetsWithinSheet, firstSheetEndRowIndexExclusive } =
+      this.detectSheetsWithinSheet();
+    if (hasSheetsWithinSheet) {
+      logger.info(
+        `Sheet '${sheetName}' has sheets within sheet. Only the first sheet ending on row number '${firstSheetEndRowIndexExclusive + 1}' (exclusive) will be analyzed.`,
+      );
+      this.enhancedMatrix = this.enhancedMatrix.slice(
+        0,
+        firstSheetEndRowIndexExclusive,
+      );
+    }
+    this.hasSheetsWithinSheet = hasSheetsWithinSheet;
     this.invertedEnhancedMatrix = Sheet.invertEnhancedMatrix(
       this.enhancedMatrix,
     );
@@ -232,8 +247,7 @@ export class Sheet {
     const enhancedMatrix: EnhancedCell[][] = [];
 
     // Initialize matrix with proper dimensions
-    const maxColumns = 60;
-    const topColumnIndex = Math.min(this.range.e.c, maxColumns);
+    const topColumnIndex = Math.min(this.range.e.c, maxNumColumnsToAnalyze);
     for (let row = 0; row <= this.range.e.r; row++) {
       enhancedMatrix[row] = [];
       for (let col = 0; col <= topColumnIndex; col++) {
@@ -246,6 +260,45 @@ export class Sheet {
     }
 
     return enhancedMatrix;
+  }
+
+  private detectSheetsWithinSheet():
+    | {
+        hasSheetsWithinSheet: true;
+        firstSheetEndRowIndexExclusive: number;
+      }
+    | {
+        hasSheetsWithinSheet: false;
+        firstSheetEndRowIndexExclusive: undefined;
+      } {
+    const firstDataRowIndex = this.firstDataRowIndex;
+    let firstSheetEndRowIndexCandidate: number | undefined;
+    let hasSeenSecondHeaderRow: boolean = false;
+    // Loop through the rows to find the first that doesn't have any analyzable cells, but at least one cell with a string value. Then check if there another row with at least one analyzable cell.
+    for (let row = firstDataRowIndex; row < this.numRows; row++) {
+      const rowHasAnalyzableCells = this.enhancedMatrix[row].some(
+        (cell) => cell.isAnalyzable,
+      );
+      const rowHasStringCells = this.enhancedMatrix[row].some(
+        (cell) => typeof cell.value === "string",
+      );
+
+      if (rowHasAnalyzableCells && hasSeenSecondHeaderRow) {
+        return {
+          hasSheetsWithinSheet: true,
+          firstSheetEndRowIndexExclusive: firstSheetEndRowIndexCandidate! + 1,
+        };
+      }
+      if (rowHasAnalyzableCells) {
+        firstSheetEndRowIndexCandidate = row;
+      } else if (rowHasStringCells) {
+        hasSeenSecondHeaderRow = true;
+      }
+    }
+    return {
+      hasSheetsWithinSheet: false,
+      firstSheetEndRowIndexExclusive: undefined,
+    };
   }
 
   static invertEnhancedMatrix(matrix: EnhancedCell[][]): EnhancedCell[][] {
