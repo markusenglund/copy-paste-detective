@@ -29,7 +29,8 @@ export async function getDatasetsByDownloadStatus(
   return db
     .select()
     .from(dryadDatasets)
-    .where(eq(dryadDatasets.downloadStatus, status));
+    .where(eq(dryadDatasets.downloadStatus, status))
+    .limit(5);
 }
 
 export async function getDatasetByExtId(

@@ -1,5 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
-import { searchArticle } from "../openalex/searchArticle";
+import { getArticleByTitle } from "../openalex/searchArticle";
 
 const program = new Command();
 
@@ -8,11 +8,9 @@ program
   .description("Search for an article in OpenAlex")
   .argument("<title>", "Title of the article")
   .action(async (title) => {
-    const article = await searchArticle(title);
+    const article = await getArticleByTitle(title);
     console.log(article);
-    console.log(
-      `${article.results[0]?.title} - ${article.results[0]?.relevance_score}`,
-    );
+    console.log(`${article?.title} - ${article?.relevance_score}`);
   });
 
 program.parse();
