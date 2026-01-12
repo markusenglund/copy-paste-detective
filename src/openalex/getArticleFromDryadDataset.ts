@@ -1,10 +1,11 @@
 import { DryadDatasetRow } from "../repositories/datasets/datasetsRepository";
 import { logger } from "../utils/logger";
 import { getArticleByDoi, getArticleByTitle } from "./searchArticle";
+import { Work, WorkSearchResult } from "./schemas";
 
 export async function getArticleFromDryadDataset(
   dataset: DryadDatasetRow,
-): Promise<unknown> {
+): Promise<Work | WorkSearchResult | undefined> {
   if (dataset.primaryArticleUrl) {
     logger.debug(`Getting article by DOI: ${dataset.primaryArticleUrl}`);
     const article = await getArticleByDoi(dataset.primaryArticleUrl);

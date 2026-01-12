@@ -1,7 +1,15 @@
 import { config } from "../config/env";
 import { logger } from "../utils/logger";
+import {
+  Work,
+  WorkSchema,
+  WorkSearchResult,
+  WorkSearchResultsSchema,
+} from "./schemas";
 
-export async function getArticleByTitle(title: string): Promise<unknown> {
+export async function getArticleByTitle(
+  title: string,
+): Promise<WorkSearchResult | undefined> {
   const apiUrlBase = "https://api.openalex.org";
   // Strip title of commas (which are not supported by the OpenAlex API)
   const words = title.match(/[^,\s]+/g) || [];
@@ -22,12 +30,16 @@ export async function getArticleByTitle(title: string): Promise<unknown> {
     );
   }
   const data = await response.json();
-  return data.results[0];
+  const validated = WorkSearchResultsSchema.parse(data);
+  return validated.results[0];
 }
 
-export async function getArticleByDoi(doi: string): Promise<unknown> {
+export async function getArticleByDoi(doi: string): Promise<Work> {
   const apiUrlBase = "https://api.openalex.org";
-  const url = `${apiUrlBase}/works/${doi}`;
+  const searchQueryParams = new URLSearchParams({
+    mailto: config.openAlexEmailAddress,
+  });
+  const url = `${apiUrlBase}/works/${doi}?${searchQueryParams.toString()}`;
   logger.debug(`Request to '${url}'`);
   const response = await fetch(url);
   if (!response.ok) {
@@ -37,5 +49,5 @@ export async function getArticleByDoi(doi: string): Promise<unknown> {
     );
   }
   const data = await response.json();
-  return data;
+  return WorkSchema.parse(data);
 }
