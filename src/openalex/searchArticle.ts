@@ -30,7 +30,11 @@ export async function getArticleByTitle(
     );
   }
   const data = await response.json();
-  const validated = WorkSearchResultsSchema.parse(data);
+  const zodResult = WorkSearchResultsSchema.safeParse(data);
+  if (!zodResult.success) {
+    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+  }
+  const validated = zodResult.data;
   return validated.results[0];
 }
 
@@ -49,5 +53,10 @@ export async function getArticleByDoi(doi: string): Promise<Work> {
     );
   }
   const data = await response.json();
-  return WorkSchema.parse(data);
+  const zodResult = WorkSchema.safeParse(data);
+  if (!zodResult.success) {
+    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+  }
+  const validated = zodResult.data;
+  return validated;
 }

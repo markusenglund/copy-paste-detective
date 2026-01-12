@@ -13,7 +13,7 @@ program
   .action(async () => {
     const datasets = await getDatasetsByDownloadStatus("completed");
     console.log(`Found ${datasets.length} datasets to connect.`);
-    for (const dataset of datasets) {
+    for (const dataset of datasets.slice(0, 100)) {
       const article = await getArticleFromDryadDataset(dataset);
       logger.info(`${dataset.title} -> ${article?.title}`);
     }

@@ -1,11 +1,9 @@
 import { z } from "zod";
 
-// Basic nested schemas
-
 const IdsSchema = z.object({
   openalex: z.string(),
   doi: z.string(),
-  pmid: z.string().nullable(),
+  pmid: z.string().nullish(),
 });
 
 const BiblioSchema = z.object({
@@ -32,14 +30,10 @@ const ApcSchema = z.object({
   value_usd: z.number(),
 });
 
-// Domain, Field, Subfield schemas (used in topics)
-
 const DomainFieldSubfieldSchema = z.object({
   id: z.string(),
   display_name: z.string(),
 });
-
-// Author and Institution schemas
 
 const AuthorSchema = z.object({
   id: z.string(),
@@ -48,8 +42,8 @@ const AuthorSchema = z.object({
 });
 
 const InstitutionSchema = z.object({
-  id: z.string(),
-  display_name: z.string(),
+  id: z.string().nullable(),
+  display_name: z.string().nullable(),
   ror: z.string().nullable(),
   country_code: z.string().nullable(),
   type: z.string().nullable(),
@@ -57,12 +51,8 @@ const InstitutionSchema = z.object({
 });
 
 const AffiliationSchema = z.object({
-  id: z.string(),
-  display_name: z.string(),
-  ror: z.string().nullable(),
-  country_code: z.string().nullable(),
-  type: z.string().nullable(),
-  lineage: z.array(z.string()),
+  raw_affiliation_string: z.string(),
+  institution_ids: z.array(z.string().nullable()),
 });
 
 const AuthorshipSchema = z.object({
@@ -76,13 +66,11 @@ const AuthorshipSchema = z.object({
   affiliations: z.array(AffiliationSchema),
 });
 
-// Source and Location schemas
-
 const SourceSchema = z.object({
   id: z.string(),
   display_name: z.string(),
   issn_l: z.string().nullable(),
-  issn: z.array(z.string()),
+  issn: z.array(z.string()).nullable(),
   is_oa: z.boolean(),
   is_in_doaj: z.boolean(),
   is_core: z.boolean(),
@@ -102,10 +90,8 @@ const LocationSchema = z.object({
   license_id: z.string().nullable(),
   version: z.string().nullable(),
   is_accepted: z.boolean(),
-  is_published: z.boolean(),
+  is_published: z.boolean().nullable(),
 });
-
-// Open Access schema
 
 const OpenAccessSchema = z.object({
   is_oa: z.boolean(),
@@ -113,8 +99,6 @@ const OpenAccessSchema = z.object({
   oa_url: z.string().nullable(),
   any_repository_has_fulltext: z.boolean(),
 });
-
-// Topics and Keywords schemas
 
 const TopicSchema = z.object({
   id: z.string(),
@@ -131,17 +115,13 @@ const KeywordSchema = z.object({
   score: z.number(),
 });
 
-// MeSH schema
-
 const MeshSchema = z.object({
   descriptor_ui: z.string(),
   descriptor_name: z.string(),
-  qualifier_ui: z.string(),
-  qualifier_name: z.string(),
+  qualifier_ui: z.string().nullable(),
+  qualifier_name: z.string().nullable(),
   is_major_topic: z.boolean(),
 });
-
-// Sustainable Development Goals schema
 
 const SustainableDevelopmentGoalSchema = z.object({
   score: z.number(),
@@ -149,22 +129,16 @@ const SustainableDevelopmentGoalSchema = z.object({
   display_name: z.string(),
 });
 
-// Funder schema
-
 const FunderSchema = z.object({
   id: z.string(),
   display_name: z.string(),
   ror: z.string().nullable(),
 });
 
-// Counts by year schema
-
 const CountsByYearSchema = z.object({
   year: z.number(),
   cited_by_count: z.number(),
 });
-
-// Main Work schema
 
 export const WorkSchema = z.object({
   id: z.string(),
@@ -177,11 +151,10 @@ export const WorkSchema = z.object({
   language: z.string().nullable(),
   primary_location: LocationSchema.nullable(),
   type: z.string(),
-  type_crossref: z.string().nullable(),
+  type_crossref: z.string().nullish(),
   indexed_in: z.array(z.string()),
   open_access: OpenAccessSchema,
   authorships: z.array(AuthorshipSchema),
-  institution_assertions: z.array(z.unknown()),
   countries_distinct_count: z.number(),
   institutions_distinct_count: z.number(),
   corresponding_author_ids: z.array(z.string()),
@@ -190,13 +163,11 @@ export const WorkSchema = z.object({
   apc_paid: ApcSchema.nullable(),
   fwci: z.number().nullable(),
   has_fulltext: z.boolean(),
-  fulltext_origin: z.string().nullable(),
   cited_by_count: z.number(),
   citation_normalized_percentile: CitationNormalizedPercentileSchema.nullable(),
   cited_by_percentile_year: z
     .object({
       min: z.number(),
-      median: z.number(),
       max: z.number(),
     })
     .nullable(),
@@ -211,28 +182,20 @@ export const WorkSchema = z.object({
   locations: z.array(LocationSchema),
   best_oa_location: LocationSchema.nullable(),
   sustainable_development_goals: z.array(SustainableDevelopmentGoalSchema),
-  grants: z.array(z.unknown()),
-  datasets: z.array(z.unknown()),
-  versions: z.array(z.unknown()),
   funders: z.array(FunderSchema),
   has_content: HasContentSchema,
   referenced_works_count: z.number(),
   referenced_works: z.array(z.string()),
   related_works: z.array(z.string()),
   abstract_inverted_index: z.record(z.string(), z.array(z.number())).nullable(),
-  cited_by_api_url: z.string(),
   counts_by_year: z.array(CountsByYearSchema),
   updated_date: z.string(),
   created_date: z.string(),
 });
 
-// Work with relevance_score (for search results)
-
 export const WorkSearchResultSchema = WorkSchema.extend({
   relevance_score: z.number(),
 });
-
-// Search results schema (for getArticleByTitle)
 
 export const WorkSearchResultsSchema = z.object({
   meta: z.object({
@@ -245,8 +208,6 @@ export const WorkSearchResultsSchema = z.object({
   results: z.array(WorkSearchResultSchema),
   group_by: z.array(z.unknown()),
 });
-
-// Export inferred types
 
 export type Work = z.infer<typeof WorkSchema>;
 export type WorkSearchResult = z.infer<typeof WorkSearchResultSchema>;
