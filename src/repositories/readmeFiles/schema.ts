@@ -9,7 +9,7 @@ export const dryadReadmeFiles = pgTable(
     dryadDatasetId: integer("dryad_dataset_id")
       .notNull()
       .references(() => dryadDatasets.id),
-    extFileId: integer("ext_file_id").notNull(),
+    extFileId: integer("ext_file_id").notNull().unique(),
     filename: text("filename").notNull(),
     size: integer("size").notNull(),
     downloadStatus: downloadStatusEnum("download_status")

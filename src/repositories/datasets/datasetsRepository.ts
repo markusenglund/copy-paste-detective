@@ -241,6 +241,51 @@ export async function insertDataset(data: {
   return inserted;
 }
 
+export async function upsertDataset(data: {
+  extId: number;
+  datasetDoi: string;
+  originalFileSize?: number | null;
+  title: string;
+  abstract?: string | null;
+  usageNotes?: string | null;
+  primaryArticleUrl?: string | null;
+  journalIssn?: string | null;
+  dryadPublicationDate: string;
+  dryadLastModifiedDate: string;
+  latestVersionId: number;
+}): Promise<{ dataset: DryadDatasetRow; isNew: boolean }> {
+  const now = new Date();
+  const [result] = await db
+    .insert(dryadDatasets)
+    .values({
+      ...data,
+      downloadStatus: "not_started",
+      indexedTimestamp: now,
+      updatedTimestamp: now,
+    })
+    .onConflictDoUpdate({
+      target: dryadDatasets.extId,
+      set: {
+        datasetDoi: data.datasetDoi,
+        originalFileSize: data.originalFileSize,
+        title: data.title,
+        abstract: data.abstract,
+        usageNotes: data.usageNotes,
+        primaryArticleUrl: data.primaryArticleUrl,
+        journalIssn: data.journalIssn,
+        dryadPublicationDate: data.dryadPublicationDate,
+        dryadLastModifiedDate: data.dryadLastModifiedDate,
+        latestVersionId: data.latestVersionId,
+        updatedTimestamp: now,
+        // Preserve: downloadStatus, analysisStatus, indexedTimestamp
+      },
+    })
+    .returning();
+
+  const isNew = result.indexedTimestamp.getTime() === now.getTime();
+  return { dataset: result, isNew };
+}
+
 export async function updateDatasetDownloadStatus(
   extId: number,
   status: DownloadStatus,
@@ -367,6 +412,8 @@ export async function getDatasetCountByStatus(): Promise<
     failed: 0,
     completed: 0,
     skipped: 0,
+    api_forbidden: 0,
+    api_not_found: 0,
   };
 
   for (const row of result) {

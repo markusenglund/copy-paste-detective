@@ -25,6 +25,31 @@ export async function insertReadmeFile(data: {
   return inserted;
 }
 
+export async function upsertReadmeFile(data: {
+  dryadDatasetId: number;
+  extFileId: number;
+  filename: string;
+  size: number;
+}): Promise<DryadReadmeFileRow> {
+  const [result] = await db
+    .insert(dryadReadmeFiles)
+    .values({
+      ...data,
+      downloadStatus: "not_started",
+    })
+    .onConflictDoUpdate({
+      target: dryadReadmeFiles.extFileId,
+      set: {
+        dryadDatasetId: data.dryadDatasetId,
+        filename: data.filename,
+        size: data.size,
+        // Preserve: downloadStatus
+      },
+    })
+    .returning();
+  return result;
+}
+
 export async function updateReadmeFileDownloadStatus(
   fileId: number,
   status: DownloadStatus,

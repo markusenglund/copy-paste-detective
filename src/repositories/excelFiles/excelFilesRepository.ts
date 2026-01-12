@@ -46,6 +46,31 @@ export async function insertExcelFiles(
     .returning();
 }
 
+export async function upsertExcelFile(data: {
+  dryadDatasetId: number;
+  extFileId: number;
+  filename: string;
+  size: number;
+}): Promise<DryadExcelFileRow> {
+  const [result] = await db
+    .insert(dryadExcelFiles)
+    .values({
+      ...data,
+      downloadStatus: "not_started",
+    })
+    .onConflictDoUpdate({
+      target: dryadExcelFiles.extFileId,
+      set: {
+        dryadDatasetId: data.dryadDatasetId,
+        filename: data.filename,
+        size: data.size,
+        // Preserve: downloadStatus
+      },
+    })
+    .returning();
+  return result;
+}
+
 export async function updateExcelFileDownloadStatus(
   fileId: number,
   status: DownloadStatus,

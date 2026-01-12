@@ -84,7 +84,7 @@ const LinksSchema = z.object({
 });
 
 // Individual dataset schema
-const DatasetSchema = z.object({
+export const DatasetSchema = z.object({
   id: z.number(),
   identifier: z.string(),
   storageSize: z.number().optional(),
@@ -109,7 +109,7 @@ const DatasetSchema = z.object({
   _links: LinksSchema,
 });
 
-const ForbiddenDatasetSchema = z.object({
+export const ForbiddenDatasetSchema = z.object({
   identifier: z.string(),
   id: z.number(),
   message: z.literal(
