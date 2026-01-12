@@ -83,7 +83,7 @@ const SourceSchema = z.object({
 
 const LocationSchema = z.object({
   is_oa: z.boolean(),
-  landing_page_url: z.string(),
+  landing_page_url: z.string().nullable(),
   pdf_url: z.string().nullable(),
   source: SourceSchema.nullable(),
   license: z.string().nullable(),

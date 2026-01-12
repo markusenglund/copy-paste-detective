@@ -9,6 +9,12 @@ export async function getArticleFromDryadDataset(
   if (dataset.primaryArticleUrl) {
     logger.debug(`Getting article by DOI: ${dataset.primaryArticleUrl}`);
     const article = await getArticleByDoi(dataset.primaryArticleUrl);
+    if (!article) {
+      logger.warn(
+        `No article found by DOI: ${dataset.primaryArticleUrl}, giving up...`,
+      );
+      return undefined;
+    }
     return article;
   }
 

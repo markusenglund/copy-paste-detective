@@ -26,7 +26,7 @@ export async function getArticleByTitle(
   if (!response.ok) {
     const responseText = await response.text();
     throw new Error(
-      `Failed to search article: ${response.status} ${response.statusText} - ${responseText}`,
+      `Failed to search article at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
     );
   }
   const data = await response.json();
@@ -38,7 +38,7 @@ export async function getArticleByTitle(
   return validated.results[0];
 }
 
-export async function getArticleByDoi(doi: string): Promise<Work> {
+export async function getArticleByDoi(doi: string): Promise<Work | undefined> {
   const apiUrlBase = "https://api.openalex.org";
   const searchQueryParams = new URLSearchParams({
     mailto: config.openAlexEmailAddress,
@@ -48,9 +48,10 @@ export async function getArticleByDoi(doi: string): Promise<Work> {
   const response = await fetch(url);
   if (!response.ok) {
     const responseText = await response.text();
-    throw new Error(
-      `Failed to search article: ${response.status} ${response.statusText} - ${responseText}`,
+    logger.warn(
+      `Failed to get article by DOI '${doi}' at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
     );
+    return undefined;
   }
   const data = await response.json();
   const zodResult = WorkSchema.safeParse(data);
