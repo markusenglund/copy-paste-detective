@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const IdsSchema = z.object({
   openalex: z.string(),
-  doi: z.string(),
+  doi: z.string().nullish(),
   pmid: z.string().nullish(),
 });
 
@@ -36,7 +36,7 @@ const DomainFieldSubfieldSchema = z.object({
 });
 
 const AuthorSchema = z.object({
-  id: z.string(),
+  id: z.string().nullable(),
   display_name: z.string(),
   orcid: z.string().nullable(),
 });
@@ -142,7 +142,7 @@ const CountsByYearSchema = z.object({
 
 export const WorkSchema = z.object({
   id: z.string(),
-  doi: z.string(),
+  doi: z.string().nullable(),
   title: z.string(),
   display_name: z.string(),
   publication_year: z.number(),

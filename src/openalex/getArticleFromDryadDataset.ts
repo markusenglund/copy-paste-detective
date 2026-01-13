@@ -1,21 +1,25 @@
 import { DryadDatasetRow } from "../repositories/datasets/datasetsRepository";
 import { logger } from "../utils/logger";
-import { getArticleByDoi, getArticleByTitle } from "./searchArticle";
+import {
+  getArticleByAbstract,
+  getArticleByDoi,
+  getArticleByTitle,
+} from "./searchArticle";
 import { Work, WorkSearchResult } from "./schemas";
 
 export async function getArticleFromDryadDataset(
   dataset: DryadDatasetRow,
 ): Promise<Work | WorkSearchResult | undefined> {
+  let article: Work | WorkSearchResult | undefined;
   if (dataset.primaryArticleUrl) {
     logger.debug(`Getting article by DOI: '${dataset.primaryArticleUrl}'`);
-    const article = await getArticleByDoi(dataset.primaryArticleUrl);
-    if (!article) {
-      logger.warn(
-        `No article found by DOI: ${dataset.primaryArticleUrl}, giving up...`,
-      );
-      return undefined;
+    article = await getArticleByDoi(dataset.primaryArticleUrl);
+    if (article) {
+      return article;
     }
-    return article;
+    logger.warn(
+      `No article found by DOI: '${dataset.primaryArticleUrl}'. Most likely the DOI is wrong, so moving on to other methods...`,
+    );
   }
 
   const titlePrefixesToRemove = [
@@ -40,6 +44,14 @@ export async function getArticleFromDryadDataset(
     }
   }
   logger.debug(`Getting article by title: '${articleTitleBestGuess}'`);
-  const article = await getArticleByTitle(articleTitleBestGuess);
-  return article;
+  article = await getArticleByTitle(articleTitleBestGuess);
+  if (article) {
+    return article;
+  }
+
+  if (dataset.abstract) {
+    article = await getArticleByAbstract(dataset.abstract);
+    return article;
+  }
+  return undefined;
 }

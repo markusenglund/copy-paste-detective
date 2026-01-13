@@ -17,9 +17,7 @@ program
       noneFound: 0,
     };
     console.log(`Found ${datasets.length} datasets to connect.`);
-    for (const dataset of datasets
-      .slice(0, 100)
-      .filter((dataset) => !dataset.primaryArticleUrl)) {
+    for (const dataset of datasets.slice(0, 100)) {
       const article = await getArticleFromDryadDataset(dataset);
       logger.info(`
 dd: ${dataset.title} ->
