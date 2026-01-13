@@ -18,6 +18,7 @@ import {
 import { maxExcelFilesPerDataset } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { logger } from "../utils/logger";
+import { closeDb } from "../db";
 
 const program = new Command();
 
@@ -163,6 +164,7 @@ program
       { concurrency: 5 },
     );
 
+    await closeDb();
     process.exit(0);
   });
 

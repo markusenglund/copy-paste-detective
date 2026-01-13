@@ -7,3 +7,7 @@ const pool = new pg.Pool({
 });
 
 export const db = drizzle(pool, { schema });
+
+export async function closeDb(): Promise<void> {
+  await pool.end();
+}

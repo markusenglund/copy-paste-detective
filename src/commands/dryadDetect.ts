@@ -7,6 +7,7 @@ import { maxExcelFilesPerDataset } from "../config/config";
 import { analyzeDataset } from "../detection/analyzeDataset";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { logger } from "../utils/logger";
+import { closeDb } from "../db";
 
 const program = new Command();
 
@@ -26,46 +27,50 @@ program
     Object.values(StrategyName),
   )
   .action(async (datasetExtId, fileIndex, options) => {
-    const dataset = await getDatasetWithFiles(datasetExtId);
-    if (!dataset) {
-      logger.error(
-        `Dataset with extId ${datasetExtId} not found in the database.`,
-      );
-      process.exit(1);
-    }
-    if (dataset.downloadStatus !== "completed") {
-      logger.error(
-        `Dataset with extId ${datasetExtId} is not downloaded. Status: ${dataset.downloadStatus}`,
-      );
-      process.exit(1);
-    }
-
-    // If fileIndex is not provided, analyze all Excel files in the dataset.
-    const dryadExcelFiles =
-      fileIndex === undefined
-        ? dataset.excelFiles
-        : [dataset.excelFiles[fileIndex]];
-
-    const downloadedExcelFiles: ExcelFileData[] = [];
-    for (
-      let i = 0;
-      i < Math.min(dryadExcelFiles.length, maxExcelFilesPerDataset);
-      i++
-    ) {
-      const dryadExcelFile = dryadExcelFiles[i];
-      if (dryadExcelFile.downloadStatus !== "completed") {
-        logger.info(
-          `Excel file '${dryadExcelFile.filename}' is not downloaded. Status: ${dryadExcelFile.downloadStatus}`,
+    try {
+      const dataset = await getDatasetWithFiles(datasetExtId);
+      if (!dataset) {
+        logger.error(
+          `Dataset with extId ${datasetExtId} not found in the database.`,
         );
-        continue;
+        process.exit(1);
       }
-      logger.info(
-        `Analyzing ${dryadExcelFile.filename} from dataset ${dataset.extId} from ${dataset.dryadPublicationDate} (${dryadExcelFile.size} bytes) - "${dataset.title}"`,
-      );
-      const excelFileData = loadExcelFileFromDryadIndex(dataset, i);
-      downloadedExcelFiles.push(excelFileData);
+      if (dataset.downloadStatus !== "completed") {
+        logger.error(
+          `Dataset with extId ${datasetExtId} is not downloaded. Status: ${dataset.downloadStatus}`,
+        );
+        process.exit(1);
+      }
+
+      // If fileIndex is not provided, analyze all Excel files in the dataset.
+      const dryadExcelFiles =
+        fileIndex === undefined
+          ? dataset.excelFiles
+          : [dataset.excelFiles[fileIndex]];
+
+      const downloadedExcelFiles: ExcelFileData[] = [];
+      for (
+        let i = 0;
+        i < Math.min(dryadExcelFiles.length, maxExcelFilesPerDataset);
+        i++
+      ) {
+        const dryadExcelFile = dryadExcelFiles[i];
+        if (dryadExcelFile.downloadStatus !== "completed") {
+          logger.info(
+            `Excel file '${dryadExcelFile.filename}' is not downloaded. Status: ${dryadExcelFile.downloadStatus}`,
+          );
+          continue;
+        }
+        logger.info(
+          `Analyzing ${dryadExcelFile.filename} from dataset ${dataset.extId} from ${dataset.dryadPublicationDate} (${dryadExcelFile.size} bytes) - "${dataset.title}"`,
+        );
+        const excelFileData = loadExcelFileFromDryadIndex(dataset, i);
+        downloadedExcelFiles.push(excelFileData);
+      }
+      await analyzeDataset(downloadedExcelFiles, options.strategies);
+    } finally {
+      await closeDb();
     }
-    await analyzeDataset(downloadedExcelFiles, options.strategies);
   });
 
 program.parse();
