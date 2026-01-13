@@ -3,6 +3,7 @@ import { DatasetResponseSchema, type DatasetResponse } from "./schemas";
 import { fetchToken } from "./fetchToken";
 import pRetry from "p-retry";
 import { logger } from "../utils/logger";
+import { dryadFetch } from "./dryadFetch";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 type Params = {
@@ -23,7 +24,7 @@ export async function listDatasets({
   const url = `${DRYAD_BASE_API_URL}/datasets?${searchQueryParams.toString()}`;
   const responseData = await pRetry(
     async (): Promise<unknown> => {
-      const response = await fetch(url, {
+      const response = await dryadFetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },

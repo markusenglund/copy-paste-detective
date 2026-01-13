@@ -7,7 +7,7 @@ export async function getArticleFromDryadDataset(
   dataset: DryadDatasetRow,
 ): Promise<Work | WorkSearchResult | undefined> {
   if (dataset.primaryArticleUrl) {
-    logger.debug(`Getting article by DOI: ${dataset.primaryArticleUrl}`);
+    logger.debug(`Getting article by DOI: '${dataset.primaryArticleUrl}'`);
     const article = await getArticleByDoi(dataset.primaryArticleUrl);
     if (!article) {
       logger.warn(
@@ -20,8 +20,9 @@ export async function getArticleFromDryadDataset(
 
   const titlePrefixesToRemove = [
     "Data from: ",
-    "Dataset for: ",
+    "Data for: ",
     "Dataset from: ",
+    "Dataset for: ",
     "Data and code from: ",
     "Data for the paper ",
     "Raw data accompanying: ",
@@ -38,7 +39,7 @@ export async function getArticleFromDryadDataset(
       break;
     }
   }
-  logger.debug(`Getting article by title: ${articleTitleBestGuess}`);
+  logger.debug(`Getting article by title: '${articleTitleBestGuess}'`);
   const article = await getArticleByTitle(articleTitleBestGuess);
   return article;
 }

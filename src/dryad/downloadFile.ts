@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fetchToken } from "./fetchToken";
 import { logger } from "../utils/logger";
+import { dryadFetch } from "./dryadFetch";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 
@@ -28,7 +29,7 @@ export async function downloadFile({
 
   logger.info(`Downloading file: ${filename} from ${url}`);
   // Download the file
-  const response = await fetch(url, {
+  const response = await dryadFetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

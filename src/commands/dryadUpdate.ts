@@ -1,6 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
 import {
-  getAllDatasets,
   getDatasetByExtId,
   upsertDataset,
   updateDatasetDownloadStatus,
@@ -84,6 +83,21 @@ program
           const versionUrlPath = apiDataset._links["stash:version"].href;
           const latestVersionId = Number(versionUrlPath.split("/").at(-1));
 
+          const primaryArticleUrl = apiDataset.relatedWorks?.find(
+            (work) => work.relationship === "primary_article",
+          )?.identifier;
+
+          const preprintArticleUrl = apiDataset.relatedWorks?.find(
+            (work) => work.relationship === "preprint",
+          )?.identifier;
+
+          const regularArticleUrls = apiDataset.relatedWorks
+            ?.filter((work) => work.relationship === "article")
+            .map((work) => work.identifier);
+          // If there is only one regular article URL, use it if no primary or preprint is found.
+          const onlyRegularArticleUrl =
+            regularArticleUrls?.length === 1 ? regularArticleUrls[0] : null;
+
           // Upsert dataset metadata (always)
           const { dataset, isNew } = await upsertDataset({
             extId: apiDataset.id,
@@ -93,9 +107,10 @@ program
             abstract: apiDataset.abstract ?? null,
             usageNotes: apiDataset.usageNotes ?? null,
             primaryArticleUrl:
-              apiDataset.relatedWorks?.find(
-                (work) => work.relationship === "primary_article",
-              )?.identifier ?? null,
+              primaryArticleUrl ??
+              preprintArticleUrl ??
+              onlyRegularArticleUrl ??
+              null,
             journalIssn: apiDataset.relatedPublicationISSN ?? null,
             dryadPublicationDate:
               apiDataset.publicationDate ?? apiDataset.lastModificationDate,

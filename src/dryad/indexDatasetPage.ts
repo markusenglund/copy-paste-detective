@@ -62,6 +62,21 @@ export async function indexDatasetPage(
       /readme\.(txt|md)/i.test(file.path),
     );
 
+    const primaryArticleUrl = extDataset.relatedWorks?.find(
+      (work) => work.relationship === "primary_article",
+    )?.identifier;
+
+    const preprintArticleUrl = extDataset.relatedWorks?.find(
+      (work) => work.relationship === "preprint",
+    )?.identifier;
+
+    const regularArticleUrls = extDataset.relatedWorks
+      ?.filter((work) => work.relationship === "article")
+      .map((work) => work.identifier);
+    // If there is only one regular article URL, use it if no primary or preprint is found.
+    const onlyRegularArticleUrl =
+      regularArticleUrls?.length === 1 ? regularArticleUrls[0] : null;
+
     // Upsert the dataset
     const { dataset: upsertedDataset, isNew } = await upsertDataset({
       extId: extDataset.id,
@@ -71,9 +86,10 @@ export async function indexDatasetPage(
       abstract: extDataset.abstract ?? null,
       usageNotes: extDataset.usageNotes ?? null,
       primaryArticleUrl:
-        extDataset.relatedWorks?.find(
-          (work) => work.relationship === "primary_article",
-        )?.identifier ?? null,
+        primaryArticleUrl ??
+        preprintArticleUrl ??
+        onlyRegularArticleUrl ??
+        null,
       journalIssn: extDataset.relatedPublicationISSN ?? null,
       dryadPublicationDate:
         extDataset.publicationDate ?? extDataset.lastModificationDate,

@@ -8,6 +8,7 @@ import {
 import pRetry from "p-retry";
 import { logger } from "../utils/logger";
 import { z } from "zod";
+import { dryadFetch } from "./dryadFetch";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 
@@ -21,7 +22,7 @@ export async function getDataset(
 
   const responseData = await pRetry(
     async (): Promise<unknown> => {
-      const response = await fetch(url, {
+      const response = await dryadFetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
