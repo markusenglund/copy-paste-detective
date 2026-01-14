@@ -228,14 +228,11 @@ export async function insertDataset(data: {
   latestVersionId: number;
   downloadStatus?: DownloadStatus;
 }): Promise<DryadDatasetRow> {
-  const now = new Date();
   const [inserted] = await db
     .insert(dryadDatasets)
     .values({
       ...data,
       downloadStatus: data.downloadStatus ?? "not_started",
-      indexedTimestamp: now,
-      updatedTimestamp: now,
     })
     .returning();
   return inserted;
@@ -254,14 +251,11 @@ export async function upsertDataset(data: {
   dryadLastModifiedDate: string;
   latestVersionId: number;
 }): Promise<{ dataset: DryadDatasetRow; isNew: boolean }> {
-  const now = new Date();
   const [result] = await db
     .insert(dryadDatasets)
     .values({
       ...data,
       downloadStatus: "not_started",
-      indexedTimestamp: now,
-      updatedTimestamp: now,
     })
     .onConflictDoUpdate({
       target: dryadDatasets.extId,
@@ -276,13 +270,14 @@ export async function upsertDataset(data: {
         dryadPublicationDate: data.dryadPublicationDate,
         dryadLastModifiedDate: data.dryadLastModifiedDate,
         latestVersionId: data.latestVersionId,
-        updatedTimestamp: now,
+        updatedTimestamp: new Date(),
         // Preserve: downloadStatus, analysisStatus, indexedTimestamp
       },
     })
     .returning();
 
-  const isNew = result.indexedTimestamp.getTime() === now.getTime();
+  const isNew =
+    result.indexedTimestamp.getTime() === result.updatedTimestamp.getTime();
   return { dataset: result, isNew };
 }
 

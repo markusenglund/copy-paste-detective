@@ -6,12 +6,14 @@ import {
   pgTable,
   serial,
   text,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { dryadDatasets } from "../datasets/schema";
 import { journals } from "../journals/schema";
 import { authors } from "../authors/schema";
 import { funders } from "../funders/schema";
 import { institutions } from "../institutions/schema";
+import { downloadStatusEnum } from "../../db/shared/enums";
 
 export const articles = pgTable("articles", {
   id: serial("id").primaryKey(),
@@ -26,15 +28,18 @@ export const articles = pgTable("articles", {
   citedByPercentileYearMin: decimal("cited_by_percentile_year_min").notNull(),
   dryadDatasetId: serial("dryad_dataset_id").references(() => dryadDatasets.id),
   fullPdfUrl: text("full_pdf_url"),
+  pdfDownloadStatus: downloadStatusEnum("pdf_download_status"),
   field: text("field").notNull(),
   subfield: text("subfield").notNull(),
   topic: text("topic").notNull(),
   journalId: serial("journal_id")
     .notNull()
     .references(() => journals.id),
+  createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
+  updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });
 
-const authorPositionEnum = pgEnum("author_position", [
+export const authorPositionEnum = pgEnum("author_position", [
   "first",
   "middle",
   "last",
@@ -46,10 +51,12 @@ export const articleAuthors = pgTable("article_authors", {
   authorId: serial("author_id")
     .notNull()
     .references(() => authors.id),
-  authorPosition: authorPositionEnum().notNull(),
+  authorPosition: authorPositionEnum("author_position").notNull(),
   institutionId: serial("institution_id")
     .notNull()
     .references(() => institutions.id),
+  createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
+  updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });
 
 export const articleFunders = pgTable("article_funders", {

@@ -20,7 +20,12 @@ export { dryadExcelFiles } from "./excelFiles/schema";
 export { dryadReadmeFiles } from "./readmeFiles/schema";
 export { dryadIndexingState } from "./indexingState/schema";
 export { journals } from "./journals/schema";
-export { articles, articleAuthors, articleFunders } from "./articles/schema";
+export {
+  articles,
+  articleAuthors,
+  articleFunders,
+  authorPositionEnum,
+} from "./articles/schema";
 export { authors } from "./authors/schema";
 export { funders } from "./funders/schema";
 export { institutions } from "./institutions/schema";
