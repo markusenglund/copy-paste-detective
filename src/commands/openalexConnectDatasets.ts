@@ -1,7 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import {
   DryadDataset,
-  getDatasetsByDownloadStatus,
+  getCompletedDatasetsWithoutArticles,
 } from "../repositories/datasets/datasetsRepository";
 import { getArticleFromDryadDataset } from "../openalex/getArticleFromDryadDataset";
 import { logger } from "../utils/logger";
@@ -31,6 +31,11 @@ import { bulkUpsertAuthors } from "../repositories/authors/authorsRepository";
 import { bulkUpsertInstitutions } from "../repositories/institutions/institutionsRepository";
 import { bulkUpsertFunders } from "../repositories/funders/fundersRepository";
 
+type OpenAlexArticleWithDataset = {
+  dataset: DryadDataset;
+  openalexArticle: Work | WorkSearchResult;
+};
+
 const program = new Command();
 
 program
@@ -40,15 +45,18 @@ program
   )
   .action(async () => {
     try {
-      const datasets = await getDatasetsByDownloadStatus("completed");
-      const openalexArticles = await getArticlesFromDryadDatasets(datasets);
+      const datasets = await getCompletedDatasetsWithoutArticles();
       logger.info(
-        `Found ${openalexArticles.length} OpenAlex articles from ${datasets.length} datasets`,
+        `Found ${datasets.length} datasets to search OpenAlex for...`,
+      );
+      const articlesWithDatasets = await getArticlesFromDryadDatasets(datasets);
+      logger.info(
+        `Found ${articlesWithDatasets.length} OpenAlex articles from ${datasets.length} datasets`,
       );
       const articles =
-        await extractArticlesFromOpenAlexArticles(openalexArticles);
+        await extractArticlesFromOpenAlexArticles(articlesWithDatasets);
       const { authors, institutions, funders } =
-        extractArticleMetadataFromOpenAlexArticles(openalexArticles);
+        extractArticleMetadataFromOpenAlexArticles(articlesWithDatasets);
 
       logger.info(
         `Extracted: ${articles.length} articles, ${authors.length} authors, ${institutions.length} institutions, ${funders.length} funders`,
@@ -68,7 +76,7 @@ program
 
       const { articleAuthors, articleFunders } =
         extractJunctionTablesDataFromOpenalexArticles({
-          openalexArticles,
+          articlesWithDatasets,
           insertedAuthors,
           insertedInstitutions,
           insertedFunders,
@@ -90,7 +98,7 @@ program
   });
 
 function extractJunctionTablesDataFromOpenalexArticles(params: {
-  openalexArticles: (Work | WorkSearchResult)[];
+  articlesWithDatasets: OpenAlexArticleWithDataset[];
   insertedAuthors: Author[];
   insertedInstitutions: Institution[];
   insertedFunders: Funder[];
@@ -117,7 +125,7 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
 
   const articleAuthors: ArticleAuthorInsert[] = [];
   const articleFunders: ArticleFunderInsert[] = [];
-  for (const openalexArticle of params.openalexArticles) {
+  for (const { openalexArticle } of params.articlesWithDatasets) {
     const articleRecord = articleRecordByOpenalexId.get(openalexArticle.id)!;
 
     // Extract articleAuthors
@@ -160,10 +168,10 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
 }
 
 async function extractArticlesFromOpenAlexArticles(
-  openalexArticles: (Work | WorkSearchResult)[],
+  articlesWithDatasets: OpenAlexArticleWithDataset[],
 ): Promise<ArticleInsert[]> {
   const journalByIssn = await getJournalsByIssnMap();
-  const articles = openalexArticles.map((openalexArticle) => {
+  const articles = articlesWithDatasets.map(({ dataset, openalexArticle }) => {
     let journal: Journal | undefined;
     const potentialIssns: string[] = [];
     if (openalexArticle.primary_location?.source?.issn) {
@@ -186,13 +194,13 @@ async function extractArticlesFromOpenAlexArticles(
     }
 
     const { article } = convertOpenalexArticle(openalexArticle, journal?.id);
-    return article;
+    return { ...article, dryadDatasetId: dataset.id };
   });
   return articles;
 }
 
 function extractArticleMetadataFromOpenAlexArticles(
-  openalexArticles: (Work | WorkSearchResult)[],
+  articlesWithDatasets: OpenAlexArticleWithDataset[],
 ): {
   authors: AuthorInsert[];
   institutions: InstitutionInsert[];
@@ -202,7 +210,7 @@ function extractArticleMetadataFromOpenAlexArticles(
   const institutionByRorId = new Map<string, InstitutionInsert>();
   const funderByRorId = new Map<string, FunderInsert>();
 
-  for (const openalexArticle of openalexArticles) {
+  for (const { openalexArticle } of articlesWithDatasets) {
     for (const { author, institutions } of openalexArticle.authorships) {
       if (author.orcid && !authorByOrcid.has(author.orcid)) {
         authorByOrcid.set(author.orcid, {
@@ -242,17 +250,15 @@ function extractArticleMetadataFromOpenAlexArticles(
 
 async function getArticlesFromDryadDatasets(
   datasets: DryadDataset[],
-): Promise<(Work | WorkSearchResult)[]> {
-  const openalexArticles: (Work | WorkSearchResult)[] = [];
+): Promise<OpenAlexArticleWithDataset[]> {
+  const results: OpenAlexArticleWithDataset[] = [];
   for (const dataset of datasets) {
     const openalexArticle = await getArticleFromDryadDataset(dataset);
-    if (!openalexArticle) {
-      continue;
+    if (openalexArticle) {
+      results.push({ dataset, openalexArticle });
     }
-    openalexArticles.push(openalexArticle);
   }
-
-  return openalexArticles;
+  return results;
 }
 
 program.parse();

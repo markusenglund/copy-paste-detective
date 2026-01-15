@@ -32,6 +32,25 @@ export async function getDatasetsByDownloadStatus(
     .where(eq(dryadDatasets.downloadStatus, status));
 }
 
+export async function getCompletedDatasetsWithoutArticles(): Promise<
+  DryadDataset[]
+> {
+  const hasArticle = sql<boolean>`EXISTS (
+    SELECT 1 FROM articles
+    WHERE articles.dryad_dataset_id = dryad_datasets.id
+  )`;
+
+  return db
+    .select()
+    .from(dryadDatasets)
+    .where(
+      and(
+        eq(dryadDatasets.downloadStatus, "completed"),
+        sql`NOT ${hasArticle}`,
+      ),
+    );
+}
+
 export async function getDatasetByExtId(
   extId: number,
 ): Promise<DryadDataset | undefined> {
