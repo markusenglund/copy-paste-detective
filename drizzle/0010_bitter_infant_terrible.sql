@@ -1,0 +1,1 @@
+ALTER TABLE "articles" ALTER COLUMN "publication_date" DROP NOT NULL;

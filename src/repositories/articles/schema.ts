@@ -21,7 +21,7 @@ export const articles = pgTable("articles", {
   doi: text("doi").unique(),
   extOpenalexId: text("ext_openalex_id").notNull().unique(),
   title: text("title").notNull(),
-  publicationDate: date("publication_date").notNull(),
+  publicationDate: date("publication_date"),
   numCitations: integer("num_citations").notNull(),
   citationNormalizedPercentile: decimal("citation_normalized_percentile", {
     mode: "number",
