@@ -33,8 +33,10 @@ export const articles = pgTable("articles", {
   field: text("field"),
   subfield: text("subfield"),
   topic: text("topic"),
-  dryadDatasetId: serial("dryad_dataset_id").references(() => dryadDatasets.id),
-  journalId: serial("journal_id").references(() => journals.id),
+  dryadDatasetId: integer("dryad_dataset_id").references(
+    () => dryadDatasets.id,
+  ),
+  journalId: integer("journal_id").references(() => journals.id),
   createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
   updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });
@@ -45,25 +47,23 @@ export const authorPositionEnum = pgEnum("author_position", [
   "last",
 ]);
 export const articleAuthors = pgTable("article_authors", {
-  articleId: serial("article_id")
+  articleId: integer("article_id")
     .notNull()
     .references(() => articles.id),
-  authorId: serial("author_id")
+  authorId: integer("author_id")
     .notNull()
     .references(() => authors.id),
   authorPosition: authorPositionEnum("author_position").notNull(),
-  institutionId: serial("institution_id")
-    .notNull()
-    .references(() => institutions.id),
+  institutionId: integer("institution_id").references(() => institutions.id),
   createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
   updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });
 
 export const articleFunders = pgTable("article_funders", {
-  articleId: serial("article_id")
+  articleId: integer("article_id")
     .notNull()
     .references(() => articles.id),
-  funderId: serial("funder_id")
+  funderId: integer("funder_id")
     .notNull()
     .references(() => funders.id),
 });

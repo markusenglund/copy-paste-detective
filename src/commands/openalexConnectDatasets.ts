@@ -10,10 +10,22 @@ import { convertOpenalexArticle } from "../openalex/convertOpenalexArticle";
 import { getJournalsByIssnMap } from "../repositories/journals/journalsRepository";
 import { Journal } from "../repositories/journals/schema";
 import { Work, WorkSearchResult } from "../openalex/schemas";
-import { ArticleInsert } from "../repositories/articles/schema";
-import { AuthorInsert } from "../repositories/authors/schema";
-import { InstitutionInsert } from "../repositories/institutions/schema";
-import { FunderInsert } from "../repositories/funders/schema";
+import {
+  Article,
+  ArticleAuthorInsert,
+  ArticleFunderInsert,
+  ArticleInsert,
+} from "../repositories/articles/schema";
+import { Author, AuthorInsert } from "../repositories/authors/schema";
+import {
+  Institution,
+  InstitutionInsert,
+} from "../repositories/institutions/schema";
+import { Funder, FunderInsert } from "../repositories/funders/schema";
+import { bulkUpsertArticles } from "../repositories/articles/articlesRepository";
+import { bulkUpsertAuthors } from "../repositories/authors/authorsRepository";
+import { bulkUpsertInstitutions } from "../repositories/institutions/institutionsRepository";
+import { bulkUpsertFunders } from "../repositories/funders/fundersRepository";
 
 const program = new Command();
 
@@ -31,15 +43,105 @@ program
       const { authors, institutions, funders } =
         extractArticleMetadataFromOpenAlexArticles(openalexArticles);
 
-      console.log(`Found ${datasets.length} datasets to connect.`);
-
-      console.log(
-        `Results: ${articles.length} articles to be created from ${openalexArticles.length} oa articles found out of ${datasets.length} datasets.`,
+      logger.info(
+        `Extracted: ${articles.length} articles, ${authors.length} authors, ${institutions.length} institutions, ${funders.length} funders`,
       );
+
+      const insertedAuthors = await bulkUpsertAuthors(authors);
+      logger.info(`Upserted ${insertedAuthors.length} authors`);
+
+      const insertedInstitutions = await bulkUpsertInstitutions(institutions);
+      logger.info(`Upserted ${insertedInstitutions.length} institutions`);
+
+      const insertedFunders = await bulkUpsertFunders(funders);
+      logger.info(`Upserted ${insertedFunders.length} funders`);
+
+      const insertedArticles = await bulkUpsertArticles(articles);
+      console.log(`Upserted ${insertedArticles.length} articles`);
+
+      const { articleAuthors, articleFunders } =
+        extractJunctionTablesDataFromOpenalexArticles({
+          openalexArticles,
+          insertedAuthors,
+          insertedInstitutions,
+          insertedFunders,
+          insertedArticles,
+        });
     } finally {
       await closeDb();
     }
   });
+
+function extractJunctionTablesDataFromOpenalexArticles(params: {
+  openalexArticles: (Work | WorkSearchResult)[];
+  insertedAuthors: Author[];
+  insertedInstitutions: Institution[];
+  insertedFunders: Funder[];
+  insertedArticles: Article[];
+}): {
+  articleAuthors: ArticleAuthorInsert[];
+  articleFunders: ArticleFunderInsert[];
+} {
+  const authorRecordByOrcid = new Map(
+    params.insertedAuthors.map((author) => [author.orcid, author]),
+  );
+  const institutionRecordByRorId = new Map(
+    params.insertedInstitutions.map((institution) => [
+      institution.rorId,
+      institution,
+    ]),
+  );
+  const funderRecordByRorId = new Map(
+    params.insertedFunders.map((funder) => [funder.rorId, funder]),
+  );
+  const articleRecordByOpenalexId = new Map(
+    params.insertedArticles.map((article) => [article.extOpenalexId, article]),
+  );
+
+  const articleAuthors: ArticleAuthorInsert[] = [];
+  const articleFunders: ArticleFunderInsert[] = [];
+  for (const openalexArticle of params.openalexArticles) {
+    const articleRecord = articleRecordByOpenalexId.get(openalexArticle.id)!;
+
+    // Extract articleAuthors
+    for (const {
+      author,
+      institutions,
+      author_position,
+    } of openalexArticle.authorships) {
+      if (author.orcid) {
+        const authorRecord = authorRecordByOrcid.get(author.orcid)!;
+        // TODO: Just get the first listed institution for now
+        const [firstInstitution] = institutions;
+        const institutionId = firstInstitution?.ror
+          ? institutionRecordByRorId.get(firstInstitution.ror)?.id
+          : undefined;
+
+        const articleAuthor: ArticleAuthorInsert = {
+          articleId: articleRecord.id,
+          authorId: authorRecord.id,
+          authorPosition: author_position,
+          institutionId,
+        };
+        articleAuthors.push(articleAuthor);
+      }
+    }
+
+    // Extract articleFunders
+    for (const funder of openalexArticle.funders) {
+      if (funder.ror) {
+        const funderRecord = funderRecordByRorId.get(funder.ror)!;
+        const articleFunder: ArticleFunderInsert = {
+          articleId: articleRecord.id,
+          funderId: funderRecord.id,
+        };
+        articleFunders.push(articleFunder);
+      }
+    }
+  }
+
+  return { articleAuthors, articleFunders };
+}
 
 async function extractArticlesFromOpenAlexArticles(
   openalexArticles: (Work | WorkSearchResult)[],

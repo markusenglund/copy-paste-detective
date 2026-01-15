@@ -56,7 +56,7 @@ const AffiliationSchema = z.object({
 });
 
 const AuthorshipSchema = z.object({
-  author_position: z.string(),
+  author_position: z.enum(["first", "middle", "last"]),
   author: AuthorSchema,
   institutions: z.array(InstitutionSchema),
   countries: z.array(z.string()),
