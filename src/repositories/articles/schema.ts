@@ -52,12 +52,14 @@ export const articleAuthors = pgTable(
   {
     articleId: integer("article_id")
       .notNull()
-      .references(() => articles.id),
+      .references(() => articles.id, { onDelete: "cascade" }),
     authorId: integer("author_id")
       .notNull()
-      .references(() => authors.id),
+      .references(() => authors.id, { onDelete: "cascade" }),
     authorPosition: authorPositionEnum("author_position").notNull(),
-    institutionId: integer("institution_id").references(() => institutions.id),
+    institutionId: integer("institution_id").references(() => institutions.id, {
+      onDelete: "set null",
+    }),
     createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
     updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
   },
@@ -69,10 +71,10 @@ export const articleFunders = pgTable(
   {
     articleId: integer("article_id")
       .notNull()
-      .references(() => articles.id),
+      .references(() => articles.id, { onDelete: "cascade" }),
     funderId: integer("funder_id")
       .notNull()
-      .references(() => funders.id),
+      .references(() => funders.id, { onDelete: "cascade" }),
   },
   (table) => [unique().on(table.articleId, table.funderId)],
 );

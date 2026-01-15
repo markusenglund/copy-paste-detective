@@ -1,9 +1,19 @@
-import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "../../db";
 import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
 import { dryadReadmeFiles } from "../readmeFiles/schema";
+import { articles } from "../articles/schema";
 import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 import type { DryadReadmeFileRow } from "../readmeFiles/readmeFilesRepository";
 import { logger } from "../../utils/logger";
@@ -35,7 +45,7 @@ export async function getDatasetsByDownloadStatus(
 export async function getCompletedDatasetsWithoutArticles(): Promise<
   DryadDataset[]
 > {
-  const hasArticle = sql<boolean>`EXISTS (
+  const noArticleExists = sql<boolean>`NOT EXISTS (
     SELECT 1 FROM articles
     WHERE articles.dryad_dataset_id = dryad_datasets.id
   )`;
@@ -43,12 +53,7 @@ export async function getCompletedDatasetsWithoutArticles(): Promise<
   return db
     .select()
     .from(dryadDatasets)
-    .where(
-      and(
-        eq(dryadDatasets.downloadStatus, "completed"),
-        sql`NOT ${hasArticle}`,
-      ),
-    );
+    .where(and(eq(dryadDatasets.downloadStatus, "completed"), noArticleExists));
 }
 
 export async function getDatasetByExtId(

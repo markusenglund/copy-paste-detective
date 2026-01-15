@@ -45,7 +45,10 @@ program
   )
   .action(async () => {
     try {
-      const datasets = await getCompletedDatasetsWithoutArticles();
+      const datasets = (await getCompletedDatasetsWithoutArticles()).slice(
+        0,
+        100,
+      );
       logger.info(
         `Found ${datasets.length} datasets to search OpenAlex for...`,
       );
