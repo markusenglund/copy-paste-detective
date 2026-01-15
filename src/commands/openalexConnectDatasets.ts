@@ -45,10 +45,7 @@ program
   )
   .action(async () => {
     try {
-      const datasets = (await getCompletedDatasetsWithoutArticles()).slice(
-        0,
-        100,
-      );
+      const datasets = await getCompletedDatasetsWithoutArticles();
       logger.info(
         `Found ${datasets.length} datasets to search OpenAlex for...`,
       );
@@ -131,13 +128,14 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
   for (const { openalexArticle } of params.articlesWithDatasets) {
     const articleRecord = articleRecordByOpenalexId.get(openalexArticle.id)!;
 
-    // Extract articleAuthors
+    // Extract articleAuthors (deduplicate authors by ORCID per article)
+    const seenAuthorOrcids = new Set<string>();
     for (const {
       author,
       institutions,
       author_position,
     } of openalexArticle.authorships) {
-      if (author.orcid) {
+      if (author.orcid && !seenAuthorOrcids.has(author.orcid)) {
         const authorRecord = authorRecordByOrcid.get(author.orcid)!;
         const [firstInstitution] = institutions;
         const institutionId = firstInstitution?.ror
@@ -151,6 +149,7 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
           institutionId,
         };
         articleAuthors.push(articleAuthor);
+        seenAuthorOrcids.add(author.orcid);
       }
     }
 
