@@ -9,23 +9,23 @@ import type { DryadReadmeFileRow } from "../readmeFiles/readmeFilesRepository";
 import { logger } from "../../utils/logger";
 
 // Re-export types for convenience
-export type DryadDatasetRow = typeof dryadDatasets.$inferSelect;
+export type DryadDataset = typeof dryadDatasets.$inferSelect;
 
 // Composite type that includes related files
-export type DryadDatasetWithFiles = DryadDatasetRow & {
+export type DryadDatasetWithFiles = DryadDataset & {
   excelFiles: DryadExcelFileRow[];
   readmeFile: DryadReadmeFileRow | null;
 };
 
 // ============ Datasets ============
 
-export async function getAllDatasets(): Promise<DryadDatasetRow[]> {
+export async function getAllDatasets(): Promise<DryadDataset[]> {
   return db.select().from(dryadDatasets);
 }
 
 export async function getDatasetsByDownloadStatus(
   status: DownloadStatus,
-): Promise<DryadDatasetRow[]> {
+): Promise<DryadDataset[]> {
   return db
     .select()
     .from(dryadDatasets)
@@ -34,7 +34,7 @@ export async function getDatasetsByDownloadStatus(
 
 export async function getDatasetByExtId(
   extId: number,
-): Promise<DryadDatasetRow | undefined> {
+): Promise<DryadDataset | undefined> {
   const result = await db
     .select()
     .from(dryadDatasets)
@@ -227,7 +227,7 @@ export async function insertDataset(data: {
   dryadLastModifiedDate: string;
   latestVersionId: number;
   downloadStatus?: DownloadStatus;
-}): Promise<DryadDatasetRow> {
+}): Promise<DryadDataset> {
   const [inserted] = await db
     .insert(dryadDatasets)
     .values({
@@ -250,7 +250,7 @@ export async function upsertDataset(data: {
   dryadPublicationDate: string;
   dryadLastModifiedDate: string;
   latestVersionId: number;
-}): Promise<{ dataset: DryadDatasetRow; isNew: boolean }> {
+}): Promise<{ dataset: DryadDataset; isNew: boolean }> {
   const [result] = await db
     .insert(dryadDatasets)
     .values({
@@ -306,7 +306,7 @@ export async function updateDatasetDownloadStatusByCurrentStatus(
 
 export async function getDatasetsByAnalysisStatus(
   status: AnalysisStatus,
-): Promise<DryadDatasetRow[]> {
+): Promise<DryadDataset[]> {
   return db
     .select()
     .from(dryadDatasets)

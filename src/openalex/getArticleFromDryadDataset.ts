@@ -1,4 +1,4 @@
-import { DryadDatasetRow } from "../repositories/datasets/datasetsRepository";
+import { DryadDataset } from "../repositories/datasets/datasetsRepository";
 import { logger } from "../utils/logger";
 import {
   getArticleByAbstract,
@@ -8,7 +8,7 @@ import {
 import { Work, WorkSearchResult } from "./schemas";
 
 export async function getArticleFromDryadDataset(
-  dataset: DryadDatasetRow,
+  dataset: DryadDataset,
 ): Promise<Work | WorkSearchResult | undefined> {
   let article: Work | WorkSearchResult | undefined;
   if (dataset.primaryArticleUrl) {

@@ -17,24 +17,24 @@ import { downloadStatusEnum } from "../../db/shared/enums";
 
 export const articles = pgTable("articles", {
   id: serial("id").primaryKey(),
-  doi: text("doi").notNull().unique(),
+  doi: text("doi").unique(),
   extOpenalexId: text("ext_openalex_id").notNull().unique(),
   title: text("title").notNull(),
   publicationDate: date("publication_date").notNull(),
   numCitations: integer("num_citations").notNull(),
-  citationNormalizedPercentile: decimal(
-    "citation_normalized_percentile",
-  ).notNull(),
-  citedByPercentileYearMin: decimal("cited_by_percentile_year_min").notNull(),
-  dryadDatasetId: serial("dryad_dataset_id").references(() => dryadDatasets.id),
+  citationNormalizedPercentile: decimal("citation_normalized_percentile", {
+    mode: "number",
+  }),
+  citedByPercentileYearMin: decimal("cited_by_percentile_year_min", {
+    mode: "number",
+  }),
   fullPdfUrl: text("full_pdf_url"),
   pdfDownloadStatus: downloadStatusEnum("pdf_download_status"),
-  field: text("field").notNull(),
-  subfield: text("subfield").notNull(),
-  topic: text("topic").notNull(),
-  journalId: serial("journal_id")
-    .notNull()
-    .references(() => journals.id),
+  field: text("field"),
+  subfield: text("subfield"),
+  topic: text("topic"),
+  dryadDatasetId: serial("dryad_dataset_id").references(() => dryadDatasets.id),
+  journalId: serial("journal_id").references(() => journals.id),
   createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
   updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });
@@ -67,3 +67,8 @@ export const articleFunders = pgTable("article_funders", {
     .notNull()
     .references(() => funders.id),
 });
+
+export type ArticleInsert = typeof articles.$inferInsert;
+export type ArticleAuthorInsert = typeof articleAuthors.$inferInsert;
+export type ArticleFunderInsert = typeof articleFunders.$inferInsert;
+export type Article = typeof articles.$inferSelect;

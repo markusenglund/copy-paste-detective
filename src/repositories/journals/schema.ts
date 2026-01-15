@@ -24,3 +24,5 @@ export const journals = pgTable(
   },
   (table) => [index("journals_issns_idx").using("gin", table.issns)],
 );
+
+export type Journal = typeof journals.$inferSelect;
