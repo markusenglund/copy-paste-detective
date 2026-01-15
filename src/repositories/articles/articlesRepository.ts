@@ -1,5 +1,13 @@
 import { db } from "../../db";
-import { articles, ArticleInsert, Article } from "./schema";
+import {
+  articles,
+  articleAuthors,
+  articleFunders,
+  ArticleInsert,
+  ArticleAuthorInsert,
+  ArticleFunderInsert,
+  Article,
+} from "./schema";
 
 export async function bulkUpsertArticles(
   data: ArticleInsert[],
@@ -25,6 +33,43 @@ export async function bulkUpsertArticles(
         journalId: articles.journalId,
         updatedTimestamp: new Date(),
       },
+    })
+    .returning();
+}
+
+export type ArticleAuthor = typeof articleAuthors.$inferSelect;
+
+export async function bulkUpsertArticleAuthors(
+  data: ArticleAuthorInsert[],
+): Promise<ArticleAuthor[]> {
+  if (data.length === 0) return [];
+
+  return db
+    .insert(articleAuthors)
+    .values(data)
+    .onConflictDoUpdate({
+      target: [articleAuthors.articleId, articleAuthors.authorId],
+      set: {
+        authorPosition: articleAuthors.authorPosition,
+        institutionId: articleAuthors.institutionId,
+        updatedTimestamp: new Date(),
+      },
+    })
+    .returning();
+}
+
+export type ArticleFunder = typeof articleFunders.$inferSelect;
+
+export async function bulkUpsertArticleFunders(
+  data: ArticleFunderInsert[],
+): Promise<ArticleFunder[]> {
+  if (data.length === 0) return [];
+
+  return db
+    .insert(articleFunders)
+    .values(data)
+    .onConflictDoNothing({
+      target: [articleFunders.articleId, articleFunders.funderId],
     })
     .returning();
 }

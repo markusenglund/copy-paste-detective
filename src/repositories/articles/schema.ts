@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 import { dryadDatasets } from "../datasets/schema";
 import { journals } from "../journals/schema";
@@ -46,27 +47,35 @@ export const authorPositionEnum = pgEnum("author_position", [
   "middle",
   "last",
 ]);
-export const articleAuthors = pgTable("article_authors", {
-  articleId: integer("article_id")
-    .notNull()
-    .references(() => articles.id),
-  authorId: integer("author_id")
-    .notNull()
-    .references(() => authors.id),
-  authorPosition: authorPositionEnum("author_position").notNull(),
-  institutionId: integer("institution_id").references(() => institutions.id),
-  createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
-  updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
-});
+export const articleAuthors = pgTable(
+  "article_authors",
+  {
+    articleId: integer("article_id")
+      .notNull()
+      .references(() => articles.id),
+    authorId: integer("author_id")
+      .notNull()
+      .references(() => authors.id),
+    authorPosition: authorPositionEnum("author_position").notNull(),
+    institutionId: integer("institution_id").references(() => institutions.id),
+    createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
+    updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
+  },
+  (table) => [unique().on(table.articleId, table.authorId)],
+);
 
-export const articleFunders = pgTable("article_funders", {
-  articleId: integer("article_id")
-    .notNull()
-    .references(() => articles.id),
-  funderId: integer("funder_id")
-    .notNull()
-    .references(() => funders.id),
-});
+export const articleFunders = pgTable(
+  "article_funders",
+  {
+    articleId: integer("article_id")
+      .notNull()
+      .references(() => articles.id),
+    funderId: integer("funder_id")
+      .notNull()
+      .references(() => funders.id),
+  },
+  (table) => [unique().on(table.articleId, table.funderId)],
+);
 
 export type ArticleInsert = typeof articles.$inferInsert;
 export type ArticleAuthorInsert = typeof articleAuthors.$inferInsert;

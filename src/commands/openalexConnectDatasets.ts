@@ -22,7 +22,11 @@ import {
   InstitutionInsert,
 } from "../repositories/institutions/schema";
 import { Funder, FunderInsert } from "../repositories/funders/schema";
-import { bulkUpsertArticles } from "../repositories/articles/articlesRepository";
+import {
+  bulkUpsertArticles,
+  bulkUpsertArticleAuthors,
+  bulkUpsertArticleFunders,
+} from "../repositories/articles/articlesRepository";
 import { bulkUpsertAuthors } from "../repositories/authors/authorsRepository";
 import { bulkUpsertInstitutions } from "../repositories/institutions/institutionsRepository";
 import { bulkUpsertFunders } from "../repositories/funders/fundersRepository";
@@ -67,6 +71,14 @@ program
           insertedFunders,
           insertedArticles,
         });
+
+      const insertedArticleAuthors =
+        await bulkUpsertArticleAuthors(articleAuthors);
+      logger.info(`Upserted ${insertedArticleAuthors.length} article-authors`);
+
+      const insertedArticleFunders =
+        await bulkUpsertArticleFunders(articleFunders);
+      logger.info(`Upserted ${insertedArticleFunders.length} article-funders`);
     } finally {
       await closeDb();
     }
