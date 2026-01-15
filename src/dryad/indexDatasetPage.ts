@@ -1,8 +1,8 @@
 import { listDatasets } from "../dryad/listDatasets";
 import { listFiles } from "../dryad/listFiles";
-import { insertDataset } from "../repositories/datasets/datasetsRepository";
-import { insertExcelFiles } from "../repositories/excelFiles/excelFilesRepository";
-import { insertReadmeFile } from "../repositories/readmeFiles/readmeFilesRepository";
+import { upsertDataset } from "../repositories/datasets/datasetsRepository";
+import { upsertExcelFile } from "../repositories/excelFiles/excelFilesRepository";
+import { upsertReadmeFile } from "../repositories/readmeFiles/readmeFilesRepository";
 import { Dataset, ForbiddenDataset } from "./schemas";
 import Mutex from "p-mutex";
 import { logger } from "../utils/logger";
@@ -62,8 +62,23 @@ export async function indexDatasetPage(
       /readme\.(txt|md)/i.test(file.path),
     );
 
-    // Insert the dataset
-    const insertedDataset = await insertDataset({
+    const primaryArticleUrl = extDataset.relatedWorks?.find(
+      (work) => work.relationship === "primary_article",
+    )?.identifier;
+
+    const preprintArticleUrl = extDataset.relatedWorks?.find(
+      (work) => work.relationship === "preprint",
+    )?.identifier;
+
+    const regularArticleUrls = extDataset.relatedWorks
+      ?.filter((work) => work.relationship === "article")
+      .map((work) => work.identifier);
+    // If there is only one regular article URL, use it if no primary or preprint is found.
+    const onlyRegularArticleUrl =
+      regularArticleUrls?.length === 1 ? regularArticleUrls[0] : null;
+
+    // Upsert the dataset
+    const { dataset: upsertedDataset, isNew } = await upsertDataset({
       extId: extDataset.id,
       datasetDoi: extDataset.identifier,
       originalFileSize: extDataset.storageSize ?? null,
@@ -71,46 +86,45 @@ export async function indexDatasetPage(
       abstract: extDataset.abstract ?? null,
       usageNotes: extDataset.usageNotes ?? null,
       primaryArticleUrl:
-        extDataset.relatedWorks?.find(
-          (work) => work.relationship === "primary_article",
-        )?.identifier ?? null,
+        primaryArticleUrl ??
+        preprintArticleUrl ??
+        onlyRegularArticleUrl ??
+        null,
       journalIssn: extDataset.relatedPublicationISSN ?? null,
       dryadPublicationDate:
         extDataset.publicationDate ?? extDataset.lastModificationDate,
       dryadLastModifiedDate: extDataset.lastModificationDate,
       latestVersionId,
-      downloadStatus: "not_started",
     });
 
-    // Insert excel files
-    await insertExcelFiles(
-      extDryadExcelFiles.map((file) => ({
-        dryadDatasetId: insertedDataset.id,
+    // Upsert excel files
+    for (const file of extDryadExcelFiles) {
+      await upsertExcelFile({
+        dryadDatasetId: upsertedDataset.id,
         extFileId: Number(
           file._links["stash:download"]!.href.split("/").at(-2),
         ),
         filename: file.path,
         size: file.size,
-        downloadStatus: "not_started" as const,
-      })),
-    );
+      });
+    }
 
-    // Insert readme file if present
+    // Upsert readme file if present
     if (extDryadReadmeFile?._links["stash:download"]) {
-      await insertReadmeFile({
-        dryadDatasetId: insertedDataset.id,
+      await upsertReadmeFile({
+        dryadDatasetId: upsertedDataset.id,
         extFileId: Number(
           extDryadReadmeFile._links["stash:download"].href.split("/").at(-2),
         ),
         filename: extDryadReadmeFile.path,
         size: extDryadReadmeFile.size,
-        downloadStatus: "not_started",
       });
     }
 
     numDatasetsWithExcelFiles++;
+    const action = isNew ? "Inserted" : "Updated";
     logger.info(
-      `Inserted dataset ${insertedDataset.extId} with ${extDryadExcelFiles.length} Excel files: ${extDryadExcelFiles.map((file) => file.path).join(", ")} Title: '${insertedDataset.title}'`,
+      `${action} dataset ${upsertedDataset.extId} with ${extDryadExcelFiles.length} Excel files: ${extDryadExcelFiles.map((file) => file.path).join(", ")} Title: '${upsertedDataset.title}'`,
     );
   }
 

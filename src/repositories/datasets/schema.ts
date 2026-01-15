@@ -27,6 +27,6 @@ export const dryadDatasets = pgTable("dryad_datasets", {
   analysisStatus: analysisStatusEnum("analysis_status")
     .notNull()
     .default("not_analyzed"),
-  indexedTimestamp: timestamp("indexed_timestamp").notNull(),
-  updatedTimestamp: timestamp("updated_timestamp").notNull(),
+  indexedTimestamp: timestamp("indexed_timestamp").notNull().defaultNow(),
+  updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });

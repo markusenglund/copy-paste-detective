@@ -5,6 +5,7 @@ import {
   integer,
   real,
   index,
+  timestamp,
 } from "drizzle-orm/pg-core";
 
 export const journals = pgTable(
@@ -18,6 +19,10 @@ export const journals = pgTable(
     avgCitations: real("avg_citations"),
     fields: text("fields").array().notNull(),
     publisher: text("publisher"),
+    createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
+    updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
   },
   (table) => [index("journals_issns_idx").using("gin", table.issns)],
 );
+
+export type Journal = typeof journals.$inferSelect;

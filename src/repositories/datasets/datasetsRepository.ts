@@ -1,40 +1,64 @@
-import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "../../db";
 import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
 import { dryadReadmeFiles } from "../readmeFiles/schema";
+import { articles } from "../articles/schema";
 import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 import type { DryadReadmeFileRow } from "../readmeFiles/readmeFilesRepository";
 import { logger } from "../../utils/logger";
 
 // Re-export types for convenience
-export type DryadDatasetRow = typeof dryadDatasets.$inferSelect;
+export type DryadDataset = typeof dryadDatasets.$inferSelect;
 
 // Composite type that includes related files
-export type DryadDatasetWithFiles = DryadDatasetRow & {
+export type DryadDatasetWithFiles = DryadDataset & {
   excelFiles: DryadExcelFileRow[];
   readmeFile: DryadReadmeFileRow | null;
 };
 
 // ============ Datasets ============
 
-export async function getAllDatasets(): Promise<DryadDatasetRow[]> {
+export async function getAllDatasets(): Promise<DryadDataset[]> {
   return db.select().from(dryadDatasets);
 }
 
 export async function getDatasetsByDownloadStatus(
   status: DownloadStatus,
-): Promise<DryadDatasetRow[]> {
+): Promise<DryadDataset[]> {
   return db
     .select()
     .from(dryadDatasets)
     .where(eq(dryadDatasets.downloadStatus, status));
 }
 
+export async function getCompletedDatasetsWithoutArticles(): Promise<
+  DryadDataset[]
+> {
+  const noArticleExists = sql<boolean>`NOT EXISTS (
+    SELECT 1 FROM articles
+    WHERE articles.dryad_dataset_id = dryad_datasets.id
+  )`;
+
+  return db
+    .select()
+    .from(dryadDatasets)
+    .where(and(eq(dryadDatasets.downloadStatus, "completed"), noArticleExists));
+}
+
 export async function getDatasetByExtId(
   extId: number,
-): Promise<DryadDatasetRow | undefined> {
+): Promise<DryadDataset | undefined> {
   const result = await db
     .select()
     .from(dryadDatasets)
@@ -227,18 +251,58 @@ export async function insertDataset(data: {
   dryadLastModifiedDate: string;
   latestVersionId: number;
   downloadStatus?: DownloadStatus;
-}): Promise<DryadDatasetRow> {
-  const now = new Date();
+}): Promise<DryadDataset> {
   const [inserted] = await db
     .insert(dryadDatasets)
     .values({
       ...data,
       downloadStatus: data.downloadStatus ?? "not_started",
-      indexedTimestamp: now,
-      updatedTimestamp: now,
     })
     .returning();
   return inserted;
+}
+
+export async function upsertDataset(data: {
+  extId: number;
+  datasetDoi: string;
+  originalFileSize?: number | null;
+  title: string;
+  abstract?: string | null;
+  usageNotes?: string | null;
+  primaryArticleUrl?: string | null;
+  journalIssn?: string | null;
+  dryadPublicationDate: string;
+  dryadLastModifiedDate: string;
+  latestVersionId: number;
+}): Promise<{ dataset: DryadDataset; isNew: boolean }> {
+  const [result] = await db
+    .insert(dryadDatasets)
+    .values({
+      ...data,
+      downloadStatus: "not_started",
+    })
+    .onConflictDoUpdate({
+      target: dryadDatasets.extId,
+      set: {
+        datasetDoi: data.datasetDoi,
+        originalFileSize: data.originalFileSize,
+        title: data.title,
+        abstract: data.abstract,
+        usageNotes: data.usageNotes,
+        primaryArticleUrl: data.primaryArticleUrl,
+        journalIssn: data.journalIssn,
+        dryadPublicationDate: data.dryadPublicationDate,
+        dryadLastModifiedDate: data.dryadLastModifiedDate,
+        latestVersionId: data.latestVersionId,
+        updatedTimestamp: new Date(),
+        // Preserve: downloadStatus, analysisStatus, indexedTimestamp
+      },
+    })
+    .returning();
+
+  const isNew =
+    result.indexedTimestamp.getTime() === result.updatedTimestamp.getTime();
+  return { dataset: result, isNew };
 }
 
 export async function updateDatasetDownloadStatus(
@@ -266,7 +330,7 @@ export async function updateDatasetDownloadStatusByCurrentStatus(
 
 export async function getDatasetsByAnalysisStatus(
   status: AnalysisStatus,
-): Promise<DryadDatasetRow[]> {
+): Promise<DryadDataset[]> {
   return db
     .select()
     .from(dryadDatasets)
@@ -367,6 +431,8 @@ export async function getDatasetCountByStatus(): Promise<
     failed: 0,
     completed: 0,
     skipped: 0,
+    api_forbidden: 0,
+    api_not_found: 0,
   };
 
   for (const row of result) {

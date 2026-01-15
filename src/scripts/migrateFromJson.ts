@@ -7,19 +7,44 @@ import {
   dryadReadmeFiles,
   dryadIndexingState,
 } from "../repositories";
-import { DryadDataset } from "../dryad/DryadDataset";
 import { logger } from "../utils/logger";
+
+type LegacyDryadFile = {
+  filename: string;
+  size: number;
+  fileId: number;
+  status?: "downloaded";
+};
+
+type LegacyDryadDataset = {
+  status: "indexed" | "downloaded" | "analyzed" | "evaluated" | "failed";
+  extId: number;
+  dryadDoi: string;
+  originalFileSize?: number;
+  title: string;
+  abstract?: string;
+  usageNotes?: string;
+  primaryArticleLink?: string;
+  journalIssn?: string;
+  dryadPublicationDate: string;
+  dryadLastModifiedDate: string;
+  latestVersionId: number;
+  excelFiles: LegacyDryadFile[];
+  readmeFile?: LegacyDryadFile;
+  indexedTimestamp: string;
+  updatedTimestamp: string;
+};
 
 type JsonData = {
   lastPageIndexed: number | null;
-  datasets: DryadDataset[];
+  datasets: LegacyDryadDataset[];
 };
 
 /**
  * Maps old dataset status to new download_status enum
  */
 function mapDatasetStatus(
-  oldStatus: DryadDataset["status"],
+  oldStatus: LegacyDryadDataset["status"],
 ): "not_started" | "in_progress" | "failed" | "completed" {
   switch (oldStatus) {
     case "indexed":
