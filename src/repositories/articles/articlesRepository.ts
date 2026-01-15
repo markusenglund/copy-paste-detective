@@ -60,7 +60,7 @@ export async function bulkUpsertArticleAuthors(
 
 export type ArticleFunder = typeof articleFunders.$inferSelect;
 
-export async function bulkUpsertArticleFunders(
+export async function bulkInsertArticleFunders(
   data: ArticleFunderInsert[],
 ): Promise<ArticleFunder[]> {
   if (data.length === 0) return [];

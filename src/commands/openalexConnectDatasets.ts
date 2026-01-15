@@ -25,7 +25,7 @@ import { Funder, FunderInsert } from "../repositories/funders/schema";
 import {
   bulkUpsertArticles,
   bulkUpsertArticleAuthors,
-  bulkUpsertArticleFunders,
+  bulkInsertArticleFunders,
 } from "../repositories/articles/articlesRepository";
 import { bulkUpsertAuthors } from "../repositories/authors/authorsRepository";
 import { bulkUpsertInstitutions } from "../repositories/institutions/institutionsRepository";
@@ -42,6 +42,9 @@ program
     try {
       const datasets = await getDatasetsByDownloadStatus("completed");
       const openalexArticles = await getArticlesFromDryadDatasets(datasets);
+      logger.info(
+        `Found ${openalexArticles.length} OpenAlex articles from ${datasets.length} datasets`,
+      );
       const articles =
         await extractArticlesFromOpenAlexArticles(openalexArticles);
       const { authors, institutions, funders } =
@@ -61,7 +64,7 @@ program
       logger.info(`Upserted ${insertedFunders.length} funders`);
 
       const insertedArticles = await bulkUpsertArticles(articles);
-      console.log(`Upserted ${insertedArticles.length} articles`);
+      logger.info(`Upserted ${insertedArticles.length} articles`);
 
       const { articleAuthors, articleFunders } =
         extractJunctionTablesDataFromOpenalexArticles({
@@ -77,8 +80,10 @@ program
       logger.info(`Upserted ${insertedArticleAuthors.length} article-authors`);
 
       const insertedArticleFunders =
-        await bulkUpsertArticleFunders(articleFunders);
-      logger.info(`Upserted ${insertedArticleFunders.length} article-funders`);
+        await bulkInsertArticleFunders(articleFunders);
+      logger.info(
+        `Inserted ${insertedArticleFunders.length} (out of ${articleFunders.length} found) article-funders`,
+      );
     } finally {
       await closeDb();
     }
@@ -123,7 +128,6 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
     } of openalexArticle.authorships) {
       if (author.orcid) {
         const authorRecord = authorRecordByOrcid.get(author.orcid)!;
-        // TODO: Just get the first listed institution for now
         const [firstInstitution] = institutions;
         const institutionId = firstInstitution?.ror
           ? institutionRecordByRorId.get(firstInstitution.ror)?.id
@@ -207,16 +211,14 @@ function extractArticleMetadataFromOpenAlexArticles(
           orcid: author.orcid,
         });
       }
-
-      for (const institution of institutions) {
-        if (institution.ror) {
-          institutionByRorId.set(institution.ror, {
-            openalexExtId: institution.id,
-            rorId: institution.ror,
-            displayName: institution.display_name,
-            countryCode: institution.country_code,
-          });
-        }
+      const [firstInstitution] = institutions;
+      if (firstInstitution?.ror) {
+        institutionByRorId.set(firstInstitution.ror, {
+          openalexExtId: firstInstitution.id,
+          rorId: firstInstitution.ror,
+          displayName: firstInstitution.display_name,
+          countryCode: firstInstitution.country_code,
+        });
       }
     }
 
