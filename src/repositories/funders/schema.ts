@@ -6,3 +6,6 @@ export const funders = pgTable("funders", {
   rorId: text("ror_id").unique().notNull(),
   displayName: text("display_name").notNull(),
 });
+
+export type FunderInsert = typeof funders.$inferInsert;
+export type Funder = typeof funders.$inferSelect;
