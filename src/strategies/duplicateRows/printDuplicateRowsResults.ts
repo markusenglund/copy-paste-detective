@@ -2,6 +2,7 @@ import { DuplicateRowsResult } from "../../types/strategies";
 import { calculateBaseNumberEntropy } from "../../utils/entropy";
 import { levelToSymbol } from "../../utils/output";
 import { logger } from "../../utils/logger";
+import { DuplicateRow } from "../../entities/DuplicateRow";
 
 export function printDuplicateRowsResults({
   duplicateRows,
@@ -11,49 +12,56 @@ export function printDuplicateRowsResults({
     return;
   }
 
-  const sortedDuplicateRows = duplicateRows
-    .toSorted((a, b) => b.rowEntropyScore - a.rowEntropyScore)
-    .slice(0, 20); // Show top 20 most suspicious pairs
-
-  const tableData = sortedDuplicateRows.map((duplicateRow) => {
-    // Format shared values for display (show first few if many)
-    const sortedSharedValues = duplicateRow.sharedValues.toSorted((a, b) => {
-      const entropyA = calculateBaseNumberEntropy(a);
-      const entropyB = calculateBaseNumberEntropy(b);
-      return entropyB - entropyA;
-    });
-    const sharedValuesDisplay =
-      sortedSharedValues.length > 3
-        ? `${sortedSharedValues.slice(0, 3).join(", ")} (+${sortedSharedValues.length - 3})`
-        : sortedSharedValues.join(", ");
-
-    let sharedColumnsDisplay = duplicateRow.sharedColumns
-      .map((colIndex: number) => {
-        const columnLetter = getColumnLetter(colIndex);
-        return columnLetter;
-      })
-      .join(", ");
-    if (sharedColumnsDisplay.length > 30) {
-      sharedColumnsDisplay = `${sharedColumnsDisplay.slice(0, 30)}...`;
-    }
-
-    return {
-      level: levelToSymbol[duplicateRow.suspicionLevel],
-      sheetName: duplicateRow.sheet.name,
-      sharedValues: sharedValuesDisplay,
-      length: duplicateRow.totalSharedCount,
-      entropy: duplicateRow.rowEntropyScore.toFixed(1),
-      sizeAdj: duplicateRow.matrixSizeAdjustedEntropyScore.toFixed(1),
-      sharedColumns: sharedColumnsDisplay,
-      row1: duplicateRow.rowIndices[0] + 1, // Convert to 1-based indexing for display
-      row2: duplicateRow.rowIndices[1] + 1,
-    };
-  });
-
-  logger.info(
-    `\nDuplicate rows (${duplicateRows.length} total, showing top ${tableData.length}):`,
+  const duplicateRowsBySheet = Map.groupBy(
+    duplicateRows,
+    (dr) => dr.sheet.name,
   );
-  console.table(tableData);
+
+  for (const [sheetName, duplicateRows] of duplicateRowsBySheet.entries()) {
+    const sortedDuplicateRows = duplicateRows
+      .toSorted((a, b) => b.rowEntropyScore - a.rowEntropyScore)
+      .slice(0, 20); // Show top 20 most suspicious pairs
+
+    const tableData = sortedDuplicateRows.map((duplicateRow) => {
+      // Format shared values for display (show first few if many)
+      const sortedSharedValues = duplicateRow.sharedValues.toSorted((a, b) => {
+        const entropyA = calculateBaseNumberEntropy(a);
+        const entropyB = calculateBaseNumberEntropy(b);
+        return entropyB - entropyA;
+      });
+      const sharedValuesDisplay =
+        sortedSharedValues.length > 3
+          ? `${sortedSharedValues.slice(0, 3).join(", ")} (+${sortedSharedValues.length - 3})`
+          : sortedSharedValues.join(", ");
+
+      let sharedColumnsDisplay = duplicateRow.sharedColumns
+        .map((colIndex: number) => {
+          const columnLetter = getColumnLetter(colIndex);
+          return columnLetter;
+        })
+        .join(", ");
+      if (sharedColumnsDisplay.length > 30) {
+        sharedColumnsDisplay = `${sharedColumnsDisplay.slice(0, 30)}...`;
+      }
+
+      return {
+        level: levelToSymbol[duplicateRow.suspicionLevel],
+        sheetName: duplicateRow.sheet.name,
+        sharedValues: sharedValuesDisplay,
+        length: duplicateRow.totalSharedCount,
+        entropy: duplicateRow.rowEntropyScore.toFixed(1),
+        sizeAdj: duplicateRow.matrixSizeAdjustedEntropyScore.toFixed(1),
+        sharedColumns: sharedColumnsDisplay,
+        row1: duplicateRow.rowIndices[0] + 1, // Convert to 1-based indexing for display
+        row2: duplicateRow.rowIndices[1] + 1,
+      };
+    });
+
+    logger.info(
+      `\nDuplicate rows for '${sheetName}' (${duplicateRows.length} total, showing top ${tableData.length}):`,
+    );
+    console.table(tableData);
+  }
 }
 
 function getColumnLetter(columnIndex: number): string {

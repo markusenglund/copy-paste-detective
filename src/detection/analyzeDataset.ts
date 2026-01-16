@@ -206,6 +206,7 @@ async function reviewMostSuspiciousResults(
 export async function analyzeDataset(
   excelFiles: ExcelFileData[],
   strategies: StrategyName[],
+  options?: { excludeAiProfile?: boolean; skipResultsReview?: boolean },
 ): Promise<AnalyzeDatasetResult> {
   const selectedExcelFilesByFilename = Object.fromEntries(
     excelFiles
@@ -215,26 +216,34 @@ export async function analyzeDataset(
 
   const excelFileAnalyses: ExcelFileAnalysis[] = [];
   for (const excelFile of Object.values(selectedExcelFilesByFilename)) {
-    const excelFileAnalysis = await analyzeExcelFile(strategies, excelFile);
+    const excelFileAnalysis = await analyzeExcelFile(strategies, excelFile, {
+      excludeAiProfile: options?.excludeAiProfile,
+    });
     excelFileAnalyses.push(excelFileAnalysis);
   }
 
-  const reviewResult = await reviewMostSuspiciousResults(
-    excelFileAnalyses,
-    selectedExcelFilesByFilename,
-  );
+  let reviewResult: ReviewResult | undefined = undefined;
+  if (options?.skipResultsReview) {
+    // Skip AI review
+    reviewResult = {
+      sheetsQualifiedForReview: 0,
+      sheetsReviewed: 0,
+    };
+  }
 
   // Calculate how many sheets we attempted to review (limited by maxAiReviewsPerDataset)
   const sheetsAttempted = Math.min(
-    reviewResult.sheetsQualifiedForReview,
+    reviewResult?.sheetsQualifiedForReview ?? 0,
     maxAiReviewsPerDataset,
   );
 
   return {
     analyses: excelFileAnalyses,
-    wasFlaggedForReview: reviewResult.sheetsQualifiedForReview > 0,
+    wasFlaggedForReview: reviewResult
+      ? reviewResult.sheetsQualifiedForReview > 0
+      : false,
     // AI review is complete if all attempted reviews succeeded
     aiReviewCompleted:
-      sheetsAttempted > 0 && reviewResult.sheetsReviewed === sheetsAttempted,
+      sheetsAttempted > 0 && reviewResult?.sheetsReviewed === sheetsAttempted,
   };
 }

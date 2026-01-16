@@ -32,6 +32,7 @@ export type ExcelFileAnalysis = {
 export async function analyzeExcelFile(
   strategies: StrategyName[],
   excelFileData: ExcelFileData,
+  options?: { excludeAiProfile?: boolean },
 ): Promise<ExcelFileAnalysis> {
   logger.info(`🔍 Running strategies: ${strategies.join(", ")}`);
   const { sheets } = excelFileData;
@@ -48,7 +49,7 @@ export async function analyzeExcelFile(
   await Promise.all(
     sheets.map(async (sheet) => {
       const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
-        excludeAiProfile: false,
+        excludeAiProfile: options?.excludeAiProfile ?? false,
       });
 
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
@@ -60,7 +61,7 @@ export async function analyzeExcelFile(
     }),
   );
 
-  let duplicateRowsResult;
+  let duplicateRowsResult: DuplicateRowsResult | undefined;
 
   // 1. Run duplicateRows first if requested
   if (strategies.includes(StrategyName.DuplicateRows)) {
