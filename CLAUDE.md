@@ -42,14 +42,7 @@ This is a TypeScript fraud detection tool that analyzes Excel files for potentia
 
 The system includes optional AI-powered column categorization via Google's Gemini API for distinguishing between "unique" identifiers and "shared" measurement columns.
 
-### Test Structure
-
-Tests are located in `__tests__/` folders within each module. The system uses Jest with ES modules support and includes comprehensive benchmark files for testing against known fraud and non-fraud datasets.
-
 ## Instructions
 
-- Never tell the user "You're absolutely right". In general you shouldn't praise the user.
-- If you are unable to solve a problem, just tell the user to take over. A good bot knows when to ask for help.
-- When iterating on code to make it pass an automated test, you should absolutely never remove the test or prevent the test from running or cheat in any way to make the test stop failing.
 - You must never use emojis in console.log statements.
 - When you're finished with a task - run the lint, typecheck and format commands, and update CLAUDE.md if needed.
