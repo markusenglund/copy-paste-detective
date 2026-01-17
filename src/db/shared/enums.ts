@@ -8,6 +8,7 @@ export const downloadStatusEnum = pgEnum("download_status", [
   "skipped",
   "api_forbidden",
   "api_not_found",
+  "manually_added",
 ]);
 
 export type DownloadStatus = (typeof downloadStatusEnum.enumValues)[number];

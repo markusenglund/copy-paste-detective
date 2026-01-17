@@ -13,5 +13,6 @@
     "noImplicitReturns": true,
     "strictPropertyInitialization": true
   },
-  "include": ["/**/*"]
+  "include": ["/**/*"],
+  "exclude": ["src/web/**/*"]
 }

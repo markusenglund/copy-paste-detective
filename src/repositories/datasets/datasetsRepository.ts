@@ -433,6 +433,7 @@ export async function getDatasetCountByStatus(): Promise<
     skipped: 0,
     api_forbidden: 0,
     api_not_found: 0,
+    manually_added: 0,
   };
 
   for (const row of result) {
