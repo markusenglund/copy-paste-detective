@@ -2,7 +2,6 @@ import { DuplicateRowsResult } from "../../types/strategies";
 import { calculateBaseNumberEntropy } from "../../utils/entropy";
 import { levelToSymbol } from "../../utils/output";
 import { logger } from "../../utils/logger";
-import { DuplicateRow } from "../../entities/DuplicateRow";
 
 export function printDuplicateRowsResults({
   duplicateRows,
