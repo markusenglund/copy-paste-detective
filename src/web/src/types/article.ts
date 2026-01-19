@@ -11,4 +11,6 @@ export interface ArticleForUpload {
   citationNormalizedPercentile: number | null;
   subfield: string | null;
   countryCode: string | null;
+  pdfFilename: string | null;
+  pdfFileSize: number | null;
 }

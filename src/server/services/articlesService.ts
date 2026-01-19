@@ -3,6 +3,7 @@ import { articles, articleAuthors } from "../../repositories/articles/schema";
 import { journals } from "../../repositories/journals/schema";
 import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { institutions } from "../../repositories/institutions/schema";
+import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import { desc, eq, sql, and } from "drizzle-orm";
 
 export interface ArticleForUpload {
@@ -18,6 +19,8 @@ export interface ArticleForUpload {
   citationNormalizedPercentile: number | null;
   subfield: string | null;
   countryCode: string | null;
+  pdfFilename: string | null;
+  pdfFileSize: number | null;
 }
 
 export async function getArticlesForManualUpload(): Promise<
@@ -49,6 +52,8 @@ export async function getArticlesForManualUpload(): Promise<
       citationNormalizedPercentile: articles.citationNormalizedPercentile,
       subfield: articles.subfield,
       countryCode: institutions.countryCode,
+      pdfFilename: pdfFiles.filename,
+      pdfFileSize: pdfFiles.size,
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))
@@ -60,12 +65,10 @@ export async function getArticlesForManualUpload(): Promise<
       ),
     )
     .leftJoin(institutions, eq(articleAuthors.institutionId, institutions.id))
+    .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
     .innerJoin(
       maxScoreSubquery,
       eq(maxScoreSubquery.dryadDatasetId, articles.dryadDatasetId),
-    )
-    .where(
-      sql`${articles.pdfDownloadStatus} IS NULL OR ${articles.pdfDownloadStatus} NOT IN ('completed', 'manually_added')`,
     )
     .orderBy(desc(maxScoreSubquery.maxSuspicionScore));
 
