@@ -10,4 +10,5 @@ export interface ArticleForUpload {
   suspicionScore: number | null;
   citationNormalizedPercentile: number | null;
   subfield: string | null;
+  countryCode: string | null;
 }

@@ -20,6 +20,16 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
+function getCountryFlag(countryCode: string): string {
+  // Convert ISO 3166-1 alpha-2 country code to flag emoji
+  // Each letter is converted to a Regional Indicator Symbol
+  return countryCode
+    .toUpperCase()
+    .split("")
+    .map((char) => String.fromCodePoint(0x1f1e6 + char.charCodeAt(0) - 65))
+    .join("");
+}
+
 export function ArticlesTable({
   articles,
   onUploadSuccess,
@@ -48,6 +58,9 @@ export function ArticlesTable({
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[200px]">
               Subfield
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Country
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Suspicion
@@ -119,6 +132,15 @@ export function ArticlesTable({
                 {article.subfield ? (
                   <span className="line-clamp-3" title={article.subfield}>
                     {article.subfield}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )}
+              </td>
+              <td className="px-4 py-3 text-sm text-gray-600">
+                {article.countryCode ? (
+                  <span>
+                    {getCountryFlag(article.countryCode)} {article.countryCode}
                   </span>
                 ) : (
                   <span className="text-gray-400">-</span>
