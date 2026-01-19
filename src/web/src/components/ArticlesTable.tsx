@@ -37,23 +37,20 @@ export function ArticlesTable({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              DOI
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              PDF URL
-            </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">
               Title
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[80px]">
+              PDF URL
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[200px]">
               Journal
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Suspicion
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Date
+              Published
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Citations
@@ -65,24 +62,25 @@ export function ArticlesTable({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {articles.map((article) => (
-            <tr key={article.id} className="hover:bg-gray-50 h-20">
-              <td className="px-4 py-3 text-sm">
+            <tr key={article.id} className="hover:bg-gray-50">
+              <td className="px-4 py-3 text-sm max-w-xs">
                 {article.doi ? (
                   <a
                     href={`https://doi.org/${article.doi}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                    className="text-blue-600 hover:text-blue-800 hover:underline line-clamp-3"
+                    title={article.title}
                   >
-                    {article.doi.length > 30
-                      ? article.doi.substring(0, 30) + "..."
-                      : article.doi}
+                    {article.title}
                   </a>
                 ) : (
-                  <span className="text-gray-400">-</span>
+                  <span className="line-clamp-3" title={article.title}>
+                    {article.title}
+                  </span>
                 )}
               </td>
-              <td className="px-4 py-3 text-sm">
+              <td className="px-4 py-3 text-sm max-w-[80px]">
                 {article.fullPdfUrl ? (
                   <a
                     href={article.fullPdfUrl}
@@ -93,20 +91,16 @@ export function ArticlesTable({
                     Open PDF
                   </a>
                 ) : (
-                  <span className="text-gray-400">No PDF URL</span>
+                  <span className="text-gray-400">No URL</span>
                 )}
               </td>
               <td
-                className="px-4 py-3 text-sm max-w-xs truncate"
-                title={article.title}
-              >
-                {article.title}
-              </td>
-              <td
-                className="px-4 py-3 text-sm max-w-[200px] truncate"
+                className="px-4 py-3 text-sm max-w-[160px]"
                 title={article.journalTitle || undefined}
               >
-                {article.journalTitle || (
+                {article.journalTitle ? 
+                <span className="line-clamp-3" title={article.journalTitle}>{article.journalTitle}</span>
+                : (
                   <span className="text-gray-400">-</span>
                 )}
               </td>
