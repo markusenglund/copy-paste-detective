@@ -48,21 +48,19 @@ export function PdfDropzone({
       {...getRootProps()}
       className={`
         border-2 border-dashed rounded-md p-2 text-center cursor-pointer text-xs
-        transition-colors duration-200
+        transition-colors duration-200 h-12 flex items-center justify-center
         ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"}
         ${uploading ? "opacity-50 cursor-not-allowed" : ""}
         ${error ? "border-red-500" : ""}
       `}
     >
       <input {...getInputProps()} />
-      {uploading ? (
-        <span className="text-gray-500">Uploading...</span>
-      ) : error ? (
+      {error ? (
         <span className="text-red-500">{error}</span>
-      ) : isDragActive ? (
-        <span className="text-blue-500">Drop PDF here</span>
       ) : (
-        <span className="text-gray-500">Drop PDF</span>
+        <span className={isDragActive || uploading ? "text-blue-500" : "text-gray-500"}>
+          Drop PDF
+        </span>
       )}
     </div>
   );

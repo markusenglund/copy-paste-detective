@@ -65,7 +65,7 @@ export function ArticlesTable({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {articles.map((article) => (
-            <tr key={article.id} className="hover:bg-gray-50">
+            <tr key={article.id} className="hover:bg-gray-50 h-20">
               <td className="px-4 py-3 text-sm">
                 {article.doi ? (
                   <a
