@@ -1,6 +1,14 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, gt } from "drizzle-orm";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
+import { dryadDatasets } from "../datasets/schema";
+import type { DryadDataset } from "../datasets/datasetsRepository";
+import { articles } from "../articles/schema";
+import type { Article } from "../articles/schema";
+import { pdfFiles } from "../pdfFiles/schema";
+import type { PdfFile } from "../pdfFiles/schema";
+import { dryadExcelFiles } from "../excelFiles/schema";
+import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 
 // Re-export types for convenience
 export type AiReviewResultRow = typeof aiReviewResults.$inferSelect;
@@ -65,4 +73,50 @@ export async function getLatestReviewsPerSheet(): Promise<
   }
 
   return reviewsByDatasetId;
+}
+
+/**
+ * Get high-suspicion AI reviews with all associated data (articles, PDFs, datasets, excel files).
+ * Filters for suspicionScore > threshold and pdfDownloadStatus = 'completed'.
+ * Orders by suspicionScore DESC, impactScore DESC.
+ */
+export async function getHighSuspicionReviewsWithArticles(
+  suspicionThreshold: number,
+  limit: number,
+): Promise<
+  Array<{
+    aiReview: AiReviewResultRow;
+    article: Article;
+    pdfFile: PdfFile;
+    dataset: DryadDataset;
+    excelFile: DryadExcelFileRow;
+  }>
+> {
+  const results = await db
+    .select({
+      aiReview: aiReviewResults,
+      article: articles,
+      pdfFile: pdfFiles,
+      dataset: dryadDatasets,
+      excelFile: dryadExcelFiles,
+    })
+    .from(aiReviewResults)
+    .innerJoin(
+      dryadDatasets,
+      eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
+    )
+    .innerJoin(articles, eq(dryadDatasets.id, articles.dryadDatasetId))
+    .innerJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
+    .innerJoin(
+      dryadExcelFiles,
+      eq(aiReviewResults.dryadExcelFileId, dryadExcelFiles.id),
+    )
+    .where(gt(aiReviewResults.suspicionScore, suspicionThreshold))
+    .orderBy(
+      desc(aiReviewResults.suspicionScore),
+      desc(aiReviewResults.impactScore),
+    )
+    .limit(limit);
+
+  return results;
 }
