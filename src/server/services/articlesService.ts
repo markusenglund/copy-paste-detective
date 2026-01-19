@@ -14,6 +14,8 @@ export interface ArticleForUpload {
   pdfDownloadStatus: string | null;
   journalTitle: string | null;
   suspicionScore: number | null;
+  citationNormalizedPercentile: number | null;
+  subfield: string | null;
 }
 
 export async function getArticlesForManualUpload(): Promise<
@@ -42,6 +44,8 @@ export async function getArticlesForManualUpload(): Promise<
       pdfDownloadStatus: articles.pdfDownloadStatus,
       journalTitle: journals.title,
       suspicionScore: maxScoreSubquery.maxSuspicionScore,
+      citationNormalizedPercentile: articles.citationNormalizedPercentile,
+      subfield: articles.subfield,
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))

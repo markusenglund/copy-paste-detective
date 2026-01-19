@@ -46,6 +46,9 @@ export function ArticlesTable({
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[200px]">
               Journal
             </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[200px]">
+              Subfield
+            </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Suspicion
             </th>
@@ -54,6 +57,9 @@ export function ArticlesTable({
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Citations
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Citation %
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Upload
@@ -98,9 +104,23 @@ export function ArticlesTable({
                 className="px-4 py-3 text-sm max-w-[160px]"
                 title={article.journalTitle || undefined}
               >
-                {article.journalTitle ? 
-                <span className="line-clamp-3" title={article.journalTitle}>{article.journalTitle}</span>
-                : (
+                {article.journalTitle ? (
+                  <span className="line-clamp-3" title={article.journalTitle}>
+                    {article.journalTitle}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )}
+              </td>
+              <td
+                className="px-4 py-3 text-sm max-w-[200px]"
+                title={article.subfield || undefined}
+              >
+                {article.subfield ? (
+                  <span className="line-clamp-3" title={article.subfield}>
+                    {article.subfield}
+                  </span>
+                ) : (
                   <span className="text-gray-400">-</span>
                 )}
               </td>
@@ -114,6 +134,11 @@ export function ArticlesTable({
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
                 {article.numCitations}
+              </td>
+              <td className="px-4 py-3 text-sm text-gray-600">
+                {article.citationNormalizedPercentile !== null
+                  ? `${(article.citationNormalizedPercentile * 100).toFixed(1)}%`
+                  : "-"}
               </td>
               <td className="px-4 py-3 text-sm">
                 <PdfDropzone

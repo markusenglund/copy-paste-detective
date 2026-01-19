@@ -8,4 +8,6 @@ export interface ArticleForUpload {
   pdfDownloadStatus: string | null;
   journalTitle: string | null;
   suspicionScore: number | null;
+  citationNormalizedPercentile: number | null;
+  subfield: string | null;
 }
