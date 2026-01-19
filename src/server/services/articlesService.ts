@@ -19,18 +19,17 @@ export interface ArticleForUpload {
 export async function getArticlesForManualUpload(): Promise<
   ArticleForUpload[]
 > {
-  // Subquery to get the latest ai_review_result per dryadDatasetId
-  const latestReviewSubquery = db
+  // Subquery to get the maximum suspicion score per dryadDatasetId
+  const maxScoreSubquery = db
     .select({
       dryadDatasetId: aiReviewResults.dryadDatasetId,
-      suspicionScore: aiReviewResults.suspicionScore,
-      rowNumber: sql<number>`ROW_NUMBER() OVER (
-        PARTITION BY ${aiReviewResults.dryadDatasetId}
-        ORDER BY ${aiReviewResults.createdAt} DESC
-      )`.as("row_number"),
+      maxSuspicionScore: sql<number>`MAX(${aiReviewResults.suspicionScore})`.as(
+        "max_suspicion_score",
+      ),
     })
     .from(aiReviewResults)
-    .as("latest_reviews");
+    .groupBy(aiReviewResults.dryadDatasetId)
+    .as("max_scores");
 
   const result = await db
     .select({
@@ -42,18 +41,18 @@ export async function getArticlesForManualUpload(): Promise<
       numCitations: articles.numCitations,
       pdfDownloadStatus: articles.pdfDownloadStatus,
       journalTitle: journals.title,
-      suspicionScore: latestReviewSubquery.suspicionScore,
+      suspicionScore: maxScoreSubquery.maxSuspicionScore,
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))
     .innerJoin(
-      latestReviewSubquery,
-      sql`${latestReviewSubquery.dryadDatasetId} = ${articles.dryadDatasetId} AND ${latestReviewSubquery.rowNumber} = 1`,
+      maxScoreSubquery,
+      eq(maxScoreSubquery.dryadDatasetId, articles.dryadDatasetId),
     )
     .where(
       sql`${articles.pdfDownloadStatus} IS NULL OR ${articles.pdfDownloadStatus} NOT IN ('completed', 'manually_added')`,
     )
-    .orderBy(desc(latestReviewSubquery.suspicionScore));
+    .orderBy(desc(maxScoreSubquery.maxSuspicionScore));
 
   return result;
 }
