@@ -6,6 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Run fraud detection**: `npm run detect excel <folder> [fileIndex] [--strategies <strategies>]`
   - Example: `npm run detect excel benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418 1 --strategies duplicateRows,individualNumbers` (analyzes second Excel file in the folder)
+- **Review PDFs for suspicious datasets**: `npm run pdf-review [--limit <number>] [--ext-id <number>]`
+  - Example: `npm run pdf-review --limit 5` (reviews up to 5 PDFs)
+  - Example: `npm run pdf-review --ext-id 158552` (reviews only dataset with extId 158552)
 - **Run tests**: `npm test`
 - **Run specific test**: `npm test -- --testPathPattern=<pattern>`
 - **Lint code**: `npm run lint`

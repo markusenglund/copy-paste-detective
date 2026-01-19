@@ -21,18 +21,23 @@ program
     parseIntArgument,
     1,
   )
+  .option("--extId <number>", "Update a specific dataset by extId", parseInt)
   .action(async (options) => {
     let successCount = 0;
     let failedCount = 0;
 
     try {
+      const filterMessage = options.extId
+        ? ` for dataset extId ${options.extId}`
+        : "";
       logger.info(
-        `Fetching up to ${options.limit} high-suspicion reviews (suspicion score > ${SUSPICION_THRESHOLD})...`,
+        `Fetching up to ${options.limit} high-suspicion reviews (suspicion score > ${SUSPICION_THRESHOLD})${filterMessage}...`,
       );
 
       const reviews = await getHighSuspicionReviewsWithArticles(
         SUSPICION_THRESHOLD,
         options.limit,
+        options.extId,
       );
 
       logger.info(`Found ${reviews.length} reviews to process`);
@@ -84,11 +89,8 @@ program
 
           // Log results (truncated)
           logger.info(`Impact Score: ${pdfReview.impactScore}/10`);
-          const truncatedResponse =
-            pdfReview.response.length > 300
-              ? `${pdfReview.response.slice(0, 300)}...`
-              : pdfReview.response;
-          logger.info(`Analysis: ${truncatedResponse}`);
+
+          logger.info(`Analysis: ${pdfReview.response}`);
 
           successCount++;
         } catch (err) {

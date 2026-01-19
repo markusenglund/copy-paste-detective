@@ -1,4 +1,4 @@
-import { desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
 import { dryadDatasets } from "../datasets/schema";
@@ -78,11 +78,13 @@ export async function getLatestReviewsPerSheet(): Promise<
 /**
  * Get high-suspicion AI reviews with all associated data (articles, PDFs, datasets, excel files).
  * Filters for suspicionScore > threshold and pdfDownloadStatus = 'completed'.
+ * Optionally filters by dataset extId.
  * Orders by suspicionScore DESC, impactScore DESC.
  */
 export async function getHighSuspicionReviewsWithArticles(
   suspicionThreshold: number,
   limit: number,
+  extId?: number,
 ): Promise<
   Array<{
     aiReview: AiReviewResultRow;
@@ -92,6 +94,14 @@ export async function getHighSuspicionReviewsWithArticles(
     excelFile: DryadExcelFileRow;
   }>
 > {
+  const whereConditions = [
+    gt(aiReviewResults.suspicionScore, suspicionThreshold),
+  ];
+
+  if (extId !== undefined) {
+    whereConditions.push(eq(dryadDatasets.extId, extId));
+  }
+
   const results = await db
     .select({
       aiReview: aiReviewResults,
@@ -111,7 +121,7 @@ export async function getHighSuspicionReviewsWithArticles(
       dryadExcelFiles,
       eq(aiReviewResults.dryadExcelFileId, dryadExcelFiles.id),
     )
-    .where(gt(aiReviewResults.suspicionScore, suspicionThreshold))
+    .where(and(...whereConditions))
     .orderBy(
       desc(aiReviewResults.suspicionScore),
       desc(aiReviewResults.impactScore),
