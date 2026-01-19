@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { updateArticlePdfDownloadStatus } from "../../repositories/articles/articlesRepository";
+import { upsertPdfFile } from "../../repositories/pdfFiles/pdfFilesRepository";
 
 export async function uploadRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{
@@ -32,6 +33,13 @@ export async function uploadRoutes(fastify: FastifyInstance): Promise<void> {
     await writeFile(filePath, buffer);
 
     await updateArticlePdfDownloadStatus(articleId, "manually_added");
+
+    await upsertPdfFile({
+      articleId,
+      filename,
+      size: buffer.length,
+      url: null,
+    });
 
     return reply.send({
       success: true,

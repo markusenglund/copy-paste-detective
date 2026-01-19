@@ -29,3 +29,4 @@ export {
 export { authors } from "./authors/schema";
 export { funders } from "./funders/schema";
 export { institutions } from "./institutions/schema";
+export { pdfFiles } from "./pdfFiles/schema";

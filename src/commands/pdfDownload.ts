@@ -3,6 +3,7 @@ import {
   getArticlesForPdfDownload,
   updateArticlePdfDownloadStatus,
 } from "../repositories/articles/articlesRepository";
+import { upsertPdfFile } from "../repositories/pdfFiles/pdfFilesRepository";
 import { downloadPdf } from "../utils/downloadPdf";
 import { parseIntArgument } from "../utils/command";
 import { logger } from "../utils/logger";
@@ -43,12 +44,19 @@ program
         try {
           await updateArticlePdfDownloadStatus(article.id, "in_progress");
 
-          const filePath = await downloadPdf({
+          const { filePath, filename, size } = await downloadPdf({
             articleId: article.id,
             pdfUrl: article.fullPdfUrl!,
           });
 
           await updateArticlePdfDownloadStatus(article.id, "completed");
+
+          await upsertPdfFile({
+            articleId: article.id,
+            filename,
+            size,
+            url: article.fullPdfUrl ?? null,
+          });
 
           logger.info(`Successfully downloaded PDF to ${filePath}`);
           successCount++;

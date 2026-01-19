@@ -21,6 +21,7 @@
     "openalex-search-article": "LOG_LEVEL=debug tsx -r dotenv/config src/commands/openalexSearchArticle",
     "openalex-connect-datasets": "LOG_LEVEL=debug tsx -r dotenv/config src/commands/openalexConnectDatasets",
     "pdf-download": "tsx -r dotenv/config src/commands/pdfDownload",
+    "backfill-pdf-metadata": "tsx -r dotenv/config src/scripts/backfillPdfMetadata.ts",
     "server": "tsx -r dotenv/config src/server/index.ts",
     "server:dev": "nodemon --watch src/server --ext ts --exec 'tsx -r dotenv/config src/server/index.ts'",
     "web:dev": "vite --config src/web/vite.config.ts",

@@ -46,7 +46,7 @@ function extractFilenameFromResponse(
 export async function downloadPdf({
   articleId,
   pdfUrl,
-}: Params): Promise<string> {
+}: Params): Promise<{ filePath: string; filename: string; size: number }> {
   const downloadDir = join(process.cwd(), `data/pdfs/${articleId}`);
 
   await mkdir(downloadDir, { recursive: true });
@@ -71,12 +71,14 @@ export async function downloadPdf({
   const writeStream = createWriteStream(filePath);
 
   const reader = response.body.getReader();
+  let size = 0;
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
+      size += value.length;
       writeStream.write(value);
     }
   } finally {
@@ -89,5 +91,5 @@ export async function downloadPdf({
     writeStream.on("error", reject);
   });
 
-  return filePath;
+  return { filePath, filename, size };
 }
