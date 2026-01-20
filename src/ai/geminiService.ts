@@ -424,6 +424,36 @@ function buildPdfReviewParams(
   };
 }
 
+type PdfReviewHashParams = {
+  model: string;
+  conversation: {
+    originalUserPrompt: string;
+    modelResponse: string;
+    followUpPrompt: string;
+  };
+  config: {
+    temperature: number;
+    responseMimeType: "application/json";
+    responseSchema: typeof pdfReviewGeminiSchema;
+  };
+};
+
+function buildPdfReviewHashParams(conversation: {
+  originalUserPrompt: string;
+  modelResponse: string;
+  followUpPrompt: string;
+}): PdfReviewHashParams {
+  return {
+    model: pdfReviewModel,
+    conversation,
+    config: {
+      temperature: 1,
+      responseMimeType: "application/json",
+      responseSchema: pdfReviewGeminiSchema,
+    },
+  };
+}
+
 async function reviewPdfGemini(
   params: PdfReviewParams,
 ): Promise<PdfReviewResponse> {
@@ -460,12 +490,10 @@ export type ReviewPdfWithCacheParams = {
 
 /**
  * Higher-order function that wraps the PDF review Gemini API call with database caching.
- * - Uploads PDF file to Gemini
- * - Builds the full Gemini API params object
- * - Computes a hash from the full params object (model, conversation, config, PDF hash)
+ * - Computes a deterministic hash from conversation, config, and PDF content
  * - Checks DB for cached result
- * - If hit: returns cached data
- * - If miss: stores result, returns it
+ * - If hit: returns cached data (no upload or API call)
+ * - If miss: uploads PDF file to Gemini, calls API, stores result
  */
 export async function reviewPdfWithCache(
   params: ReviewPdfWithCacheParams,
@@ -473,10 +501,25 @@ export async function reviewPdfWithCache(
   const { conversation, pdfBuffer, pdfFileName, aiReviewResultId, articleId } =
     params;
 
-  // Upload PDF file to Gemini
-  // Convert Buffer to Blob for upload
-  const pdfBlob = new Blob([pdfBuffer], { type: "application/pdf" });
+  // STEP 1: Calculate deterministic hash BEFORE uploading
+  const hashParams = buildPdfReviewHashParams(conversation);
+  const pdfHash = createHash("md5").update(pdfBuffer).digest("hex");
+  const hash = createHash("md5")
+    .update(JSON.stringify({ ...hashParams, pdfHash }))
+    .digest("hex");
 
+  // STEP 2: Check cache with deterministic hash
+  const cached = await findPdfReviewResultByHash(hash);
+  if (cached) {
+    logger.info(`Found cached PDF review result for article ${articleId}`);
+    return {
+      impactScore: cached.impactScore,
+      response: cached.response,
+    };
+  }
+
+  // STEP 3: Cache miss - upload PDF to Gemini
+  const pdfBlob = new Blob([pdfBuffer], { type: "application/pdf" });
   const uploadResult = await geminiClient.files.upload({
     file: pdfBlob,
     config: {
@@ -490,35 +533,17 @@ export async function reviewPdfWithCache(
 
   const fileUri = uploadResult.uri;
 
-  // Build Gemini params with uploaded file URI
+  // STEP 4: Build full params with fileUri and call API
   const geminiParams = buildPdfReviewParams(conversation, fileUri);
-
-  // Compute hash including PDF file hash for caching
-  const pdfHash = createHash("md5").update(pdfBuffer).digest("hex");
-  const hash = createHash("md5")
-    .update(JSON.stringify({ ...geminiParams, pdfHash }))
-    .digest("hex");
-
-  // Check for cached result
-  const cached = await findPdfReviewResultByHash(hash);
-  if (cached) {
-    logger.info(`Found cached PDF review result for article ${articleId}`);
-    return {
-      impactScore: cached.impactScore,
-      response: cached.response,
-    };
-  }
-
   const result = await reviewPdfGemini(geminiParams);
 
-  // Serialize conversation for storage
+  // STEP 5: Store with deterministic hash
   const promptForStorage = JSON.stringify({
     originalUserPrompt: conversation.originalUserPrompt,
     modelResponse: conversation.modelResponse,
     followUpPrompt: conversation.followUpPrompt,
   });
 
-  // Store in database
   await insertPdfReviewResult({
     aiReviewResultId,
     articleId,
