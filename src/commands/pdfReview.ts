@@ -88,9 +88,12 @@ program
           });
 
           // Log results (truncated)
-          logger.info(`Impact Score: ${pdfReview.impactScore}/10`);
 
           logger.info(`Analysis: ${pdfReview.response}`);
+          logger.info(
+            `Previous suspicion score: ${aiReview.suspicionScore}/10`,
+          );
+          logger.info(`Impact Score: ${pdfReview.impactScore}/10`);
 
           successCount++;
         } catch (err) {
