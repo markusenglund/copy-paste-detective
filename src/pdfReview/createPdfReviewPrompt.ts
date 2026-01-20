@@ -31,11 +31,10 @@ Then evaluate how seriously the data issues might impact the paper's conclusions
 
 Examples of impact scores:
 - 1: The problematic data is not referenced in the paper at all
-- 3: Only a single row in a larger dataset affected, no impact on conclusions.
-- 5: Multiple rows affected, but only minor conclusions are affected.
-- 7: Multiple rows affected, and some main conclusions are affected.
-- 9: Issues are widespread and affect main conclusions.
-- 10: Severe widespread issues that make all conclusions completely untrustworthy.
+- 3: Only a single row with issues in a larger dataset, leaving conclusions largely unaffected.
+- 5: Multiple rows with issues, but only secondary or supporting conclusions are affected.
+- 7: Multiple rows with issues in data that directly affect the primary result.
+- 9: Widespread issues that affect all primary conclusions.
 `;
 
   return {
