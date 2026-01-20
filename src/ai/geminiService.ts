@@ -354,7 +354,7 @@ const pdfReviewResponseSchema = z.object({
 
 export type PdfReviewResponse = z.infer<typeof pdfReviewResponseSchema>;
 
-const pdfReviewModel = "gemini-3-pro-preview";
+const pdfReviewModel = "gemini-2.5-flash-lite";
 
 const pdfReviewGeminiSchema = {
   type: Type.OBJECT,

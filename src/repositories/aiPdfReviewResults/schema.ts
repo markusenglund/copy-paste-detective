@@ -34,9 +34,6 @@ export const aiPdfReviewResults = pgTable(
     ),
     articleIdx: index("idx_ai_pdf_review_results_article").on(table.articleId),
     hashIdx: index("idx_ai_pdf_review_results_hash").on(table.hash),
-    aiReviewResultIdUnique: unique(
-      "ai_pdf_review_results_ai_review_result_id_unique",
-    ).on(table.aiReviewResultId),
     hashUnique: unique("ai_pdf_review_results_hash_unique").on(table.hash),
   }),
 );
