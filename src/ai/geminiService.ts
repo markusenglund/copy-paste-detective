@@ -354,7 +354,7 @@ const pdfReviewResponseSchema = z.object({
 
 export type PdfReviewResponse = z.infer<typeof pdfReviewResponseSchema>;
 
-const pdfReviewModel = "gemini-2.5-flash-lite";
+const pdfReviewModel = "gemini-3-flash-preview";
 
 const pdfReviewGeminiSchema = {
   type: Type.OBJECT,
@@ -462,6 +462,19 @@ async function reviewPdfGemini(
 
     if (!response.text) {
       throw new Error("No text received from Gemini API");
+    }
+
+    // Log token usage
+    if (response.usageMetadata) {
+      logger.info(
+        `PDF review token usage: ` +
+          `input=${response.usageMetadata.promptTokenCount ?? 0}, ` +
+          `output=${response.usageMetadata.candidatesTokenCount ?? 0}, ` +
+          `total=${response.usageMetadata.totalTokenCount ?? 0}` +
+          (response.usageMetadata.cachedContentTokenCount
+            ? `, cached=${response.usageMetadata.cachedContentTokenCount}`
+            : ""),
+      );
     }
 
     // Parse and validate the structured JSON response
