@@ -18,6 +18,7 @@ export const analysisStatusEnum = pgEnum("analysis_status", [
   "not_flagged_for_review",
   "flagged_for_review",
   "reviewed_by_ai",
+  "pdf_reviewed_by_ai",
   "failed",
 ]);
 

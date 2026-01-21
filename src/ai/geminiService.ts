@@ -362,7 +362,7 @@ const pdfReviewGeminiSchema = {
     response: {
       type: Type.STRING,
       description:
-      "Full analysis of affected conclusions, overall impact, and supporting evidence",
+        "Full analysis of affected conclusions, overall impact, and supporting evidence",
     },
     impactScore: {
       type: Type.INTEGER,

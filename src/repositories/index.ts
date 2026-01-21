@@ -9,7 +9,7 @@
  */
 
 // Shared enums
-export { downloadStatusEnum } from "../db/shared/enums";
+export { downloadStatusEnum, analysisStatusEnum } from "../db/shared/enums";
 export type { DownloadStatus } from "../db/shared/enums";
 
 // Schemas

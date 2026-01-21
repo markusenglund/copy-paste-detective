@@ -1,6 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import { parseIntArgument } from "../utils/command";
-import { getHighSuspicionReviewsWithArticles } from "../repositories/aiReviewResults/aiReviewResultsRepository";
+import { getDatasetsForPdfReview } from "../repositories/aiReviewResults/aiReviewResultsRepository";
+import { updateDatasetAnalysisStatus } from "../repositories/datasets/datasetsRepository";
 import { loadPdfFile } from "../utils/loadPdfForGemini";
 import { createPdfReviewPrompt } from "../pdfReview/createPdfReviewPrompt";
 import { reviewPdfWithCache } from "../ai/geminiService";
@@ -21,91 +22,114 @@ program
     parseIntArgument,
     1,
   )
-  .option("--extId <number>", "Update a specific dataset by extId", parseInt)
+  .option(
+    "--extId <number>",
+    "Get reviews for a specific dataset by extId",
+    parseInt,
+  )
   .action(async (options) => {
     let successCount = 0;
     let failedCount = 0;
+    let datasetsProcessed = 0;
 
     try {
       const filterMessage = options.extId
         ? ` for dataset extId ${options.extId}`
         : "";
       logger.info(
-        `Fetching up to ${options.limit} high-suspicion reviews (suspicion score > ${SUSPICION_THRESHOLD})${filterMessage}...`,
+        `Fetching up to ${options.limit} datasets with high-suspicion reviews (suspicion score > ${SUSPICION_THRESHOLD})${filterMessage}...`,
       );
 
-      const reviews = await getHighSuspicionReviewsWithArticles(
+      const datasetsWithReviews = await getDatasetsForPdfReview(
         SUSPICION_THRESHOLD,
         options.limit,
         options.extId,
       );
 
-      logger.info(`Found ${reviews.length} reviews to process`);
+      const totalReviews = datasetsWithReviews.reduce(
+        (sum, d) => sum + d.reviews.length,
+        0,
+      );
+      logger.info(
+        `Found ${datasetsWithReviews.length} datasets with ${totalReviews} reviews to process`,
+      );
 
       for (const {
-        aiReview,
+        dataset,
         article,
         pdfFile,
-        dataset,
-        excelFile,
-      } of reviews) {
-        try {
-          logger.info(`Processing article ${article.id}: ${article.title}`);
+        reviews,
+      } of datasetsWithReviews) {
+        logger.info(
+          `Processing dataset ${dataset.extId}: ${dataset.title} (${reviews.length} reviews)`,
+        );
 
-          // Load PDF file
-          const pdfData = await loadPdfFile({
-            articleId: article.id,
-            filename: pdfFile.filename,
-          });
+        // Load PDF file once per dataset
+        const pdfData = await loadPdfFile({
+          articleId: article.id,
+          filename: pdfFile.filename,
+        });
 
-          logger.info(
-            `Loaded PDF: ${pdfFile.filename} (${pdfFile.size} bytes)`,
-          );
+        logger.info(`Loaded PDF: ${pdfFile.filename} (${pdfFile.size} bytes)`);
 
-          // Create conversation structure for multi-turn prompt
-          const conversation = createPdfReviewPrompt({
-            originalPrompt: aiReview.prompt,
-            articleTitle: article.title,
-            articleAbstract: dataset.abstract ?? undefined,
-            excelFileName: excelFile.filename,
-            sheetName: aiReview.sheetName,
-            originalAiReview: {
-              explanation: aiReview.explanation,
-              falsePositiveTheory: aiReview.falsePositiveTheory,
-              suspicionScore: aiReview.suspicionScore,
-              impactScore: aiReview.impactScore,
-            },
-          });
+        for (const { aiReview, excelFile } of reviews) {
+          try {
+            logger.info(
+              `Processing review for ${excelFile.filename} / ${aiReview.sheetName}`,
+            );
 
-          // Call AI with caching
-          logger.info("Calling AI for PDF review...");
-          const pdfReview = await reviewPdfWithCache({
-            conversation,
-            pdfBuffer: pdfData.fileBuffer,
-            pdfFileName: pdfFile.filename,
-            aiReviewResultId: aiReview.id,
-            articleId: article.id,
-          });
+            // Create conversation structure for multi-turn prompt
+            const conversation = createPdfReviewPrompt({
+              originalPrompt: aiReview.prompt,
+              articleTitle: article.title,
+              articleAbstract: dataset.abstract ?? undefined,
+              excelFileName: excelFile.filename,
+              sheetName: aiReview.sheetName,
+              originalAiReview: {
+                explanation: aiReview.explanation,
+                falsePositiveTheory: aiReview.falsePositiveTheory,
+                suspicionScore: aiReview.suspicionScore,
+                impactScore: aiReview.impactScore,
+              },
+            });
 
-          // Log results (truncated)
+            // Call AI with caching
+            logger.info("Calling AI for PDF review...");
+            const pdfReview = await reviewPdfWithCache({
+              conversation,
+              pdfBuffer: pdfData.fileBuffer,
+              pdfFileName: pdfFile.filename,
+              aiReviewResultId: aiReview.id,
+              articleId: article.id,
+            });
 
-          logger.info(`Analysis: ${pdfReview.response}`);
-          logger.info(
-            `Previous suspicion score: ${aiReview.suspicionScore}/10`,
-          );
-          logger.info(`Impact Score: ${pdfReview.impactScore}/5`);
+            // Log results
+            logger.info(`Analysis: ${pdfReview.response}`);
+            logger.info(
+              `Previous suspicion score: ${aiReview.suspicionScore}/10`,
+            );
+            logger.info(`Impact Score: ${pdfReview.impactScore}/5`);
 
-          successCount++;
-        } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : String(err);
-          logger.error(
-            `Failed to process article ${article.id}: ${errorMessage}`,
-          );
-          failedCount++;
+            successCount++;
+          } catch (err) {
+            const errorMessage =
+              err instanceof Error ? err.message : String(err);
+            logger.error(
+              `Failed to process review for ${excelFile.filename} / ${aiReview.sheetName}: ${errorMessage}`,
+            );
+            failedCount++;
+          }
         }
+
+        // Mark dataset as pdf_reviewed_by_ai after processing all its reviews
+        await updateDatasetAnalysisStatus(dataset.extId, "pdf_reviewed_by_ai");
+        datasetsProcessed++;
+        logger.info(`Dataset ${dataset.extId} marked as pdf_reviewed_by_ai`);
       }
 
-      logger.info(`Complete. Success: ${successCount}, Failed: ${failedCount}`);
+      logger.info(
+        `Complete. Datasets: ${datasetsProcessed}, Reviews - Success: ${successCount}, Failed: ${failedCount}`,
+      );
     } finally {
       await closeDb();
     }
