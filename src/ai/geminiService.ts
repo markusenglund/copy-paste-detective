@@ -359,18 +359,19 @@ const pdfReviewModel = "gemini-3-pro-preview";
 const pdfReviewGeminiSchema = {
   type: Type.OBJECT,
   properties: {
+    response: {
+      type: Type.STRING,
+      description:
+      "Full analysis of affected conclusions, overall impact, and supporting evidence",
+    },
     impactScore: {
       type: Type.INTEGER,
       description:
         "Impact score from 1 to 10 (1 = no impact, 10 = conclusions entirely untrustworthy)",
     },
-    response: {
-      type: Type.STRING,
-      description:
-        "Full analysis of affected conclusions, overall impact, and supporting evidence",
-    },
   },
-  required: ["impactScore", "response"],
+  propertyOrdering: ["response", "impactScore"],
+  required: ["response", "impactScore"],
 } as const;
 
 type PdfReviewParams = {

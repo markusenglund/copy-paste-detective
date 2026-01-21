@@ -93,7 +93,7 @@ program
           logger.info(
             `Previous suspicion score: ${aiReview.suspicionScore}/10`,
           );
-          logger.info(`Impact Score: ${pdfReview.impactScore}/10`);
+          logger.info(`Impact Score: ${pdfReview.impactScore}/5`);
 
           successCount++;
         } catch (err) {
