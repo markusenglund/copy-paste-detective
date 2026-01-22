@@ -7,11 +7,11 @@ interface ArticlesTableProps {
   onUploadSuccess: () => void;
 }
 
-function getSuspicionScoreColor(score: number | null): string {
-  if (score === null) return "text-gray-400";
-  if (score >= 8) return "text-red-600 font-bold";
-  if (score >= 6) return "text-orange-500 font-semibold";
-  if (score >= 4) return "text-yellow-600";
+function getTruePositiveProbabilityColor(probability: number | null): string {
+  if (probability === null) return "text-gray-400";
+  if (probability >= 0.8) return "text-red-600 font-bold";
+  if (probability >= 0.6) return "text-orange-500 font-semibold";
+  if (probability >= 0.4) return "text-yellow-600";
   return "text-gray-600";
 }
 
@@ -88,7 +88,7 @@ export function ArticlesTable({
               Country
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Suspicion
+              Probability
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Published
@@ -172,9 +172,11 @@ export function ArticlesTable({
                 )}
               </td>
               <td
-                className={`px-4 py-3 text-sm ${getSuspicionScoreColor(article.suspicionScore)}`}
+                className={`px-4 py-3 text-sm ${getTruePositiveProbabilityColor(article.truePositiveProbability)}`}
               >
-                {article.suspicionScore ?? "-"}
+                {article.truePositiveProbability !== null
+                  ? `${(article.truePositiveProbability * 100).toFixed(0)}%`
+                  : "-"}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
                 {formatDate(article.publicationDate)}

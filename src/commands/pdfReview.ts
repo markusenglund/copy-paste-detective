@@ -10,7 +10,7 @@ import { closeDb } from "../db";
 
 const program = new Command();
 
-const SUSPICION_THRESHOLD = 5;
+const SUSPICION_THRESHOLD = 0.5;
 
 program
   .name("pdf-review")
@@ -37,7 +37,7 @@ program
         ? ` for dataset extId ${options.extId}`
         : "";
       logger.info(
-        `Fetching up to ${options.limit} datasets with high-suspicion reviews (suspicion score > ${SUSPICION_THRESHOLD})${filterMessage}...`,
+        `Fetching up to ${options.limit} datasets with high-suspicion reviews (probability > ${SUSPICION_THRESHOLD * 100}%)${filterMessage}...`,
       );
 
       const datasetsWithReviews = await getDatasetsForPdfReview(
@@ -85,12 +85,7 @@ program
               articleAbstract: dataset.abstract ?? undefined,
               excelFileName: excelFile.filename,
               sheetName: aiReview.sheetName,
-              originalAiReview: {
-                explanation: aiReview.explanation,
-                falsePositiveTheory: aiReview.falsePositiveTheory,
-                suspicionScore: aiReview.suspicionScore,
-                impactScore: aiReview.impactScore,
-              },
+              originalAiReview: aiReview.response,
             });
 
             // Call AI with caching
@@ -106,7 +101,7 @@ program
             // Log results
             logger.info(`Analysis: ${pdfReview.response}`);
             logger.info(
-              `Previous suspicion score: ${aiReview.suspicionScore}/10`,
+              `Previous probability of real issues: ${(aiReview.truePositiveProbability * 100).toFixed(0)}%`,
             );
             logger.info(`Impact Score: ${pdfReview.impactScore}/5`);
 

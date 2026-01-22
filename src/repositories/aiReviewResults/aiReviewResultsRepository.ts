@@ -30,10 +30,8 @@ export async function insertResult(data: {
   sheetName: string;
   prompt: string;
   model: string;
-  explanation: string;
-  falsePositiveTheory: string;
-  suspicionScore: number;
-  impactScore: number;
+  response: string;
+  truePositiveProbability: number;
   hash: string;
 }): Promise<AiReviewResultRow> {
   const [inserted] = await db.insert(aiReviewResults).values(data).returning();
@@ -77,9 +75,9 @@ export async function getLatestReviewsPerSheet(): Promise<
 
 /**
  * Get high-suspicion AI reviews with all associated data (articles, PDFs, datasets, excel files).
- * Filters for suspicionScore > threshold and pdfDownloadStatus = 'completed'.
+ * Filters for truePositiveProbability > threshold and pdfDownloadStatus = 'completed'.
  * Optionally filters by dataset extId.
- * Orders by suspicionScore DESC, impactScore DESC.
+ * Orders by truePositiveProbability DESC.
  */
 export async function getHighSuspicionReviewsWithArticles(
   suspicionThreshold: number,
@@ -95,7 +93,7 @@ export async function getHighSuspicionReviewsWithArticles(
   }>
 > {
   const whereConditions = [
-    gt(aiReviewResults.suspicionScore, suspicionThreshold),
+    gt(aiReviewResults.truePositiveProbability, suspicionThreshold),
   ];
 
   if (extId !== undefined) {
@@ -122,10 +120,7 @@ export async function getHighSuspicionReviewsWithArticles(
       eq(aiReviewResults.dryadExcelFileId, dryadExcelFiles.id),
     )
     .where(and(...whereConditions))
-    .orderBy(
-      desc(aiReviewResults.suspicionScore),
-      desc(aiReviewResults.impactScore),
-    )
+    .orderBy(desc(aiReviewResults.truePositiveProbability))
     .limit(limit);
 
   return results;
@@ -181,7 +176,7 @@ export async function getDatasetsForPdfReview(
       INNER JOIN articles a ON a.dryad_dataset_id = arr.dryad_dataset_id
       INNER JOIN pdf_files pf ON pf.article_id = a.id
       WHERE arr.dryad_dataset_id = dryad_datasets.id
-        AND arr.suspicion_score > ${suspicionThreshold}
+        AND arr.true_positive_probability > ${suspicionThreshold}
         AND arr.created_at > ${PDF_REVIEW_DATE_THRESHOLD}
         AND a.pdf_download_status IN ('completed', 'manually_added')
     )`;
@@ -214,7 +209,7 @@ export async function getDatasetsForPdfReview(
     SELECT dryad_dataset_id, dryad_excel_file_id, sheet_name, MAX(created_at) as max_created_at
     FROM ai_review_results
     WHERE dryad_dataset_id IN (${datasetIdList})
-      AND suspicion_score > ${suspicionThreshold}
+      AND true_positive_probability > ${suspicionThreshold}
       AND created_at > ${PDF_REVIEW_DATE_THRESHOLD}
     GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
   )`;
@@ -252,10 +247,7 @@ export async function getDatasetsForPdfReview(
         inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
       ),
     )
-    .orderBy(
-      desc(aiReviewResults.suspicionScore),
-      desc(aiReviewResults.impactScore),
-    );
+    .orderBy(desc(aiReviewResults.truePositiveProbability));
 
   // Step 4: Group reviews by dataset
   const reviewsByDatasetId = new Map<

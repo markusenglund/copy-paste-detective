@@ -15,7 +15,7 @@ export interface ArticleForUpload {
   numCitations: number;
   pdfDownloadStatus: string | null;
   journalTitle: string | null;
-  suspicionScore: number | null;
+  truePositiveProbability: number | null;
   citationNormalizedPercentile: number | null;
   subfield: string | null;
   countryCode: string | null;
@@ -26,13 +26,14 @@ export interface ArticleForUpload {
 export async function getArticlesForManualUpload(): Promise<
   ArticleForUpload[]
 > {
-  // Subquery to get the maximum suspicion score per dryadDatasetId
+  // Subquery to get the maximum true positive probability per dryadDatasetId
   const maxScoreSubquery = db
     .select({
       dryadDatasetId: aiReviewResults.dryadDatasetId,
-      maxSuspicionScore: sql<number>`MAX(${aiReviewResults.suspicionScore})`.as(
-        "max_suspicion_score",
-      ),
+      maxTruePositiveProbability:
+        sql<number>`MAX(${aiReviewResults.truePositiveProbability})`.as(
+          "max_true_positive_probability",
+        ),
     })
     .from(aiReviewResults)
     .groupBy(aiReviewResults.dryadDatasetId)
@@ -48,7 +49,7 @@ export async function getArticlesForManualUpload(): Promise<
       numCitations: articles.numCitations,
       pdfDownloadStatus: articles.pdfDownloadStatus,
       journalTitle: journals.title,
-      suspicionScore: maxScoreSubquery.maxSuspicionScore,
+      truePositiveProbability: maxScoreSubquery.maxTruePositiveProbability,
       citationNormalizedPercentile: articles.citationNormalizedPercentile,
       subfield: articles.subfield,
       countryCode: institutions.countryCode,
@@ -70,7 +71,7 @@ export async function getArticlesForManualUpload(): Promise<
       maxScoreSubquery,
       eq(maxScoreSubquery.dryadDatasetId, articles.dryadDatasetId),
     )
-    .orderBy(desc(maxScoreSubquery.maxSuspicionScore));
+    .orderBy(desc(maxScoreSubquery.maxTruePositiveProbability));
 
   return result;
 }

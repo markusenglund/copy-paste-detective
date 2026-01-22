@@ -7,7 +7,7 @@ export interface ArticleForUpload {
   numCitations: number;
   pdfDownloadStatus: string | null;
   journalTitle: string | null;
-  suspicionScore: number | null;
+  truePositiveProbability: number | null;
   citationNormalizedPercentile: number | null;
   subfield: string | null;
   countryCode: string | null;

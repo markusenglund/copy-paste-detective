@@ -1,4 +1,11 @@
-import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  integer,
+  numeric,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { dryadDatasets } from "../datasets/schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
 
@@ -13,10 +20,10 @@ export const aiReviewResults = pgTable("ai_review_results", {
   sheetName: text("sheet_name").notNull(),
   prompt: text("prompt").notNull(),
   model: text("model").notNull(),
-  explanation: text("explanation").notNull(),
-  falsePositiveTheory: text("false_positive_theory").notNull(),
-  suspicionScore: integer("suspicion_score").notNull(),
-  impactScore: integer("impact_score").notNull(),
+  response: text("response").notNull(),
+  truePositiveProbability: numeric("true_positive_probability", {
+    mode: "number",
+  }).notNull(),
   hash: text("hash").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

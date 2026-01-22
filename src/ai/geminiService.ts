@@ -196,10 +196,8 @@ export async function screenColumnsWithCache(
 
 // Schema for parsing review results from Gemini API
 const reviewResultsResponseSchema = z.object({
-  explanation: z.string(),
-  falsePositiveTheory: z.string(),
-  suspicionScore: z.number().int().min(1).max(10),
-  impactScore: z.number().int().min(1).max(10),
+  response: z.string(),
+  truePositiveProbability: z.number().min(0).max(1),
 });
 
 export type ReviewResultsResponse = z.infer<typeof reviewResultsResponseSchema>;
@@ -209,32 +207,18 @@ const reviewResultsModel = "gemini-3-pro-preview";
 const reviewResultsGeminiSchema = {
   type: Type.OBJECT,
   properties: {
-    explanation: {
+    response: {
       type: Type.STRING,
-      description: "Best explanation for the duplicates",
+      description: "Full response to the prompt",
     },
-    falsePositiveTheory: {
-      type: Type.STRING,
+    truePositiveProbability: {
+      type: Type.NUMBER,
       description:
-        "Theory for how this could be a false positive with an innocent explanation",
-    },
-    suspicionScore: {
-      type: Type.INTEGER,
-      description:
-        "Suspiciousness score from 1 to 10 expressing the probability of real issues (1 = certain false positive, 10 = 100% real issue)",
-    },
-    impactScore: {
-      type: Type.INTEGER,
-      description:
-        "Impact score from 1 to 10 expressing how seriously the issue might impact the paper's conclusions (1 = no impact, 10 = conclusions entirely untrustworthy)",
+        "The probability between 0 and 1 that the data contain real issues.",
     },
   },
-  required: [
-    "explanation",
-    "falsePositiveTheory",
-    "suspicionScore",
-    "impactScore",
-  ],
+  propertyOrdering: ["response", "truePositiveProbability"],
+  required: ["response", "truePositiveProbability"],
 } as const;
 
 type ReviewResultsParams = {
@@ -315,10 +299,8 @@ export async function reviewResultsWithCache(
     if (cached) {
       logger.info(`Found cached review result for sheet '${sheetName}'`);
       return {
-        explanation: cached.explanation,
-        falsePositiveTheory: cached.falsePositiveTheory,
-        suspicionScore: cached.suspicionScore,
-        impactScore: cached.impactScore,
+        response: cached.response,
+        truePositiveProbability: cached.truePositiveProbability,
       };
     }
   }
@@ -333,10 +315,8 @@ export async function reviewResultsWithCache(
       sheetName,
       prompt,
       model: reviewResultsModel,
-      explanation: result.explanation,
-      falsePositiveTheory: result.falsePositiveTheory,
-      suspicionScore: result.suspicionScore,
-      impactScore: result.impactScore,
+      response: result.response,
+      truePositiveProbability: result.truePositiveProbability,
       hash,
     });
   }
@@ -366,8 +346,7 @@ const pdfReviewGeminiSchema = {
     },
     impactScore: {
       type: Type.INTEGER,
-      description:
-        "Impact score from 1 to 10 (1 = no impact, 10 = conclusions entirely untrustworthy)",
+      description: "Impact score from 1 to 5",
     },
   },
   propertyOrdering: ["response", "impactScore"],

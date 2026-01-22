@@ -16,7 +16,7 @@ export const aiPdfReviewResults = pgTable(
     id: serial("id").primaryKey(),
     aiReviewResultId: integer("ai_review_result_id")
       .notNull()
-      .references(() => aiReviewResults.id),
+      .references(() => aiReviewResults.id, { onDelete: "cascade" }),
     articleId: integer("article_id")
       .notNull()
       .references(() => articles.id),

@@ -47,13 +47,10 @@ program
         const extId = extIdByInternalId.get(internalId);
         if (extId === undefined) continue;
 
-        // Find the most suspicious sheet (highest suspicionScore, then impactScore)
-        const mostSuspicious = reviews.toSorted((a, b) => {
-          if (b.suspicionScore !== a.suspicionScore) {
-            return b.suspicionScore - a.suspicionScore;
-          }
-          return b.impactScore - a.impactScore;
-        })[0];
+        // Find the most suspicious sheet (highest truePositiveProbability)
+        const mostSuspicious = reviews.toSorted(
+          (a, b) => b.truePositiveProbability - a.truePositiveProbability,
+        )[0];
 
         mostSuspiciousSheetByExtId.set(extId, mostSuspicious ?? null);
       }
@@ -95,7 +92,7 @@ program
           };
         });
 
-      // Sort datasets: AI-reviewed first (by suspicionScore, then impactScore),
+      // Sort datasets: AI-reviewed first (by truePositiveProbability),
       // then non-AI-reviewed (by entropy score)
       const sortedDatasets = datasets.toSorted((a, b) => {
         const aHasAiReview = a.aiReview !== null;
@@ -105,12 +102,12 @@ program
         if (aHasAiReview && !bHasAiReview) return -1;
         if (!aHasAiReview && bHasAiReview) return 1;
 
-        // Both have AI reviews: sort by suspicionScore, then impactScore
+        // Both have AI reviews: sort by truePositiveProbability
         if (aHasAiReview && bHasAiReview) {
-          if (b.aiReview!.suspicionScore !== a.aiReview!.suspicionScore) {
-            return b.aiReview!.suspicionScore - a.aiReview!.suspicionScore;
-          }
-          return b.aiReview!.impactScore - a.aiReview!.impactScore;
+          return (
+            b.aiReview!.truePositiveProbability -
+            a.aiReview!.truePositiveProbability
+          );
         }
 
         // Neither has AI review: sort by entropy score
@@ -128,8 +125,9 @@ program
           extId: dataset.extId,
           articleName: dataset.title?.slice(0, 40),
           fileName: dataset.mostSuspiciousFile.fileName.slice(0, 30),
-          suspicionScore: dataset.aiReview?.suspicionScore ?? "-",
-          impactScore: dataset.aiReview?.impactScore ?? "-",
+          truePositiveProbability: dataset.aiReview?.truePositiveProbability
+            ? `${(dataset.aiReview.truePositiveProbability * 100).toFixed(0)}%`
+            : "-",
           entropyScore:
             dataset.mostSuspiciousFile.highestEntropyScore.toFixed(2),
           journalScore: dataset.journal?.sjrScore,

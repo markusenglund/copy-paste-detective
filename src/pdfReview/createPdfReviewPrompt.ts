@@ -10,20 +10,8 @@ export function createPdfReviewPrompt(params: {
   articleAbstract?: string;
   excelFileName: string;
   sheetName: string;
-  originalAiReview: {
-    explanation: string;
-    falsePositiveTheory: string;
-    suspicionScore: number;
-    impactScore: number;
-  };
+  originalAiReview: string;
 }): PdfReviewConversation {
-  // Format model's response using the explanation and other fields
-  const modelResponse = `${params.originalAiReview.explanation}
-
-False Positive Theory: ${params.originalAiReview.falsePositiveTheory}
-
-Suspicion Score: ${params.originalAiReview.suspicionScore}/10`;
-
   // Follow-up prompt asking to analyze the PDF
   const followUpPrompt = `Please read through the attached PDF of the paper and do the following:
 1. Identify the specific columns that have duplicated cells and tell me whether they were used to calculate any results of the paper.
@@ -45,7 +33,7 @@ Examples of impact scores:
 
   return {
     originalUserPrompt: params.originalPrompt,
-    modelResponse,
+    modelResponse: params.originalAiReview,
     followUpPrompt,
   };
 }
