@@ -484,6 +484,6 @@ Do you think these duplicated blocks of cells make sense in the context of the p
 - A brief description of the duplicates.
 - Your best explanation for the duplicates. There could be different explanations for the different examples. If you think there are multiple plausible explanations, please provide them all. Try especially to think of explanations for why it could be a false positive.
 - A brief evaluation of how serious you think these issues are.
-- The probability (from 0 to 100%) that the duplicates are indicative of real issues with the data.
+- The probability (from 0 to 100%) that the duplicates are a true positive, meaning they are indicative of real issues with the data.
 `;
 }
