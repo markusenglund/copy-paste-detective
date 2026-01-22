@@ -1,5 +1,6 @@
 import { Sheet } from "./Sheet";
 
+const maxHeaderChars = 60;
 export class Column {
   public readonly index: number;
   private readonly sheet: Sheet;
@@ -18,6 +19,11 @@ export class Column {
         this.sheet.getEffectiveValueForCell(rowIndex, this.index),
       )
       .filter((value) => typeof value === "string")
+      // Prevent including ridiculously long headers which are probably just sheet headers
+      .filter(
+        (value, i, arr) =>
+          !(arr.length > i + 1 && value.length > maxHeaderChars),
+      )
       .map((value) => value.trim());
     return headers.join(" - ");
   }

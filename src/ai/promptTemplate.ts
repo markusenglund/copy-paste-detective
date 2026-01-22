@@ -20,17 +20,25 @@ export function generateColumnCategorizationPrompt(
       ? `${readmeContent.slice(0, maxPromptDataDescriptionChars)}... (content truncated due to exceeding character limit)`
       : params.readmeContent;
 
-  const nonEmptyTable: [string[], string[], string[]] = [[], [], []];
+  const seenColumnNames = new Set<string>();
+  const tableWithNonEmptyUniqueColumnNames: [string[], string[], string[]] = [
+    [],
+    [],
+    [],
+  ];
   for (let i = 0; i < columnNames.length; i++) {
     const columnName = columnNames[i];
-    if (columnName !== "") {
-      nonEmptyTable[0].push(columnName);
-      nonEmptyTable[1].push(columnData[0][i]);
-      nonEmptyTable[2].push(columnData[1][i]);
+    if (columnName !== "" && !seenColumnNames.has(columnName)) {
+      seenColumnNames.add(columnName);
+      tableWithNonEmptyUniqueColumnNames[0].push(columnName);
+      tableWithNonEmptyUniqueColumnNames[1].push(columnData[0][i]);
+      tableWithNonEmptyUniqueColumnNames[2].push(columnData[1][i]);
     }
   }
 
-  const markdownFormattedTable = markdownTable(nonEmptyTable);
+  const markdownFormattedTable = markdownTable(
+    tableWithNonEmptyUniqueColumnNames,
+  );
 
   return `**Your Task:**
 
