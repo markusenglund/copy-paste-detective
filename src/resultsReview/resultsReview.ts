@@ -201,6 +201,8 @@ function createDataDescriptionSection(excelFileData: ExcelFileData): string {
   return `
 # Description of the data
 
+The following description of the dataset was provided by the authors. Be aware that some of it might refer to completely different spreadsheets than the one you're reviewing.
+
 ${wrapInCodeBlock(truncatedDataDescription)}
 `;
 }
