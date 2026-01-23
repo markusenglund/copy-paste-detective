@@ -124,12 +124,14 @@ async function screenColumnsGemini(
   } catch (error) {
     if (error instanceof ApiError) {
       if (error.status === 503) {
-        throw error
+        throw error;
       }
     }
 
     logger.error(`Prompt: ${params.contents}`);
-    throw new Error(`Failed to screen columns: ${error instanceof Error ? error.message : "Unknown error"}`);
+    throw new Error(
+      `Failed to screen columns: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
@@ -451,12 +453,12 @@ async function reviewPdfGemini(
     if (response.usageMetadata) {
       logger.info(
         `PDF review token usage: ` +
-        `input=${response.usageMetadata.promptTokenCount ?? 0}, ` +
-        `output=${response.usageMetadata.candidatesTokenCount ?? 0}, ` +
-        `total=${response.usageMetadata.totalTokenCount ?? 0}` +
-        (response.usageMetadata.cachedContentTokenCount
-          ? `, cached=${response.usageMetadata.cachedContentTokenCount}`
-          : ""),
+          `input=${response.usageMetadata.promptTokenCount ?? 0}, ` +
+          `output=${response.usageMetadata.candidatesTokenCount ?? 0}, ` +
+          `total=${response.usageMetadata.totalTokenCount ?? 0}` +
+          (response.usageMetadata.cachedContentTokenCount
+            ? `, cached=${response.usageMetadata.cachedContentTokenCount}`
+            : ""),
       );
     }
 
