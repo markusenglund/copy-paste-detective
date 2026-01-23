@@ -269,14 +269,17 @@ ${lnColumns.map((columnName) => "- " + columnName).join("\n")}
 }
 
 function createDataSection(sheet: Sheet): string {
-  const numberOfSampleRows = 8;
+  // Choose number of sample rows based on the number of columns in the sheet - too many numbers can confuse the AI
+  const maxSampleValues = 200;
+  const maxSampleRows = 10;
+  const numSampleRows = Math.min(maxSampleRows, sheet.numRows, Math.floor(maxSampleValues / sheet.numColumns));
   const columnNames = sheet.columnNames;
-  const firstTenRows = sheet.getSampleData(numberOfSampleRows);
-  const sampleTable = markdownTable([columnNames, ...firstTenRows]);
+  const firstRows = sheet.getSampleData(numSampleRows);
+  const sampleTable = markdownTable([columnNames, ...firstRows]);
 
   return `
 # Data
-Here are the first ${numberOfSampleRows} rows of the spreadsheet to help you understand the structure of the spreadsheet:
+Here are the first ${numSampleRows} rows of the spreadsheet to help you understand the structure of the spreadsheet:
 
 ${sampleTable}
 `;
