@@ -1,0 +1,1 @@
+ALTER TYPE "public"."download_status" ADD VALUE 'manually_added';

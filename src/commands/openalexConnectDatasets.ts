@@ -2,6 +2,7 @@ import { Command } from "@commander-js/extra-typings";
 import {
   DryadDataset,
   getCompletedDatasetsWithoutArticles,
+  getDatasetByExtId,
 } from "../repositories/datasets/datasetsRepository";
 import { getArticleFromDryadDataset } from "../openalex/getArticleFromDryadDataset";
 import { logger } from "../utils/logger";
@@ -43,12 +44,32 @@ program
   .description(
     "Connect downloaded datasets to an article from the OpenAlex API",
   )
-  .action(async () => {
+  .option("--extId <number>", "Connect a specific dataset by extId", parseInt)
+  .action(async (options) => {
     try {
-      const datasets = await getCompletedDatasetsWithoutArticles();
-      logger.info(
-        `Found ${datasets.length} datasets to search OpenAlex for...`,
-      );
+      let datasets: DryadDataset[];
+
+      if (options.extId) {
+        const dataset = await getDatasetByExtId(options.extId);
+        if (!dataset) {
+          logger.error(`Dataset with extId ${options.extId} not found`);
+          return;
+        }
+        if (dataset.downloadStatus !== "completed") {
+          logger.error(
+            `Dataset with extId ${options.extId} has downloadStatus '${dataset.downloadStatus}', expected 'completed'`,
+          );
+          return;
+        }
+        datasets = [dataset];
+        logger.info(`Processing dataset with extId ${options.extId}...`);
+      } else {
+        datasets = await getCompletedDatasetsWithoutArticles();
+        logger.info(
+          `Found ${datasets.length} datasets to search OpenAlex for...`,
+        );
+      }
+
       const articlesWithDatasets = await getArticlesFromDryadDatasets(datasets);
       logger.info(
         `Found ${articlesWithDatasets.length} OpenAlex articles from ${datasets.length} datasets`,

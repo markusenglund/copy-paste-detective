@@ -9,6 +9,8 @@ import {
   Article,
 } from "./schema";
 import { processInBatches } from "../../utils/batch";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { DownloadStatus } from "../../db/shared/enums";
 
 const BATCH_SIZE = 500;
 
@@ -81,4 +83,40 @@ export async function bulkInsertArticleFunders(
       })
       .returning(),
   );
+}
+
+export async function getArticlesForPdfDownload(
+  limit: number,
+): Promise<Article[]> {
+  const hasSuspiciousReview = sql<boolean>`EXISTS (
+    SELECT 1 FROM ai_review_results
+    WHERE ai_review_results.dryad_dataset_id = articles.dryad_dataset_id
+    AND ai_review_results.suspicion_score >= 4
+  )`;
+
+  return db
+    .select()
+    .from(articles)
+    .where(
+      and(
+        isNotNull(articles.fullPdfUrl),
+        eq(articles.pdfDownloadStatus, "not_started"),
+        isNotNull(articles.dryadDatasetId),
+        hasSuspiciousReview,
+      ),
+    )
+    .limit(limit);
+}
+
+export async function updateArticlePdfDownloadStatus(
+  articleId: number,
+  status: DownloadStatus,
+): Promise<void> {
+  await db
+    .update(articles)
+    .set({
+      pdfDownloadStatus: status,
+      updatedTimestamp: new Date(),
+    })
+    .where(eq(articles.id, articleId));
 }

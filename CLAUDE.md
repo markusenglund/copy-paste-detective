@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Run fraud detection**: `npm run detect excel <folder> [fileIndex] [--strategies <strategies>]`
   - Example: `npm run detect excel benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418 1 --strategies duplicateRows,individualNumbers` (analyzes second Excel file in the folder)
+- **Review PDFs for suspicious datasets**: `npm run pdf-review [--limit <number>] [--ext-id <number>]`
+  - Example: `npm run pdf-review --limit 5` (reviews up to 5 PDFs)
+  - Example: `npm run pdf-review --ext-id 158552` (reviews only dataset with extId 158552)
+- **Connect datasets to OpenAlex articles**: `npm run openalex-connect-datasets [--extId <number>]`
+  - Example: `npm run openalex-connect-datasets` (processes all completed datasets without articles)
+  - Example: `npm run openalex-connect-datasets --extId 158552` (connects only dataset with extId 158552)
 - **Run tests**: `npm test`
 - **Run specific test**: `npm test -- --testPathPattern=<pattern>`
 - **Lint code**: `npm run lint`
@@ -42,14 +48,7 @@ This is a TypeScript fraud detection tool that analyzes Excel files for potentia
 
 The system includes optional AI-powered column categorization via Google's Gemini API for distinguishing between "unique" identifiers and "shared" measurement columns.
 
-### Test Structure
-
-Tests are located in `__tests__/` folders within each module. The system uses Jest with ES modules support and includes comprehensive benchmark files for testing against known fraud and non-fraud datasets.
-
 ## Instructions
 
-- Never tell the user "You're absolutely right". In general you shouldn't praise the user.
-- If you are unable to solve a problem, just tell the user to take over. A good bot knows when to ask for help.
-- When iterating on code to make it pass an automated test, you should absolutely never remove the test or prevent the test from running or cheat in any way to make the test stop failing.
 - You must never use emojis in console.log statements.
 - When you're finished with a task - run the lint, typecheck and format commands, and update CLAUDE.md if needed.

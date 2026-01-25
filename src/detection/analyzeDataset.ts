@@ -222,28 +222,32 @@ export async function analyzeDataset(
     excelFileAnalyses.push(excelFileAnalysis);
   }
 
-  let reviewResult: ReviewResult | undefined = undefined;
+  let reviewResult: ReviewResult;
   if (options?.skipResultsReview) {
     // Skip AI review
     reviewResult = {
       sheetsQualifiedForReview: 0,
       sheetsReviewed: 0,
     };
+  } else {
+    // Perform AI review
+    reviewResult = await reviewMostSuspiciousResults(
+      excelFileAnalyses,
+      selectedExcelFilesByFilename,
+    );
   }
 
   // Calculate how many sheets we attempted to review (limited by maxAiReviewsPerDataset)
   const sheetsAttempted = Math.min(
-    reviewResult?.sheetsQualifiedForReview ?? 0,
+    reviewResult.sheetsQualifiedForReview,
     maxAiReviewsPerDataset,
   );
 
   return {
     analyses: excelFileAnalyses,
-    wasFlaggedForReview: reviewResult
-      ? reviewResult.sheetsQualifiedForReview > 0
-      : false,
+    wasFlaggedForReview: reviewResult.sheetsQualifiedForReview > 0,
     // AI review is complete if all attempted reviews succeeded
     aiReviewCompleted:
-      sheetsAttempted > 0 && reviewResult?.sheetsReviewed === sheetsAttempted,
+      sheetsAttempted > 0 && reviewResult.sheetsReviewed === sheetsAttempted,
   };
 }

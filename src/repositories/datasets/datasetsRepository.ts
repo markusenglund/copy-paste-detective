@@ -1,19 +1,9 @@
-import {
-  and,
-  desc,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
 import { dryadReadmeFiles } from "../readmeFiles/schema";
-import { articles } from "../articles/schema";
 import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 import type { DryadReadmeFileRow } from "../readmeFiles/readmeFilesRepository";
 import { logger } from "../../utils/logger";
@@ -433,6 +423,7 @@ export async function getDatasetCountByStatus(): Promise<
     skipped: 0,
     api_forbidden: 0,
     api_not_found: 0,
+    manually_added: 0,
   };
 
   for (const row of result) {

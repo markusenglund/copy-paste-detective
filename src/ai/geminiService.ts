@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { ApiError, GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
 import { createHash } from "crypto";
 import { config } from "../config/env";
@@ -12,6 +12,10 @@ import {
   findByHash as findReviewResultByHash,
   insertResult as insertReviewResult,
 } from "../repositories/aiReviewResults/aiReviewResultsRepository";
+import {
+  findByHash as findPdfReviewResultByHash,
+  insertResult as insertPdfReviewResult,
+} from "../repositories/aiPdfReviewResults/aiPdfReviewResultsRepository";
 import { logger } from "../utils/logger";
 
 // Internal schema for parsing raw Gemini API response (uses prompt field names)
@@ -118,11 +122,14 @@ async function screenColumnsGemini(
       excludedColumnNames,
     };
   } catch (error) {
-    logger.error(`Error calling Gemini API: ${error}`);
+    if (error instanceof ApiError) {
+      if (error.status === 503) {
+        throw error
+      }
+    }
+
     logger.error(`Prompt: ${params.contents}`);
-    throw new Error(
-      `Failed to categorize columns: ${error instanceof Error ? error.message : "Unknown error"}`,
-    );
+    throw new Error(`Failed to screen columns: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
@@ -192,10 +199,8 @@ export async function screenColumnsWithCache(
 
 // Schema for parsing review results from Gemini API
 const reviewResultsResponseSchema = z.object({
-  explanation: z.string(),
-  falsePositiveTheory: z.string(),
-  suspicionScore: z.number().int().min(1).max(10),
-  impactScore: z.number().int().min(1).max(10),
+  response: z.string(),
+  truePositiveProbability: z.number().min(0).max(1),
 });
 
 export type ReviewResultsResponse = z.infer<typeof reviewResultsResponseSchema>;
@@ -205,32 +210,18 @@ const reviewResultsModel = "gemini-3-pro-preview";
 const reviewResultsGeminiSchema = {
   type: Type.OBJECT,
   properties: {
-    explanation: {
+    response: {
       type: Type.STRING,
-      description: "Best explanation for the duplicates",
+      description: "Full response to the prompt",
     },
-    falsePositiveTheory: {
-      type: Type.STRING,
+    truePositiveProbability: {
+      type: Type.NUMBER,
       description:
-        "Theory for how this could be a false positive with an innocent explanation",
-    },
-    suspicionScore: {
-      type: Type.INTEGER,
-      description:
-        "Suspiciousness score from 1 to 10 expressing the probability of real issues (1 = certain false positive, 10 = 100% real issue)",
-    },
-    impactScore: {
-      type: Type.INTEGER,
-      description:
-        "Impact score from 1 to 10 expressing how seriously the issue might impact the paper's conclusions (1 = no impact, 10 = conclusions entirely untrustworthy)",
+        "The probability between 0 and 1 that the data contain real issues.",
     },
   },
-  required: [
-    "explanation",
-    "falsePositiveTheory",
-    "suspicionScore",
-    "impactScore",
-  ],
+  propertyOrdering: ["response", "truePositiveProbability"],
+  required: ["response", "truePositiveProbability"],
 } as const;
 
 type ReviewResultsParams = {
@@ -311,10 +302,8 @@ export async function reviewResultsWithCache(
     if (cached) {
       logger.info(`Found cached review result for sheet '${sheetName}'`);
       return {
-        explanation: cached.explanation,
-        falsePositiveTheory: cached.falsePositiveTheory,
-        suspicionScore: cached.suspicionScore,
-        impactScore: cached.impactScore,
+        response: cached.response,
+        truePositiveProbability: cached.truePositiveProbability,
       };
     }
   }
@@ -329,13 +318,237 @@ export async function reviewResultsWithCache(
       sheetName,
       prompt,
       model: reviewResultsModel,
-      explanation: result.explanation,
-      falsePositiveTheory: result.falsePositiveTheory,
-      suspicionScore: result.suspicionScore,
-      impactScore: result.impactScore,
+      response: result.response,
+      truePositiveProbability: result.truePositiveProbability,
       hash,
     });
   }
+
+  return result;
+}
+
+// ============ PDF Review ============
+
+// Schema for parsing PDF review results from Gemini API
+const pdfReviewResponseSchema = z.object({
+  impactScore: z.number().int().min(1).max(10),
+  response: z.string(),
+});
+
+export type PdfReviewResponse = z.infer<typeof pdfReviewResponseSchema>;
+
+const pdfReviewModel = "gemini-3-pro-preview";
+
+const pdfReviewGeminiSchema = {
+  type: Type.OBJECT,
+  properties: {
+    response: {
+      type: Type.STRING,
+      description:
+        "Full analysis of affected conclusions, overall impact, and supporting evidence",
+    },
+    impactScore: {
+      type: Type.INTEGER,
+      description: "Impact score from 1 to 5",
+    },
+  },
+  propertyOrdering: ["response", "impactScore"],
+  required: ["response", "impactScore"],
+} as const;
+
+type PdfReviewParams = {
+  model: string;
+  contents: Array<{
+    role: string;
+    parts: Array<{
+      text?: string;
+      fileData?: { mimeType: string; fileUri: string };
+    }>;
+  }>;
+  config: {
+    temperature: number;
+    responseMimeType: "application/json";
+    responseSchema: typeof pdfReviewGeminiSchema;
+  };
+};
+
+function buildPdfReviewParams(
+  conversation: {
+    originalUserPrompt: string;
+    modelResponse: string;
+    followUpPrompt: string;
+  },
+  fileUri: string,
+): PdfReviewParams {
+  return {
+    model: pdfReviewModel,
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: conversation.originalUserPrompt }],
+      },
+      {
+        role: "model",
+        parts: [{ text: conversation.modelResponse }],
+      },
+      {
+        role: "user",
+        parts: [
+          { text: conversation.followUpPrompt },
+          { fileData: { mimeType: "application/pdf", fileUri } },
+        ],
+      },
+    ],
+    config: {
+      temperature: 1,
+      responseMimeType: "application/json",
+      responseSchema: pdfReviewGeminiSchema,
+    },
+  };
+}
+
+type PdfReviewHashParams = {
+  model: string;
+  conversation: {
+    originalUserPrompt: string;
+    modelResponse: string;
+    followUpPrompt: string;
+  };
+  config: {
+    temperature: number;
+    responseMimeType: "application/json";
+    responseSchema: typeof pdfReviewGeminiSchema;
+  };
+};
+
+function buildPdfReviewHashParams(conversation: {
+  originalUserPrompt: string;
+  modelResponse: string;
+  followUpPrompt: string;
+}): PdfReviewHashParams {
+  return {
+    model: pdfReviewModel,
+    conversation,
+    config: {
+      temperature: 1,
+      responseMimeType: "application/json",
+      responseSchema: pdfReviewGeminiSchema,
+    },
+  };
+}
+
+async function reviewPdfGemini(
+  params: PdfReviewParams,
+): Promise<PdfReviewResponse> {
+  try {
+    const response = await geminiClient.models.generateContent(params);
+
+    if (!response.text) {
+      throw new Error("No text received from Gemini API");
+    }
+
+    // Log token usage
+    if (response.usageMetadata) {
+      logger.info(
+        `PDF review token usage: ` +
+        `input=${response.usageMetadata.promptTokenCount ?? 0}, ` +
+        `output=${response.usageMetadata.candidatesTokenCount ?? 0}, ` +
+        `total=${response.usageMetadata.totalTokenCount ?? 0}` +
+        (response.usageMetadata.cachedContentTokenCount
+          ? `, cached=${response.usageMetadata.cachedContentTokenCount}`
+          : ""),
+      );
+    }
+
+    // Parse and validate the structured JSON response
+    const parsed = JSON.parse(response.text);
+    return pdfReviewResponseSchema.parse(parsed);
+  } catch (error) {
+    logger.error(`Error calling Gemini API for PDF review: ${error}`);
+    throw new Error(
+      `Failed to review PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
+
+// Context needed for caching PDF review results in the database
+export type ReviewPdfWithCacheParams = {
+  conversation: {
+    originalUserPrompt: string;
+    modelResponse: string;
+    followUpPrompt: string;
+  };
+  pdfBuffer: Buffer;
+  pdfFileName: string;
+  aiReviewResultId: number;
+  articleId: number;
+};
+
+/**
+ * Higher-order function that wraps the PDF review Gemini API call with database caching.
+ * - Computes a deterministic hash from conversation, config, and PDF content
+ * - Checks DB for cached result
+ * - If hit: returns cached data (no upload or API call)
+ * - If miss: uploads PDF file to Gemini, calls API, stores result
+ */
+export async function reviewPdfWithCache(
+  params: ReviewPdfWithCacheParams,
+): Promise<PdfReviewResponse> {
+  const { conversation, pdfBuffer, pdfFileName, aiReviewResultId, articleId } =
+    params;
+
+  // STEP 1: Calculate deterministic hash BEFORE uploading
+  const hashParams = buildPdfReviewHashParams(conversation);
+  const pdfHash = createHash("md5").update(pdfBuffer).digest("hex");
+  const hash = createHash("md5")
+    .update(JSON.stringify({ ...hashParams, pdfHash }))
+    .digest("hex");
+
+  // STEP 2: Check cache with deterministic hash
+  const cached = await findPdfReviewResultByHash(hash);
+  if (cached) {
+    logger.info(`Found cached PDF review result for article ${articleId}`);
+    return {
+      impactScore: cached.impactScore,
+      response: cached.response,
+    };
+  }
+
+  // STEP 3: Cache miss - upload PDF to Gemini
+  const pdfBlob = new Blob([pdfBuffer], { type: "application/pdf" });
+  const uploadResult = await geminiClient.files.upload({
+    file: pdfBlob,
+    config: {
+      displayName: pdfFileName,
+    },
+  });
+
+  if (!uploadResult.uri) {
+    throw new Error("Failed to upload PDF file: no URI returned");
+  }
+
+  const fileUri = uploadResult.uri;
+
+  // STEP 4: Build full params with fileUri and call API
+  const geminiParams = buildPdfReviewParams(conversation, fileUri);
+  const result = await reviewPdfGemini(geminiParams);
+
+  // STEP 5: Store with deterministic hash
+  const promptForStorage = JSON.stringify({
+    originalUserPrompt: conversation.originalUserPrompt,
+    modelResponse: conversation.modelResponse,
+    followUpPrompt: conversation.followUpPrompt,
+  });
+
+  await insertPdfReviewResult({
+    aiReviewResultId,
+    articleId,
+    prompt: promptForStorage,
+    model: pdfReviewModel,
+    impactScore: result.impactScore,
+    response: result.response,
+    hash,
+  });
 
   return result;
 }

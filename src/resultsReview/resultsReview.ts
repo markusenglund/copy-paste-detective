@@ -113,10 +113,10 @@ export async function reviewSheetResults(
   });
 
   logger.info(`\n📊 Review result for '${sheet.name}':`);
-  logger.info(`   Suspicion score: ${result.suspicionScore}/10`);
-  logger.info(`   Impact score: ${result.impactScore}/10`);
-  logger.info(`   Explanation: ${result.explanation}`);
-  logger.info(`   False positive theory: ${result.falsePositiveTheory}`);
+  logger.info(
+    `   Probability of real issues: ${(result.truePositiveProbability * 100).toFixed(0)}%`,
+  );
+  logger.info(`   Response: ${result.response}`);
 
   return {
     ...result,
@@ -201,6 +201,8 @@ function createDataDescriptionSection(excelFileData: ExcelFileData): string {
   return `
 # Description of the data
 
+The following description of the dataset was provided by the authors. Be aware that some of it might refer to completely different spreadsheets than the one you're reviewing.
+
 ${wrapInCodeBlock(truncatedDataDescription)}
 `;
 }
@@ -223,6 +225,7 @@ function createInstructionsSection(
 Keep the following in mind when analyzing the duplications
 - If a duplicate sequence or row has values that have a high number of occurrences in the sheet (meaning the same exact value is found in lots of other cells): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
 - It's good to consider what a row represents, for example whether it's one observation of a single individual or aggregated data of multiple observations.
+- Be aware that you're only given a small sample of the data, and might be missing important context. Therefore, try to avoid overconfidence in your analysis.
 
 ### Common sources of false positives
 - If the duplicate values are actually supposed to be shared between rows, such as species level data shared between all individuals belonging to that species.
@@ -268,14 +271,17 @@ ${lnColumns.map((columnName) => "- " + columnName).join("\n")}
 }
 
 function createDataSection(sheet: Sheet): string {
-  const numberOfSampleRows = 8;
+  // Choose number of sample rows based on the number of columns in the sheet - too many numbers can confuse the AI
+  const maxSampleValues = 200;
+  const maxSampleRows = 10;
+  const numSampleRows = Math.min(maxSampleRows, sheet.numRows, Math.floor(maxSampleValues / sheet.numColumns));
   const columnNames = sheet.columnNames;
-  const firstTenRows = sheet.getSampleData(numberOfSampleRows);
-  const sampleTable = markdownTable([columnNames, ...firstTenRows]);
+  const firstRows = sheet.getSampleData(numSampleRows);
+  const sampleTable = markdownTable([columnNames, ...firstRows]);
 
   return `
 # Data
-Here are the first ${numberOfSampleRows} rows of the spreadsheet to help you understand the structure of the spreadsheet:
+Here are the first ${numSampleRows} rows of the spreadsheet to help you understand the structure of the spreadsheet:
 
 ${sampleTable}
 `;
@@ -479,9 +485,10 @@ function createTaskSection(): string {
 # Your task
 
 Do you think these duplicated blocks of cells make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include the following in your response:
-- Your best explanation for the duplicates (could be different for each example).
-- Your best theory for how the patterns could have an innocent explanation and therefore be a false positive.
-- A suspiciousness score from 1 to 10 that expresses the probability that the data contains real issues, where 1 means it's a certain false positive and 10 means it's 100% a real issue.
-- If you believe the data has issues, provide an impact score from 1 to 10 which expresses how seriously the issue might impact the paper's conclusions, where 1 means no impact and 10 means that the conclusions are entirely untrustworthy.
+- A brief explanation of the data and the underlying experiment. Include what you think one row represents.
+- A brief description of the duplicates.
+- Your best explanation for the duplicates. There could be different explanations for the different examples. If you think there are multiple plausible explanations, please provide them all. Try especially to think of explanations for why it could be a false positive.
+- A brief evaluation of how serious you think these issues are.
+- The probability (from 0 to 100%) that the duplicates are a true positive, meaning they are indicative of real issues with the data.
 `;
 }

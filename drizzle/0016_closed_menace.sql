@@ -1,0 +1,1 @@
+ALTER TYPE "public"."analysis_status" ADD VALUE 'pdf_reviewed_by_ai' BEFORE 'failed';

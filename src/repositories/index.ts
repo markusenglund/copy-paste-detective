@@ -9,12 +9,13 @@
  */
 
 // Shared enums
-export { downloadStatusEnum } from "../db/shared/enums";
+export { downloadStatusEnum, analysisStatusEnum } from "../db/shared/enums";
 export type { DownloadStatus } from "../db/shared/enums";
 
 // Schemas
 export { aiColumnCategorizationResults } from "./aiColumnCategorizationResults/schema";
 export { aiReviewResults } from "./aiReviewResults/schema";
+export { aiPdfReviewResults } from "./aiPdfReviewResults/schema";
 export { dryadDatasets } from "./datasets/schema";
 export { dryadExcelFiles } from "./excelFiles/schema";
 export { dryadReadmeFiles } from "./readmeFiles/schema";
@@ -29,3 +30,4 @@ export {
 export { authors } from "./authors/schema";
 export { funders } from "./funders/schema";
 export { institutions } from "./institutions/schema";
+export { pdfFiles } from "./pdfFiles/schema";

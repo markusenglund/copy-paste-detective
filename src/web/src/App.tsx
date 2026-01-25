@@ -1,0 +1,67 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { ArticleForUpload } from "./types/article";
+import { fetchArticles } from "./api/client";
+import { ArticlesTable } from "./components/ArticlesTable";
+
+function App(): React.ReactElement {
+  const [articles, setArticles] = useState<ArticleForUpload[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadArticles = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchArticles();
+      setArticles(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load articles");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadArticles();
+  }, [loadArticles]);
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Manual PDF Upload
+          </h1>
+          <button
+            onClick={loadArticles}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Loading..." : "Refresh"}
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          {loading && articles.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">Loading...</div>
+          ) : (
+            <ArticlesTable articles={articles} onUploadSuccess={loadArticles} />
+          )}
+        </div>
+
+        <div className="mt-4 text-sm text-gray-500">
+          {articles.length} article{articles.length !== 1 ? "s" : ""} pending
+          PDF upload
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;
