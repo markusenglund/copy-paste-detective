@@ -242,6 +242,8 @@ None of these are a definite sign of a false positive, but might provide an inno
     fractionColumns.length > 0
   ) {
     instructions += `
+### Columns with artificially many significant digits
+
 Note that some columns have artificially many significant digits because they are the result of either 1) a fraction 2) a log transformation or 3) a square root of the original measurement.   
 `;
   }
@@ -337,18 +339,18 @@ ${duplicateRowTable}
 
 They share the values in the following columns:
 ${duplicateRow.sharedColumns
-  .map((columnIndex, i) => {
-    const value = duplicateRow.sharedValues[i];
-    const numOccurrences = numOccurrencesByNumericValue.get(value);
-    if (!numOccurrences) {
-      throw new Error(
-        `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
-      );
-    }
-    const column = duplicateRow.categorizedColumns[columnIndex];
-    return `- '${column.name}' - value: ${value}, occurrences of value: ${numOccurrences}`;
-  })
-  .join("\n")}
+        .map((columnIndex, i) => {
+          const value = duplicateRow.sharedValues[i];
+          const numOccurrences = numOccurrencesByNumericValue.get(value);
+          if (!numOccurrences) {
+            throw new Error(
+              `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
+            );
+          }
+          const column = duplicateRow.categorizedColumns[columnIndex];
+          return `- '${column.name}' - value: ${value}, occurrences of value: ${numOccurrences}`;
+        })
+        .join("\n")}
 `;
   }
 
@@ -454,17 +456,17 @@ ${sequence2MarkdownTable}
 
 They share the following values:
 ${duplicateColumnSequence.values
-  .slice(0, 100) // Prevent showing ludicrously long sequences of numbers
-  .map((value) => {
-    const numOccurrences = numOccurrencesByNumericValue.get(value);
-    if (!numOccurrences) {
-      throw new Error(
-        `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
-      );
-    }
-    return `- Value: ${value}, occurrences of value: ${numOccurrences}`;
-  })
-  .join("\n")}
+        .slice(0, 100) // Prevent showing ludicrously long sequences of numbers
+        .map((value) => {
+          const numOccurrences = numOccurrencesByNumericValue.get(value);
+          if (!numOccurrences) {
+            throw new Error(
+              `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
+            );
+          }
+          return `- Value: ${value}, occurrences of value: ${numOccurrences}`;
+        })
+        .join("\n")}
 `;
     if (values.length > numDuplicateSequenceRowsInTable) {
       section += `
