@@ -276,7 +276,11 @@ function createDataSection(sheet: Sheet): string {
   // Choose number of sample rows based on the number of columns in the sheet - too many numbers can confuse the AI
   const maxSampleValues = 200;
   const maxSampleRows = 10;
-  const numSampleRows = Math.min(maxSampleRows, sheet.numRows, Math.floor(maxSampleValues / sheet.numColumns));
+  const numSampleRows = Math.min(
+    maxSampleRows,
+    sheet.numRows,
+    Math.floor(maxSampleValues / sheet.numColumns),
+  );
   const columnNames = sheet.columnNames;
   const firstRows = sheet.getSampleData(numSampleRows);
   const sampleTable = markdownTable([columnNames, ...firstRows]);
@@ -339,18 +343,18 @@ ${duplicateRowTable}
 
 They share the values in the following columns:
 ${duplicateRow.sharedColumns
-        .map((columnIndex, i) => {
-          const value = duplicateRow.sharedValues[i];
-          const numOccurrences = numOccurrencesByNumericValue.get(value);
-          if (!numOccurrences) {
-            throw new Error(
-              `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
-            );
-          }
-          const column = duplicateRow.categorizedColumns[columnIndex];
-          return `- '${column.name}' - value: ${value}, occurrences of value: ${numOccurrences}`;
-        })
-        .join("\n")}
+  .map((columnIndex, i) => {
+    const value = duplicateRow.sharedValues[i];
+    const numOccurrences = numOccurrencesByNumericValue.get(value);
+    if (!numOccurrences) {
+      throw new Error(
+        `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
+      );
+    }
+    const column = duplicateRow.categorizedColumns[columnIndex];
+    return `- '${column.name}' - value: ${value}, occurrences of value: ${numOccurrences}`;
+  })
+  .join("\n")}
 `;
   }
 
@@ -456,17 +460,17 @@ ${sequence2MarkdownTable}
 
 They share the following values:
 ${duplicateColumnSequence.values
-        .slice(0, 100) // Prevent showing ludicrously long sequences of numbers
-        .map((value) => {
-          const numOccurrences = numOccurrencesByNumericValue.get(value);
-          if (!numOccurrences) {
-            throw new Error(
-              `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
-            );
-          }
-          return `- Value: ${value}, occurrences of value: ${numOccurrences}`;
-        })
-        .join("\n")}
+  .slice(0, 100) // Prevent showing ludicrously long sequences of numbers
+  .map((value) => {
+    const numOccurrences = numOccurrencesByNumericValue.get(value);
+    if (!numOccurrences) {
+      throw new Error(
+        `Unexpectedly found no occurrences for the value '${value}' in sheet ${sheet.name}`,
+      );
+    }
+    return `- Value: ${value}, occurrences of value: ${numOccurrences}`;
+  })
+  .join("\n")}
 `;
     if (values.length > numDuplicateSequenceRowsInTable) {
       section += `
