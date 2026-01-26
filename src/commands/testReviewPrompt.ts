@@ -218,4 +218,164 @@ const testCases: TestCase[] = [{
   },
   confidence: "high"
 },
+{
+  extId: 162720,
+  filename: "NP_Data.xlsx",
+  sheetName: "Sheet1",
+  description: "It's the classic PCoA case where rows with identical richness values unexpectedly produce different PCoA results, which to my understanding is indicative of a real issue. However, it has nothing to do with the flagged duplications which are false positives.",
+  expectedResult: {
+    suspicionLevelInterval: [8, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 155108,
+  filename: "2025-3-24-Field_survey.xlsx",
+  sheetName: "Field survey-data",
+  description: "It contains loads of rows with duplicated root values, including some with single digit modifications.",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 155108,
+  filename: "2025-3-24-common_garden.xlsx",
+  sheetName: "common garden-data",
+  description: "The less suspicious of the two sheets, containing slightly fewer rows with duplicated root values.",
+  expectedResult: {
+    suspicionLevelInterval: [8, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 155414,
+  filename: "Data_Dryad_Drought_Decreases_Carbon_Flux_but_Not_Transport_Speed_of_Newly_Fixed_Carbon_from_Leaves_to_Sinks_in_a_Giant_Bamboo_Forest-new.xlsx",
+  sheetName: "Leaves to Soil",
+  description: "Contains just insane data with so many red flags.",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 111029,
+  filename: "data.xlsx",
+  sheetName: "Data",
+  description: "Duplicated soil measurements for different plots.",
+  expectedResult: {
+    suspicionLevelInterval: [8, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 146898,
+  filename: "data.xlsx",
+  sheetName: "chill coma recovery duration(s)",
+  description: "15C female data has duplicated columnar sequences that make no sense at all.",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 142655,
+  filename: "CoCo_ms_Dataset_Revised_Dryad_Submission.xlsx",
+  sheetName: "Neural",
+  description: "The EEG data has duplications between samples belonging to different children!",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 139667,
+  filename: "Data_Fig._5b_Persistence_length_as_a_funciton_of_bacterial_concentration.xlsx",
+  sheetName: "P. megatetrium Experiment1",
+  description: "Data from different videos of different runs of the experiment have the exact same data but in different scrambled order. This turned out to be because of a combination of software malfunction and spreadsheet user error.",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 92897,
+  filename: "Source_Data.xlsx",
+  sheetName: "Mastersheet",
+  description: "Total Phosphorus ('TP') and Total Organic Phosphorus ('TOP') values are identical to 15 significant digits between different samples (different Blocks).",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 146873,
+  filename: "Datasets_figure_contents.xls",
+  sheetName: "Cell cycle scores_Fig 2b",
+  description: "A sequence of 33 rows starting from row 251 is a perfect duplicate the block starting from row 284. There's no good reason for this.",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 16328,
+  filename: "Bierbach et al clonal molly behav development_data for deposit.xlsx",
+  sheetName: "Clonal molly behavioral individ",
+  description: "The data for fish size have been scrambled so that the same fish have different sizes in different rows. The impact is huge since they got a false negative result for movement behaviori being caused by size differences.",
+  expectedResult: {
+    suspicionLevelInterval: [10, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 0,
+  filename: "",
+  sheetName: "",
+  description: "",
+  expectedResult: {
+    suspicionLevelInterval: [0, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 0,
+  filename: "",
+  sheetName: "",
+  description: "",
+  expectedResult: {
+    suspicionLevelInterval: [0, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 0,
+  filename: "",
+  sheetName: "",
+  description: "",
+  expectedResult: {
+    suspicionLevelInterval: [0, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 0,
+  filename: "",
+  sheetName: "",
+  description: "",
+  expectedResult: {
+    suspicionLevelInterval: [0, 10]
+  },
+  confidence: "high"
+},
+{
+  extId: 0,
+  filename: "",
+  sheetName: "",
+  description: "",
+  expectedResult: {
+    suspicionLevelInterval: [0, 10]
+  },
+  confidence: "high"
+},
 ]
