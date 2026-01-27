@@ -743,11 +743,23 @@ function printResults(results: TestResult[]): void {
     );
     const avgDistance = totalDistance / validatedResults.length;
 
+    const falsePositives = validatedResults.filter(
+      (r) => r.aiSuspicionLevel! > r.expectedInterval[1],
+    ).length;
+
+    const falseNegatives = validatedResults.filter(
+      (r) => r.aiSuspicionLevel! < r.expectedInterval[0],
+    ).length;
+
     console.log(
       `\nScoring (based on ${validatedResults.length} validated test cases):`,
     );
     console.log(
       `  Tests within expected interval: ${withinInterval}/${validatedResults.length} (${((withinInterval / validatedResults.length) * 100).toFixed(1)}%)`,
+    );
+    console.log(`  False positives: ${falsePositives} (AI too suspicious)`);
+    console.log(
+      `  False negatives: ${falseNegatives} (AI not suspicious enough)`,
     );
     console.log(
       `  Total distance score: ${totalDistance.toFixed(2)} (lower is better)`,
