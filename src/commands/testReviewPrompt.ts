@@ -751,6 +751,17 @@ function printResults(results: TestResult[]): void {
       (r) => r.aiSuspicionLevel! < r.expectedInterval[0],
     ).length;
 
+    // Calculate confidence score based on how extreme the AI scores are
+    const confidenceDistances = completedResults.map((r) => {
+      const score = r.aiSuspicionLevel!;
+      // Distance to nearest extreme (0 or 10)
+      return Math.min(score, 10 - score);
+    });
+    const avgConfidenceDistance =
+      confidenceDistances.reduce((sum, d) => sum + d, 0) /
+      confidenceDistances.length;
+    const confidenceScore = (5 - avgConfidenceDistance) * 2;
+
     console.log(
       `\nScoring (based on ${validatedResults.length} validated test cases):`,
     );
@@ -765,6 +776,9 @@ function printResults(results: TestResult[]): void {
       `  Total distance score: ${totalDistance.toFixed(2)} (lower is better)`,
     );
     console.log(`  Average distance per test: ${avgDistance.toFixed(2)}`);
+    console.log(
+      `  AI confidence score: ${confidenceScore.toFixed(2)}/10 (based on score extremeness)`,
+    );
   }
 
   // Bias calculation based on all completed test cases
