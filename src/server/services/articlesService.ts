@@ -4,7 +4,8 @@ import { journals } from "../../repositories/journals/schema";
 import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
-import { desc, eq, sql, and } from "drizzle-orm";
+import { desc, eq, sql, and, gt } from "drizzle-orm";
+import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
 
 export interface ArticleForUpload {
   id: number;
@@ -36,6 +37,7 @@ export async function getArticlesForManualUpload(): Promise<
         ),
     })
     .from(aiReviewResults)
+    .where(gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE))
     .groupBy(aiReviewResults.dryadDatasetId)
     .as("max_scores");
 

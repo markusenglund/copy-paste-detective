@@ -10,6 +10,9 @@ import type { PdfFile } from "../pdfFiles/schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
 import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 
+// Hardcoded date threshold that reviews must been created after to be considered not obsolete.
+export const AI_REVIEW_MIN_DATE = new Date("2026-01-27T00:00:00Z");
+
 // Re-export types for convenience
 export type AiReviewResultRow = typeof aiReviewResults.$inferSelect;
 
@@ -50,6 +53,7 @@ export async function getLatestReviewsPerSheet(): Promise<
   const allReviews = await db
     .select()
     .from(aiReviewResults)
+    .where(gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE))
     .orderBy(desc(aiReviewResults.createdAt));
 
   // Group by unique sheet (dryadExcelFileId + sheetName) and keep only the latest
@@ -94,6 +98,7 @@ export async function getHighSuspicionReviewsWithArticles(
 > {
   const whereConditions = [
     gt(aiReviewResults.truePositiveProbability, suspicionThreshold),
+    gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
   ];
 
   if (extId !== undefined) {
@@ -125,9 +130,6 @@ export async function getHighSuspicionReviewsWithArticles(
 
   return results;
 }
-
-// Hardcoded date threshold for pdf review - only consider reviews created after this date
-const PDF_REVIEW_DATE_THRESHOLD = new Date("2026-01-01T00:00:00Z");
 
 export type DatasetWithReviews = {
   dataset: DryadDataset;
@@ -177,7 +179,7 @@ export async function getDatasetsForPdfReview(
       INNER JOIN pdf_files pf ON pf.article_id = a.id
       WHERE arr.dryad_dataset_id = dryad_datasets.id
         AND arr.true_positive_probability > ${suspicionThreshold}
-        AND arr.created_at > ${PDF_REVIEW_DATE_THRESHOLD}
+        AND arr.created_at > ${AI_REVIEW_MIN_DATE}
         AND a.pdf_download_status IN ('completed', 'manually_added')
     )`;
 
@@ -210,7 +212,7 @@ export async function getDatasetsForPdfReview(
     FROM ai_review_results
     WHERE dryad_dataset_id IN (${datasetIdList})
       AND true_positive_probability > ${suspicionThreshold}
-      AND created_at > ${PDF_REVIEW_DATE_THRESHOLD}
+      AND created_at > ${AI_REVIEW_MIN_DATE}
     GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
   )`;
 
