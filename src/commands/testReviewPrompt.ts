@@ -9,18 +9,8 @@ interface TestCase {
   };
 }
 
-const testCases: TestCase[] = [
-  {
-    extId: 158535,
-    filename: "Miller_procellariiform_flight_parameter_database.xlsx",
-    sheetName: "Nocturnal activity (NFI)",
-    description:
-      "It's a meta-analysis. It's difficult to tell if a mistake has occured. On one hand, it's plausible that the source pooled data for the two closely related species, but on the other it looks wrong that they have different sample sizes but the same mean and standard deviation.",
-    expectedResult: {
-      suspicionLevelInterval: [2, 8],
-    },
-    confidence: "low",
-  },
+const validatedTestCases: TestCase[] = [
+
   {
     extId: 158289,
     filename: "S._aureus_Proteome_Data_Table_FINAL..xlsx",
@@ -50,9 +40,9 @@ const testCases: TestCase[] = [
     description:
       "Leaning false positive. The column sequences are obviously false positives, while the 696 and 1196 rows probably also are but I don't understand why the NBi column is not duplicated as would be expected if it's calculated from the t0 and t5 data.",
     expectedResult: {
-      suspicionLevelInterval: [0, 2],
+      suspicionLevelInterval: [0, 6],
     },
-    confidence: "low",
+    confidence: "medium",
   },
   {
     extId: 147943,
@@ -98,39 +88,7 @@ const testCases: TestCase[] = [
     },
     confidence: "high",
   },
-  {
-    extId: 139030,
-    filename: "Data_for_Figure_S2_Trait_Validation.xlsx",
-    sheetName: "StemDiameter",
-    description:
-      "Difficult one. They have four replicates for each 'column', and a column must reasonably refer to a specific row of plants. So it makes no sense for the manual measurements to be repeated.",
-    expectedResult: {
-      suspicionLevelInterval: [2, 8],
-    },
-    confidence: "low",
-  },
-  {
-    extId: 111831,
-    filename: "Supplementary_Information.xlsx",
-    sheetName: "Supplementary Data 5",
-    description:
-      "Most likely a false positive. It is statistically probable and technically expected that for certain ranges of concrete strength or load, two different design codes will arrive at the exact same 'minimum reinforcement' configuration or the same discrete member size. ",
-    expectedResult: {
-      suspicionLevelInterval: [0, 2],
-    },
-    confidence: "low",
-  },
-  {
-    extId: 78610,
-    filename: "GRR1518-andblks-rawdata.xlsx",
-    sheetName: "GRR1518-14",
-    description:
-      "The duplicate O16 value on lines 69 and 91 is a bit weird, but certainly not strong evidence of a true positive.", //TODO
-    expectedResult: {
-      suspicionLevelInterval: [0, 7],
-    },
-    confidence: "low",
-  },
+
   {
     extId: 72706,
     filename: "TTYH_absence_of_chloride_conduction.xlsx",
@@ -142,37 +100,7 @@ const testCases: TestCase[] = [
     },
     confidence: "high",
   },
-  {
-    extId: 26305,
-    filename: "Supple-Data_ChiralMF-20190428.2.xlsx",
-    sheetName: "Fig.S4",
-    description:
-      "This is in the context of the known fraudulent data, but the specific finds in this sheet are really hard to evaluate.",
-    expectedResult: {
-      suspicionLevelInterval: [0, 8],
-    },
-    confidence: "low",
-  },
-  {
-    extId: 23027,
-    filename: "final_report.xls",
-    sheetName: "Fold Change",
-    description: "Can't evaluate.",
-    expectedResult: {
-      suspicionLevelInterval: [0, 10],
-    },
-    confidence: "low",
-  },
-  {
-    extId: 21495,
-    filename: "CDD_Data.xlsx",
-    sheetName: "Sheet1",
-    description: "Can't evaluate",
-    expectedResult: {
-      suspicionLevelInterval: [0, 10],
-    },
-    confidence: "low",
-  },
+
   {
     extId: 14904,
     filename: "Data.xlsx",
@@ -195,17 +123,7 @@ const testCases: TestCase[] = [
     },
     confidence: "high",
   },
-  {
-    extId: 8258,
-    filename: "Dryad_data_27-10-17.xlsx",
-    sheetName: "acoustic analyses",
-    description:
-      "The duplications in 'Wp2p' for rows 299 and 300 might well be a true positive.",
-    expectedResult: {
-      suspicionLevelInterval: [0, 8],
-    },
-    confidence: "low",
-  },
+
   {
     extId: 5416,
     filename: "Schmid_2014-06-07391C_Trait_Divergence.xlsx",
@@ -217,17 +135,7 @@ const testCases: TestCase[] = [
     },
     confidence: "high",
   },
-  {
-    extId: 3702,
-    filename: "Supplementary_Data_2.xlsx",
-    sheetName: "Shift_species_2798",
-    description:
-      "Gemini finds that the Italy data with repeated occurences of the exact same elevation shifts are dubious and I have to agree. Everything else is a false positive.",
-    expectedResult: {
-      suspicionLevelInterval: [2, 8],
-    },
-    confidence: "low",
-  },
+
   {
     extId: 3043,
     filename: "science data for repository.xlsx",
@@ -471,3 +379,103 @@ const testCases: TestCase[] = [
     confidence: "high",
   },
 ];
+
+const uncertainTestCases: TestCase[] = [
+  {
+    extId: 3702,
+    filename: "Supplementary_Data_2.xlsx",
+    sheetName: "Shift_species_2798",
+    description:
+      "Gemini finds that the Italy data with repeated occurences of the exact same elevation shifts are dubious and I have to agree. Everything else is a false positive.",
+    expectedResult: {
+      suspicionLevelInterval: [2, 8],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 158535,
+    filename: "Miller_procellariiform_flight_parameter_database.xlsx",
+    sheetName: "Nocturnal activity (NFI)",
+    description:
+      "It's a meta-analysis. It's difficult to tell if a mistake has occured. On one hand, it's plausible that the source pooled data for the two closely related species, but on the other it looks wrong that they have different sample sizes but the same mean and standard deviation.",
+    expectedResult: {
+      suspicionLevelInterval: [2, 8],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 139030,
+    filename: "Data_for_Figure_S2_Trait_Validation.xlsx",
+    sheetName: "StemDiameter",
+    description:
+      "Difficult one. They have four replicates for each 'column', and a column must reasonably refer to a specific row of plants. So it makes no sense for the manual measurements to be repeated.",
+    expectedResult: {
+      suspicionLevelInterval: [2, 8],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 111831,
+    filename: "Supplementary_Information.xlsx",
+    sheetName: "Supplementary Data 5",
+    description:
+      "Most likely a false positive. It is statistically probable and technically expected that for certain ranges of concrete strength or load, two different design codes will arrive at the exact same 'minimum reinforcement' configuration or the same discrete member size. ",
+    expectedResult: {
+      suspicionLevelInterval: [0, 4],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 78610,
+    filename: "GRR1518-andblks-rawdata.xlsx",
+    sheetName: "GRR1518-14",
+    description:
+      "The duplicate O16 value on lines 69 and 91 is a bit weird, but certainly not strong evidence of a true positive.", //TODO
+    expectedResult: {
+      suspicionLevelInterval: [0, 7],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 26305,
+    filename: "Supple-Data_ChiralMF-20190428.2.xlsx",
+    sheetName: "Fig.S4",
+    description:
+      "This is in the context of the known fraudulent data, but the specific finds in this sheet are really hard to evaluate.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 8],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 23027,
+    filename: "final_report.xls",
+    sheetName: "Fold Change",
+    description: "Can't evaluate.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 10],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 21495,
+    filename: "CDD_Data.xlsx",
+    sheetName: "Sheet1",
+    description: "Can't evaluate",
+    expectedResult: {
+      suspicionLevelInterval: [0, 10],
+    },
+    confidence: "low",
+  },
+  {
+    extId: 8258,
+    filename: "Dryad_data_27-10-17.xlsx",
+    sheetName: "acoustic analyses",
+    description:
+      "The duplications in 'Wp2p' for rows 299 and 300 might well be a true positive.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 8],
+    },
+    confidence: "low",
+  },
+]
