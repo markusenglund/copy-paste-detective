@@ -885,7 +885,7 @@ program
       const results = await pMap(
         testCasesWithFlags,
         ({ testCase, isUncertain }) => processTestCase(testCase, isUncertain),
-        { concurrency: 5 },
+        { concurrency: 8 },
       );
 
       // Print results
