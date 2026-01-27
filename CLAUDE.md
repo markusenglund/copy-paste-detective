@@ -12,6 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Connect datasets to OpenAlex articles**: `npm run openalex-connect-datasets [--extId <number>]`
   - Example: `npm run openalex-connect-datasets` (processes all completed datasets without articles)
   - Example: `npm run openalex-connect-datasets --extId 158552` (connects only dataset with extId 158552)
+- **Download PDFs for articles**: `npm run pdf-download [--limit <number>] [--extId <number>]`
+  - Example: `npm run pdf-download --limit 5` (downloads up to 5 PDFs for articles with suspicious datasets)
+  - Example: `npm run pdf-download --extId 158552` (downloads PDF only for dataset with extId 158552, ignores download status)
 - **Run tests**: `npm test`
 - **Run specific test**: `npm test -- --testPathPattern=<pattern>`
 - **Lint code**: `npm run lint`

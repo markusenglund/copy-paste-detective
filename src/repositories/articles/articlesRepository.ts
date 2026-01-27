@@ -12,6 +12,7 @@ import { processInBatches } from "../../utils/batch";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { DownloadStatus } from "../../db/shared/enums";
 import { AI_REVIEW_MIN_DATE } from "../aiReviewResults/aiReviewResultsRepository";
+import { dryadDatasets } from "../datasets/schema";
 
 const BATCH_SIZE = 500;
 
@@ -88,6 +89,7 @@ export async function bulkInsertArticleFunders(
 
 export async function getArticlesForPdfDownload(
   limit: number,
+  extId?: number,
 ): Promise<Article[]> {
   const hasSuspiciousReview = sql<boolean>`EXISTS (
     SELECT 1 FROM ai_review_results
@@ -95,6 +97,40 @@ export async function getArticlesForPdfDownload(
     AND ai_review_results.true_positive_probability > 0.5
     AND ai_review_results.created_at > ${AI_REVIEW_MIN_DATE}
   )`;
+
+  // When extId is provided, filter by it and ignore download status
+  if (extId !== undefined) {
+    return db
+      .select({
+        id: articles.id,
+        doi: articles.doi,
+        extOpenalexId: articles.extOpenalexId,
+        title: articles.title,
+        publicationDate: articles.publicationDate,
+        numCitations: articles.numCitations,
+        citationNormalizedPercentile: articles.citationNormalizedPercentile,
+        citedByPercentileYearMin: articles.citedByPercentileYearMin,
+        fullPdfUrl: articles.fullPdfUrl,
+        pdfDownloadStatus: articles.pdfDownloadStatus,
+        field: articles.field,
+        subfield: articles.subfield,
+        topic: articles.topic,
+        dryadDatasetId: articles.dryadDatasetId,
+        journalId: articles.journalId,
+        createdTimestamp: articles.createdTimestamp,
+        updatedTimestamp: articles.updatedTimestamp,
+      })
+      .from(articles)
+      .innerJoin(dryadDatasets, eq(articles.dryadDatasetId, dryadDatasets.id))
+      .where(
+        and(
+          isNotNull(articles.fullPdfUrl),
+          isNotNull(articles.dryadDatasetId),
+          eq(dryadDatasets.extId, extId),
+          hasSuspiciousReview,
+        ),
+      );
+  }
 
   return db
     .select()

@@ -453,12 +453,12 @@ async function reviewPdfGemini(
     if (response.usageMetadata) {
       logger.info(
         `PDF review token usage: ` +
-        `input=${response.usageMetadata.promptTokenCount ?? 0}, ` +
-        `output=${response.usageMetadata.candidatesTokenCount ?? 0}, ` +
-        `total=${response.usageMetadata.totalTokenCount ?? 0}` +
-        (response.usageMetadata.cachedContentTokenCount
-          ? `, cached=${response.usageMetadata.cachedContentTokenCount}`
-          : ""),
+          `input=${response.usageMetadata.promptTokenCount ?? 0}, ` +
+          `output=${response.usageMetadata.candidatesTokenCount ?? 0}, ` +
+          `total=${response.usageMetadata.totalTokenCount ?? 0}` +
+          (response.usageMetadata.cachedContentTokenCount
+            ? `, cached=${response.usageMetadata.cachedContentTokenCount}`
+            : ""),
       );
     }
 

@@ -65,6 +65,15 @@ export async function downloadPdf({
     throw new Error(`No response body for article ${articleId} PDF`);
   }
 
+  // Check the size of the file
+  const contentLength = response.headers.get("content-length");
+  if (contentLength) {
+    const size = parseInt(contentLength, 10);
+    if (size === 0) {
+      throw new Error(`The file is empty.`);
+    }
+  }
+
   const filename = extractFilenameFromResponse(response, pdfUrl, articleId);
   const filePath = join(downloadDir, filename);
 

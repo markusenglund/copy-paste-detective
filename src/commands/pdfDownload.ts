@@ -23,10 +23,18 @@ program
     parseIntArgument,
     10,
   )
+  .option(
+    "--extId <number>",
+    "Download PDF only for specific dataset extId (ignores download status)",
+    parseIntArgument,
+  )
   .action(async (options) => {
     try {
       logger.info("Fetching articles with PDFs to download...");
-      const articlesToDownload = await getArticlesForPdfDownload(options.limit);
+      const articlesToDownload = await getArticlesForPdfDownload(
+        options.limit,
+        options.extId,
+      );
 
       logger.info(
         `Found ${articlesToDownload.length} articles with PDFs to download`,

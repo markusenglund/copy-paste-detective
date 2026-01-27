@@ -17,7 +17,9 @@ export async function loadPdfFile(options: {
   const fileBuffer = await readFile(filePath);
 
   if (fileBuffer.length === 0) {
-    throw new Error(`Failed to read PDF file from filepath ${filePath}: empty buffer`);
+    throw new Error(
+      `Failed to read PDF file from filepath ${filePath}: empty buffer`,
+    );
   }
 
   return {
