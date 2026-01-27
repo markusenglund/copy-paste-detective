@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, ne, sql, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, sql, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
 import { dryadDatasets } from "../datasets/schema";
@@ -12,6 +12,9 @@ import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 
 // Hardcoded date threshold that reviews must been created after to be considered not obsolete.
 export const AI_REVIEW_MIN_DATE = new Date("2026-01-27T00:00:00Z");
+
+// Date threshold for PDF reviews - reviews created before this are considered obsolete
+export const PDF_REVIEW_MIN_DATE = new Date("2026-01-26T00:00:00Z");
 
 // Re-export types for convenience
 export type AiReviewResultRow = typeof aiReviewResults.$inferSelect;
@@ -145,7 +148,7 @@ export type DatasetWithReviews = {
  * Get datasets ready for PDF review with all associated data.
  *
  * This function:
- * 1. Finds datasets that haven't been pdf_reviewed_by_ai yet
+ * 1. Finds datasets that don't have a recent (non-obsolete) PDF review
  * 2. Have at least one high-suspicion review created after the date threshold
  * 3. For each dataset, returns only the latest review for each unique (excelFileId, sheetName) combo
  * 4. Includes article and PDF data (only articles with completed PDF downloads)
@@ -171,7 +174,7 @@ export async function getDatasetsForPdfReview(
     datasetIds = dataset.map((d) => d.id);
   } else {
     // Find datasets that:
-    // 1. Haven't been pdf_reviewed_by_ai yet
+    // 1. Don't have a recent (non-obsolete) PDF review
     // 2. Have at least one qualifying review (suspicion > threshold AND createdAt > date threshold)
     const hasQualifyingReview = sql<boolean>`EXISTS (
       SELECT 1 FROM ai_review_results arr
@@ -183,15 +186,18 @@ export async function getDatasetsForPdfReview(
         AND a.pdf_download_status IN ('completed', 'manually_added')
     )`;
 
+    // Check if dataset has a recent (non-obsolete) PDF review
+    const hasRecentPdfReview = sql<boolean>`EXISTS (
+      SELECT 1 FROM ai_pdf_review_results pdfr
+      INNER JOIN ai_review_results arr ON pdfr.ai_review_result_id = arr.id
+      WHERE arr.dryad_dataset_id = dryad_datasets.id
+        AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
+    )`;
+
     const datasets = await db
       .select({ id: dryadDatasets.id })
       .from(dryadDatasets)
-      .where(
-        and(
-          ne(dryadDatasets.analysisStatus, "pdf_reviewed_by_ai"),
-          hasQualifyingReview,
-        ),
-      )
+      .where(and(sql`NOT (${hasRecentPdfReview})`, hasQualifyingReview))
       .limit(limit);
 
     datasetIds = datasets.map((d) => d.id);
