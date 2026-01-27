@@ -316,6 +316,24 @@ export async function updateDatasetDownloadStatusByCurrentStatus(
   return result.rowCount ?? 0;
 }
 
+export async function resetAnalysisStatusesExceptFailed(): Promise<number> {
+  const result = await db
+    .update(dryadDatasets)
+    .set({ analysisStatus: "not_analyzed", updatedTimestamp: new Date() })
+    .where(
+      and(
+        eq(dryadDatasets.downloadStatus, "completed"),
+        inArray(dryadDatasets.analysisStatus, [
+          "not_flagged_for_review",
+          "flagged_for_review",
+          "reviewed_by_ai",
+          "pdf_reviewed_by_ai",
+        ]),
+      ),
+    );
+  return result.rowCount ?? 0;
+}
+
 // ============ Analysis Status ============
 
 export async function getDatasetsByAnalysisStatus(

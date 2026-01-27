@@ -4,6 +4,7 @@ import Mutex from "p-mutex";
 import {
   getDownloadedNotAnalyzedDatasetsWithFiles,
   updateDatasetAnalysisStatus,
+  resetAnalysisStatusesExceptFailed,
 } from "../repositories/datasets/datasetsRepository";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
@@ -27,8 +28,22 @@ program
   .description("Analyze excel files from downloaded Dryad datasets.")
   .version("0.1.0")
   .argument("[count]", "Number of datasets to analyze", parseIntArgument, 100)
+  .option(
+    "--reset",
+    "Reset all non-failed analysis statuses to 'not_analyzed' before processing",
+  )
+  .action(async (count, options) => {
+    // Handle --reset option
+    if (options.reset) {
+      logger.info(
+        "Reset option detected - resetting all non-failed analysis statuses to 'not_analyzed'...",
+      );
+      const resetCount = await resetAnalysisStatusesExceptFailed();
+      logger.info(
+        `Reset ${resetCount} dataset(s) from completed analysis states back to 'not_analyzed'`,
+      );
+    }
 
-  .action(async (count) => {
     const journalByIssn = await getJournalsByIssnMap();
 
     // Get datasets that have been downloaded but not yet analyzed
