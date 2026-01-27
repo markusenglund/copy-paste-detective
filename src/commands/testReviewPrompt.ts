@@ -31,6 +31,7 @@ type TestResult = {
   noFindingsToReview: boolean;
   error?: string;
   reviewResponse?: string;
+  isUncertain: boolean;
 };
 
 const validatedTestCases: TestCase[] = [
@@ -516,7 +517,10 @@ function calculateDistanceFromInterval(
   return actual < min ? min - actual : actual - max;
 }
 
-async function processTestCase(testCase: TestCase): Promise<TestResult> {
+async function processTestCase(
+  testCase: TestCase,
+  isUncertain: boolean,
+): Promise<TestResult> {
   const { extId, filename, sheetName, expectedResult } = testCase;
   const expectedInterval = expectedResult.suspicionLevelInterval;
 
@@ -531,6 +535,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
         distanceFromInterval: null,
         noFindingsToReview: false,
         error: `Dataset with extId ${extId} not found`,
+        isUncertain,
       };
     }
 
@@ -546,6 +551,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
         distanceFromInterval: null,
         noFindingsToReview: false,
         error: `File "${filename}" not found in dataset ${extId}`,
+        isUncertain,
       };
     }
 
@@ -562,6 +568,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
         distanceFromInterval: null,
         noFindingsToReview: false,
         error: `Sheet "${sheetName}" not found in file "${filename}"`,
+        isUncertain,
       };
     }
 
@@ -595,6 +602,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
         expectedInterval,
         distanceFromInterval: null,
         noFindingsToReview: true,
+        isUncertain,
       };
     }
 
@@ -614,6 +622,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
         distanceFromInterval: null,
         noFindingsToReview: false,
         error: `Missing analysis data for sheet "${sheetName}"`,
+        isUncertain,
       };
     }
 
@@ -642,6 +651,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
         expectedInterval,
         distanceFromInterval: null,
         noFindingsToReview: true,
+        isUncertain,
       };
     }
 
@@ -659,6 +669,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
       distanceFromInterval: distance,
       noFindingsToReview: false,
       reviewResponse: reviewResult.response,
+      isUncertain,
     };
   } catch (error) {
     return {
@@ -668,6 +679,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
       distanceFromInterval: null,
       noFindingsToReview: false,
       error: error instanceof Error ? error.message : String(error),
+      isUncertain,
     };
   }
 }
@@ -697,7 +709,7 @@ function printResults(results: TestResult[]): void {
         `  Status: NO FINDINGS | Strategies found no Medium/High suspicion findings`,
       );
     } else if (aiSuspicionLevel !== null && distanceFromInterval !== null) {
-      const status = distanceFromInterval === 0 ? "PASS" : "MISS";
+      const status = distanceFromInterval === 0 ? "PASS" : "FAIL";
       console.log(
         `  Status: ${status} | Expected: [${min}, ${max}], Actual: ${aiSuspicionLevel.toFixed(1)}`,
       );
@@ -710,6 +722,7 @@ function printResults(results: TestResult[]): void {
   const completedResults = results.filter(
     (r) => r.aiSuspicionLevel !== null && !r.error && !r.noFindingsToReview,
   );
+  const validatedResults = completedResults.filter((r) => !r.isUncertain);
   const errorResults = results.filter((r) => r.error);
   const noFindingsResults = results.filter((r) => r.noFindingsToReview);
 
@@ -719,17 +732,31 @@ function printResults(results: TestResult[]): void {
   console.log(`No findings to review: ${noFindingsResults.length}`);
   console.log(`Errors: ${errorResults.length}`);
 
-  if (completedResults.length > 0) {
-    const withinInterval = completedResults.filter(
+  // Pass/fail rate and average distance based on validated test cases only
+  if (validatedResults.length > 0) {
+    const withinInterval = validatedResults.filter(
       (r) => r.distanceFromInterval === 0,
     ).length;
-    const totalDistance = completedResults.reduce(
+    const totalDistance = validatedResults.reduce(
       (sum, r) => sum + (r.distanceFromInterval ?? 0),
       0,
     );
-    const avgDistance = totalDistance / completedResults.length;
+    const avgDistance = totalDistance / validatedResults.length;
 
-    // Calculate bias score
+    console.log(
+      `\nScoring (based on ${validatedResults.length} validated test cases):`,
+    );
+    console.log(
+      `  Tests within expected interval: ${withinInterval}/${validatedResults.length} (${((withinInterval / validatedResults.length) * 100).toFixed(1)}%)`,
+    );
+    console.log(
+      `  Total distance score: ${totalDistance.toFixed(2)} (lower is better)`,
+    );
+    console.log(`  Average distance per test: ${avgDistance.toFixed(2)}`);
+  }
+
+  // Bias calculation based on all completed test cases
+  if (completedResults.length > 0) {
     const actualSum = completedResults.reduce(
       (sum, r) => sum + (r.aiSuspicionLevel ?? 0),
       0,
@@ -740,17 +767,11 @@ function printResults(results: TestResult[]): void {
     }, 0);
     const biasScore = actualSum - expectedMidpointSum;
     const avgBias = biasScore / completedResults.length;
+    const biasSign = biasScore >= 0 ? "+" : "";
 
-    console.log(`\nScoring (based on ${completedResults.length} AI reviews):`);
-    console.log(
-      `  Tests within expected interval: ${withinInterval}/${completedResults.length} (${((withinInterval / completedResults.length) * 100).toFixed(1)}%)`,
-    );
-    console.log(
-      `  Total distance score: ${totalDistance.toFixed(2)} (lower is better)`,
-    );
-    console.log(`  Average distance per test: ${avgDistance.toFixed(2)}`);
-    console.log(`  Total bias score: ${biasScore.toFixed(2)}`);
-    console.log(`  Average bias per test: ${avgBias.toFixed(2)}`);
+    console.log(`\nBias (based on ${completedResults.length} test cases):`);
+    console.log(`  Total bias score: ${biasSign}${biasScore.toFixed(2)}`);
+    console.log(`  Average bias per test: ${biasSign}${avgBias.toFixed(2)}`);
     console.log(`    (negative = AI biased low, positive = AI biased high)`);
   }
 
@@ -780,45 +801,74 @@ program
   .name("test-review-prompt")
   .description("Test AI review prompt accuracy against validated test cases")
   .version("0.1.0")
-  .option("--validatedOnly", "Only run validated test cases")
-  .option("--uncertainOnly", "Only run uncertain test cases")
-  .option("--extId <extId>", "Run only test case(s) with this extId", parseInt)
+  .option("--validated-only", "Only run validated test cases")
+  .option("--uncertain-only", "Only run uncertain test cases")
+  .option("--ext-id <extId>", "Run only test case(s) with this extId", parseInt)
   .action(async (options) => {
+    const startTime = Date.now();
+
     try {
       // Select test cases based on options
-      let testCases: TestCase[] = [];
+      let testCasesWithFlags: Array<{
+        testCase: TestCase;
+        isUncertain: boolean;
+      }> = [];
 
       if (options.validatedOnly) {
-        testCases = validatedTestCases;
+        testCasesWithFlags = validatedTestCases.map((tc) => ({
+          testCase: tc,
+          isUncertain: false,
+        }));
       } else if (options.uncertainOnly) {
-        testCases = uncertainTestCases;
+        testCasesWithFlags = uncertainTestCases.map((tc) => ({
+          testCase: tc,
+          isUncertain: true,
+        }));
       } else {
-        testCases = [
-          ...validatedTestCases,
-          ...uncertainTestCases,
-          ...casesWithIssuesUnrelatedToDuplications,
+        testCasesWithFlags = [
+          ...validatedTestCases.map((tc) => ({
+            testCase: tc,
+            isUncertain: false,
+          })),
+          ...casesWithIssuesUnrelatedToDuplications.map((tc) => ({
+            testCase: tc,
+            isUncertain: false,
+          })),
+          ...uncertainTestCases.map((tc) => ({
+            testCase: tc,
+            isUncertain: true,
+          })),
         ];
       }
 
       // Filter by extId if specified
       if (options.extId !== undefined) {
-        testCases = testCases.filter((tc) => tc.extId === options.extId);
+        testCasesWithFlags = testCasesWithFlags.filter(
+          (tc) => tc.testCase.extId === options.extId,
+        );
       }
 
-      if (testCases.length === 0) {
+      if (testCasesWithFlags.length === 0) {
         logger.error("No test cases match the specified criteria");
         process.exit(1);
       }
 
-      logger.info(`Running ${testCases.length} test cases...`);
+      logger.info(`Running ${testCasesWithFlags.length} test cases...`);
 
       // Process test cases in parallel with concurrency limit
-      const results = await pMap(testCases, processTestCase, {
-        concurrency: 5,
-      });
+      const results = await pMap(
+        testCasesWithFlags,
+        ({ testCase, isUncertain }) => processTestCase(testCase, isUncertain),
+        { concurrency: 5 },
+      );
 
       // Print results
       printResults(results);
+
+      // Print execution time
+      const endTime = Date.now();
+      const durationSeconds = ((endTime - startTime) / 1000).toFixed(1);
+      console.log(`\nExecution time: ${durationSeconds}s`);
     } finally {
       await closeDb();
     }
