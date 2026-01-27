@@ -11,6 +11,7 @@ import {
 import { processInBatches } from "../../utils/batch";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { DownloadStatus } from "../../db/shared/enums";
+import { AI_REVIEW_MIN_DATE } from "../aiReviewResults/aiReviewResultsRepository";
 
 const BATCH_SIZE = 500;
 
@@ -91,7 +92,8 @@ export async function getArticlesForPdfDownload(
   const hasSuspiciousReview = sql<boolean>`EXISTS (
     SELECT 1 FROM ai_review_results
     WHERE ai_review_results.dryad_dataset_id = articles.dryad_dataset_id
-    AND ai_review_results.suspicion_score >= 4
+    AND ai_review_results.true_positive_probability > 0.5
+    AND ai_review_results.created_at > ${AI_REVIEW_MIN_DATE}
   )`;
 
   return db
