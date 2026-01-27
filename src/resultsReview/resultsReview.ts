@@ -148,7 +148,7 @@ const createPrompt = (
     createBasicInfoSection(excelFileData, sheet) +
     createAbstractSection(excelFileData) +
     createDataDescriptionSection(excelFileData) +
-    createInstructionsSection(categorizedColumns) +
+    createSpecialColumnsSection(categorizedColumns) +
     createDataSection(sheet) +
     createDuplicateRowsSection(
       sheet,
@@ -207,7 +207,7 @@ ${wrapInCodeBlock(truncatedDataDescription)}
 `;
 }
 
-function createInstructionsSection(
+function createSpecialColumnsSection(
   categorizedColumns: CategorizedColumn[],
 ): string {
   const lnColumns = categorizedColumns
@@ -220,61 +220,53 @@ function createInstructionsSection(
     .filter((column) => column.isRepeatingFraction)
     .map(({ name }) => name);
 
-  let instructions = `
-# Instructions
-Keep the following in mind when analyzing the duplications
-- If a duplicate sequence or row has values that have a high number of occurrences in the sheet (meaning the same exact value is found in lots of other cells): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
-- It's good to consider what a row represents, for example whether it's one observation of a single individual or aggregated data of multiple observations.
-- Be aware that you're only given a small sample of the data, and might be missing important context. Therefore, try to avoid overconfidence in your analysis.
-
-### Common sources of false positives
-- If the duplicate values are actually supposed to be shared between rows, such as species level data shared between all individuals belonging to that species.
-- If the duplicate values are the result of some transformation (for example a fraction, square root, z-transformation or some statistical measure) where the original raw measurement was a number with low number of significant digits, but after the transformation gains a large amount of digits and looks more unique than it really is.
-- If the duplicate values are part of a column with very tight distribution (for example, a measurement of body temperature where most measured values are around 37 degrees C)
-- If a row contains multiple columns that are just transformations of the same data (for example, it's not suspicious if rows that share a 'diameter' also share a 'radius')
-
-None of these are a definite sign of a false positive, but might provide an innocent reason for why the duplicates exist.
-`;
+  let section = ``;
 
   if (
     lnColumns.length > 0 ||
     sqrtColumns.length > 0 ||
     fractionColumns.length > 0
   ) {
-    instructions += `
+    section += `
+# Special columns
+
 Note that some columns have artificially many significant digits because they are the result of either 1) a fraction 2) a log transformation or 3) a square root of the original measurement.   
 `;
   }
 
   if (fractionColumns.length > 0) {
-    instructions += `
+    section += `
 The following columns contain fractions:
 ${fractionColumns.map((columnName) => "- " + columnName).join("\n")}
 `;
   }
 
   if (sqrtColumns.length > 0) {
-    instructions += `
+    section += `
 The following columns contain square roots:
 ${sqrtColumns.map((columnName) => "- " + columnName).join("\n")}
 `;
   }
 
   if (lnColumns.length > 0) {
-    instructions += `
+    section += `
 The following columns are log-transformed:
 ${lnColumns.map((columnName) => "- " + columnName).join("\n")}
 `;
   }
 
-  return instructions;
+  return section;
 }
 
 function createDataSection(sheet: Sheet): string {
   // Choose number of sample rows based on the number of columns in the sheet - too many numbers can confuse the AI
   const maxSampleValues = 200;
   const maxSampleRows = 10;
-  const numSampleRows = Math.min(maxSampleRows, sheet.numRows, Math.floor(maxSampleValues / sheet.numColumns));
+  const numSampleRows = Math.min(
+    maxSampleRows,
+    sheet.numRows,
+    Math.floor(maxSampleValues / sheet.numColumns),
+  );
   const columnNames = sheet.columnNames;
   const firstRows = sheet.getSampleData(numSampleRows);
   const sampleTable = markdownTable([columnNames, ...firstRows]);
@@ -483,12 +475,27 @@ Not shown are an additional ${remainingDuplicateColumnSequences.length} duplicat
 function createTaskSection(): string {
   return `
 # Your task
+  
+Your task is to evaluate whether these duplicated blocks of cells make sense in the context of the paper (i.e. a false positive) or if they are a sign of a data-handling mistake or even deliberate fraud (i.e. a true positive).
 
-Do you think these duplicated blocks of cells make sense in the context of the paper or do you think they could be a sign of a data-handling mistake or even deliberate fraud? Please include the following in your response:
+Keep the following in mind when analyzing the duplications
+- If a duplicate sequence or row has values that have a high number of occurrences in the sheet (meaning the same exact value is found in lots of other cells): this can make it less suspicious that the sheet has multiple duplicate values in a row as long as the high number of occurrences actually makes sense in the context of the paper.
+- It's good to consider what a row represents, for example whether it's one observation of a single individual or aggregated data of multiple observations.
+- Be aware that you're only given a small sample of the data, and might be missing important context. Therefore, try to avoid overconfidence in your analysis.
+
+### Common sources of false positives
+- If the duplicate values are actually supposed to be shared between rows, such as species level data shared between all individuals belonging to that species.
+- If the duplicate values are the result of some transformation (for example a fraction, square root, z-transformation or data quantization) where the original raw measurement was a number with low number of significant digits, but after the transformation gains a large amount of digits and looks more unique than it really is.
+- If the duplicate values are part of a column with very tight distribution (for example, a measurement of body temperature where most measured values are around 37 degrees C)
+- If a row contains multiple columns that are just transformations of the same data (for example, it's not suspicious if rows that share a 'diameter' also share a 'radius')
+
+# Instructions
+Please include the following in your response:
 - A brief explanation of the data and the underlying experiment. Include what you think one row represents.
 - A brief description of the duplicates.
-- Your best explanation for the duplicates. There could be different explanations for the different examples. If you think there are multiple plausible explanations, please provide them all. Try especially to think of explanations for why it could be a false positive.
+- Your best explanation for the duplicates. If you think there are multiple plausible explanations, please provide them all.
 - A brief evaluation of how serious you think these issues are.
 - The probability (from 0 to 100%) that the duplicates are a true positive, meaning they are indicative of real issues with the data.
+
 `;
 }
