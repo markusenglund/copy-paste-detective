@@ -15,6 +15,24 @@ function getTruePositiveProbabilityColor(probability: number | null): string {
   return "text-gray-600";
 }
 
+function getImpactScoreColor(score: number | null): string {
+  if (score === null) return "text-gray-400";
+  if (score === 5) return "text-red-600 font-bold";
+  if (score === 4) return "text-orange-500 font-semibold";
+  if (score === 3) return "text-yellow-600";
+  return "text-gray-600";
+}
+
+function getImpactScoreLabel(score: number | null): string {
+  if (score === null) return "-";
+  if (score === 5) return "Severe";
+  if (score === 4) return "High";
+  if (score === 3) return "Medium";
+  if (score === 2) return "Low";
+  if (score === 1) return "None";
+  return "-";
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString();
@@ -89,6 +107,9 @@ export function ArticlesTable({
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Probability
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Impact
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Published
@@ -177,6 +198,11 @@ export function ArticlesTable({
                 {article.truePositiveProbability !== null
                   ? `${(article.truePositiveProbability * 100).toFixed(0)}%`
                   : "-"}
+              </td>
+              <td
+                className={`px-4 py-3 text-sm ${getImpactScoreColor(article.impactScore)}`}
+              >
+                {getImpactScoreLabel(article.impactScore)}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
                 {formatDate(article.publicationDate)}
