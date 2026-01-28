@@ -1,4 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
+import pMap from "p-map";
 import { parseIntArgument } from "../utils/command";
 import { getDatasetsForPdfReview } from "../repositories/aiReviewResults/aiReviewResultsRepository";
 import { updateDatasetAnalysisStatus } from "../repositories/datasets/datasetsRepository";
@@ -54,73 +55,77 @@ program
         `Found ${datasetsWithReviews.length} datasets with ${totalReviews} reviews to process`,
       );
 
-      for (const {
-        dataset,
-        article,
-        pdfFile,
-        reviews,
-      } of datasetsWithReviews) {
-        logger.info(
-          `Processing dataset ${dataset.extId}: ${dataset.title} (${reviews.length} reviews)`,
-        );
+      await pMap(
+        datasetsWithReviews,
+        async ({ dataset, article, pdfFile, reviews }) => {
+          logger.info(
+            `Processing dataset extId=${dataset.extId}: ${dataset.title} (${reviews.length} reviews)`,
+          );
 
-        // Load PDF file once per dataset
-        const pdfData = await loadPdfFile({
-          articleId: article.id,
-          filename: pdfFile.filename,
-        });
+          // Load PDF file once per dataset
+          const pdfData = await loadPdfFile({
+            articleId: article.id,
+            filename: pdfFile.filename,
+          });
 
-        logger.info(`Loaded PDF: ${pdfFile.filename} (${pdfFile.size} bytes)`);
+          logger.info(
+            `Loaded PDF: ${pdfFile.filename} (${pdfFile.size} bytes)`,
+          );
 
-        for (const { aiReview, excelFile } of reviews) {
-          try {
-            logger.info(
-              `Processing review for ${excelFile.filename} / ${aiReview.sheetName}`,
-            );
+          for (const { aiReview, excelFile } of reviews) {
+            try {
+              logger.info(
+                `Processing review for ${excelFile.filename} / ${aiReview.sheetName}`,
+              );
 
-            // Create conversation structure for multi-turn prompt
-            const conversation = createPdfReviewPrompt({
-              originalPrompt: aiReview.prompt,
-              articleTitle: article.title,
-              articleAbstract: dataset.abstract ?? undefined,
-              excelFileName: excelFile.filename,
-              sheetName: aiReview.sheetName,
-              originalAiReview: aiReview.response,
-            });
+              // Create conversation structure for multi-turn prompt
+              const conversation = createPdfReviewPrompt({
+                originalPrompt: aiReview.prompt,
+                articleTitle: article.title,
+                articleAbstract: dataset.abstract ?? undefined,
+                excelFileName: excelFile.filename,
+                sheetName: aiReview.sheetName,
+                originalAiReview: aiReview.response,
+              });
 
-            // Call AI with caching
-            logger.info("Calling AI for PDF review...");
-            const pdfReview = await reviewPdfWithCache({
-              conversation,
-              pdfBuffer: pdfData.fileBuffer,
-              pdfFileName: pdfFile.filename,
-              aiReviewResultId: aiReview.id,
-              articleId: article.id,
-            });
+              // Call AI with caching
+              logger.info("Calling AI for PDF review...");
+              const pdfReview = await reviewPdfWithCache({
+                conversation,
+                pdfBuffer: pdfData.fileBuffer,
+                pdfFileName: pdfFile.filename,
+                aiReviewResultId: aiReview.id,
+                articleId: article.id,
+              });
 
-            // Log results
-            logger.info(`Analysis: ${pdfReview.response}`);
-            logger.info(
-              `Previous probability of real issues: ${(aiReview.truePositiveProbability * 100).toFixed(0)}%`,
-            );
-            logger.info(`Impact Score: ${pdfReview.impactScore}/5`);
+              // Log results
+              logger.info(`Analysis: ${pdfReview.response}`);
+              logger.info(
+                `Previous probability of real issues: ${(aiReview.truePositiveProbability * 100).toFixed(0)}%`,
+              );
+              logger.info(`Impact Score: ${pdfReview.impactScore}/5`);
 
-            successCount++;
-          } catch (err) {
-            const errorMessage =
-              err instanceof Error ? err.message : String(err);
-            logger.error(
-              `Failed to process review for ${excelFile.filename} / ${aiReview.sheetName}: ${errorMessage}`,
-            );
-            failedCount++;
+              successCount++;
+            } catch (err) {
+              const errorMessage =
+                err instanceof Error ? err.message : String(err);
+              logger.error(
+                `Failed to process review for ${excelFile.filename} / ${aiReview.sheetName}: ${errorMessage}`,
+              );
+              failedCount++;
+            }
           }
-        }
 
-        // Mark dataset as pdf_reviewed_by_ai after processing all its reviews
-        await updateDatasetAnalysisStatus(dataset.extId, "pdf_reviewed_by_ai");
-        datasetsProcessed++;
-        logger.info(`Dataset ${dataset.extId} marked as pdf_reviewed_by_ai`);
-      }
+          // Mark dataset as pdf_reviewed_by_ai after processing all its reviews
+          await updateDatasetAnalysisStatus(
+            dataset.extId,
+            "pdf_reviewed_by_ai",
+          );
+          datasetsProcessed++;
+          logger.info(`Dataset ${dataset.extId} marked as pdf_reviewed_by_ai`);
+        },
+        { concurrency: 5 },
+      );
 
       logger.info(
         `Complete. Datasets: ${datasetsProcessed}, Reviews - Success: ${successCount}, Failed: ${failedCount}`,
