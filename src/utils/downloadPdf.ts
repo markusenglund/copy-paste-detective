@@ -8,6 +8,23 @@ type Params = {
   pdfUrl: string;
 };
 
+export function validatePdfMagicBytes(chunk: Uint8Array): boolean {
+  // PDF magic bytes: %PDF-
+  const pdfMagicBytes = [0x25, 0x50, 0x44, 0x46, 0x2d];
+
+  if (chunk.length < pdfMagicBytes.length) {
+    return false;
+  }
+
+  for (let i = 0; i < pdfMagicBytes.length; i++) {
+    if (chunk[i] !== pdfMagicBytes[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function extractFilenameFromUrl(url: string): string | null {
   try {
     const urlObj = new URL(url);
@@ -65,6 +82,14 @@ export async function downloadPdf({
     throw new Error(`No response body for article ${articleId} PDF`);
   }
 
+  // Validate Content-Type header
+  const contentType = response.headers.get("content-type");
+  if (contentType && !contentType.includes("application/pdf")) {
+    throw new Error(
+      `Invalid Content-Type for article ${articleId} PDF: expected "application/pdf", got "${contentType}"`,
+    );
+  }
+
   // Check the size of the file
   const contentLength = response.headers.get("content-length");
   if (contentLength) {
@@ -81,11 +106,22 @@ export async function downloadPdf({
 
   const reader = response.body.getReader();
   let size = 0;
+  let isFirstChunk = true;
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+
+      // Validate PDF magic bytes on first chunk
+      if (isFirstChunk) {
+        if (!validatePdfMagicBytes(value)) {
+          throw new Error(
+            `Downloaded file for article ${articleId} is not a valid PDF: missing PDF signature`,
+          );
+        }
+        isFirstChunk = false;
+      }
 
       size += value.length;
       writeStream.write(value);
