@@ -8,12 +8,21 @@ import {
   DEFAULT_SORT,
   SortParams,
 } from "../../shared/sortTypes";
+import {
+  FilterParams,
+  FILTER_KEYS,
+  HighProbabilityFilter,
+} from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get<{
-    Querystring: { sortBy?: string; sortOrder?: string };
+    Querystring: {
+      sortBy?: string;
+      sortOrder?: string;
+      [key: `filter_${string}`]: string;
+    };
   }>("/articles", async (request, reply) => {
-    const { sortBy, sortOrder } = request.query;
+    const { sortBy, sortOrder, ...queryParams } = request.query;
 
     // Validate and build sort params, falling back to defaults for invalid values
     const sortParams: SortParams = {
@@ -24,7 +33,23 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
           : DEFAULT_SORT.sortOrder,
     };
 
-    const articles = await getArticlesForManualUpload(sortParams);
+    // Parse filter parameters
+    const filters: FilterParams["filters"] = [];
+
+    const highProbabilityParam =
+      queryParams[`filter_${FILTER_KEYS.HIGH_PROBABILITY}`];
+    if (highProbabilityParam !== undefined) {
+      const highProbabilityFilter: HighProbabilityFilter = {
+        key: FILTER_KEYS.HIGH_PROBABILITY,
+        enabled: highProbabilityParam === "true",
+        threshold: 0.5,
+      };
+      filters.push(highProbabilityFilter);
+    }
+
+    const filterParams: FilterParams = { filters };
+
+    const articles = await getArticlesForManualUpload(sortParams, filterParams);
     return reply.send({ articles });
   });
 

@@ -5,7 +5,7 @@ import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
-import { desc, eq, sql, and, asc, SQL } from "drizzle-orm";
+import { desc, eq, sql, and, asc, SQL, gt } from "drizzle-orm";
 import {
   AI_REVIEW_MIN_DATE,
   PDF_REVIEW_MIN_DATE,
@@ -16,6 +16,11 @@ import {
   SORT_ORDERS,
   DEFAULT_SORT,
 } from "../../shared/sortTypes";
+import {
+  FilterParams,
+  FILTER_KEYS,
+  DEFAULT_FILTERS,
+} from "../../shared/filterTypes";
 
 export interface ArticleForUpload {
   id: number;
@@ -37,6 +42,7 @@ export interface ArticleForUpload {
 
 export async function getArticlesForManualUpload(
   sortParams: SortParams = DEFAULT_SORT,
+  filterParams: FilterParams = DEFAULT_FILTERS,
 ): Promise<ArticleForUpload[]> {
   // Step 1: Get latest review timestamp per unique sheet
   const latestExcelReviewTimes = sql`(
@@ -97,7 +103,8 @@ export async function getArticlesForManualUpload(
     .as("max_scores");
 
   // Helper function to map sort field to database column
-  const getSortColumn = (): SQL => {
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  const getSortColumn = () => {
     switch (sortParams.sortBy) {
       case SORT_FIELDS.PROBABILITY:
         return maxScoresSubquery.maxTruePositiveProbability;
@@ -117,10 +124,27 @@ export async function getArticlesForManualUpload(
   const sortColumn = getSortColumn();
   const orderByClause =
     sortParams.sortOrder === SORT_ORDERS.DESC
-      ? sql`${sortColumn} DESC NULLS LAST`
-      : sql`${sortColumn} ASC NULLS LAST`;
+      ? desc(sortColumn)
+      : asc(sortColumn);
 
-  const result = await db
+  // Build filter conditions
+  const filterConditions: SQL[] = [];
+
+  for (const filter of filterParams.filters) {
+    if (!filter.enabled) continue;
+
+    if (filter.key === FILTER_KEYS.HIGH_PROBABILITY) {
+      filterConditions.push(
+        gt(maxScoresSubquery.maxTruePositiveProbability, filter.threshold),
+      );
+    }
+  }
+
+  // Combine filter conditions with AND
+  const whereClause =
+    filterConditions.length > 0 ? and(...filterConditions) : undefined;
+
+  let query = db
     .select({
       id: articles.id,
       doi: articles.doi,
@@ -152,8 +176,13 @@ export async function getArticlesForManualUpload(
     .innerJoin(
       maxScoresSubquery,
       eq(maxScoresSubquery.dryadDatasetId, articles.dryadDatasetId),
-    )
-    .orderBy(orderByClause);
+    );
+
+  if (whereClause) {
+    query = query.where(whereClause) as typeof query;
+  }
+
+  const result = await query.orderBy(orderByClause);
 
   return result;
 }

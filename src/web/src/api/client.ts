@@ -1,18 +1,30 @@
 import { ArticleForUpload } from "../types/article";
 import { SortParams } from "../../../shared/sortTypes";
+import { FilterParams, serializeFilters } from "../../../shared/filterTypes";
 
 const BASE_URL = "/api";
 
 export async function fetchArticles(
   sortParams?: SortParams,
+  filterParams?: FilterParams,
 ): Promise<ArticleForUpload[]> {
   let url = `${BASE_URL}/articles`;
 
+  const params = new URLSearchParams();
+
   if (sortParams) {
-    const params = new URLSearchParams({
-      sortBy: sortParams.sortBy,
-      sortOrder: sortParams.sortOrder,
+    params.append("sortBy", sortParams.sortBy);
+    params.append("sortOrder", sortParams.sortOrder);
+  }
+
+  if (filterParams) {
+    const serializedFilters = serializeFilters(filterParams);
+    Object.entries(serializedFilters).forEach(([key, value]) => {
+      params.append(key, value);
     });
+  }
+
+  if (params.toString()) {
     url += `?${params.toString()}`;
   }
 

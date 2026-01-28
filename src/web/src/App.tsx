@@ -4,13 +4,18 @@ import { fetchArticles } from "./api/client";
 import { ArticlesTable } from "./components/ArticlesTable";
 import {
   SortField,
-  SortOrder,
   SortParams,
   DEFAULT_SORT,
   SORT_ORDERS,
   isValidSortField,
   isValidSortOrder,
 } from "../../shared/sortTypes";
+import {
+  FilterParams,
+  deserializeFilters,
+  serializeFilters,
+} from "../../shared/filterTypes";
+import { FilterPanel } from "./components/FilterPanel";
 
 function getSortFromUrl(): SortParams {
   const params = new URLSearchParams(window.location.search);
@@ -26,27 +31,60 @@ function getSortFromUrl(): SortParams {
   };
 }
 
+function getFiltersFromUrl(): FilterParams {
+  const params = new URLSearchParams(window.location.search);
+  return deserializeFilters(params);
+}
+
 function App(): React.ReactElement {
   const [articles, setArticles] = useState<ArticleForUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortParams, setSortParams] = useState<SortParams>(getSortFromUrl);
+  const [filterParams, setFilterParams] =
+    useState<FilterParams>(getFiltersFromUrl);
 
-  const loadArticles = useCallback(async (params: SortParams) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchArticles(params);
-      setArticles(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load articles");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loadArticles = useCallback(
+    async (params: SortParams, filters: FilterParams) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchArticles(params, filters);
+        setArticles(data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load articles",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  const updateUrlParams = useCallback(
+    (sortParams: SortParams, filterParams: FilterParams): void => {
+      const params = new URLSearchParams({
+        sortBy: sortParams.sortBy,
+        sortOrder: sortParams.sortOrder,
+      });
+
+      const serializedFilters = serializeFilters(filterParams);
+      Object.entries(serializedFilters).forEach(([key, value]) => {
+        params.append(key, value);
+      });
+
+      window.history.pushState(
+        {},
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
+    },
+    [],
+  );
 
   const handleSort = useCallback(
-    (field: SortField) => {
+    (field: SortField): void => {
       const newSortParams: SortParams = {
         sortBy: field,
         sortOrder:
@@ -57,35 +95,36 @@ function App(): React.ReactElement {
       };
 
       setSortParams(newSortParams);
-
-      const params = new URLSearchParams({
-        sortBy: newSortParams.sortBy,
-        sortOrder: newSortParams.sortOrder,
-      });
-      window.history.pushState(
-        {},
-        "",
-        `${window.location.pathname}?${params.toString()}`,
-      );
-
-      loadArticles(newSortParams);
+      updateUrlParams(newSortParams, filterParams);
+      loadArticles(newSortParams, filterParams);
     },
-    [sortParams, loadArticles],
+    [sortParams, filterParams, loadArticles, updateUrlParams],
+  );
+
+  const handleFilterChange = useCallback(
+    (newFilterParams: FilterParams) => {
+      setFilterParams(newFilterParams);
+      updateUrlParams(sortParams, newFilterParams);
+      loadArticles(sortParams, newFilterParams);
+    },
+    [sortParams, loadArticles, updateUrlParams],
   );
 
   useEffect(() => {
-    loadArticles(sortParams);
+    loadArticles(sortParams, filterParams);
   }, []);
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (): void => {
       const newSortParams = getSortFromUrl();
+      const newFilterParams = getFiltersFromUrl();
       setSortParams(newSortParams);
-      loadArticles(newSortParams);
+      setFilterParams(newFilterParams);
+      loadArticles(newSortParams, newFilterParams);
     };
 
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    return (): void => window.removeEventListener("popstate", handlePopState);
   }, [loadArticles]);
 
   return (
@@ -96,7 +135,7 @@ function App(): React.ReactElement {
             Science detective dashboard
           </h1>
           <button
-            onClick={() => loadArticles(sortParams)}
+            onClick={() => loadArticles(sortParams, filterParams)}
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -110,13 +149,18 @@ function App(): React.ReactElement {
           </div>
         )}
 
+        <FilterPanel
+          filterParams={filterParams}
+          onFilterChange={handleFilterChange}
+        />
+
         <div className="bg-white shadow rounded-lg overflow-hidden">
           {loading && articles.length === 0 ? (
             <div className="text-center py-8 text-gray-500">Loading...</div>
           ) : (
             <ArticlesTable
               articles={articles}
-              onUploadSuccess={() => loadArticles(sortParams)}
+              onUploadSuccess={() => loadArticles(sortParams, filterParams)}
               currentSortBy={sortParams.sortBy}
               currentSortOrder={sortParams.sortOrder}
               onSort={handleSort}
