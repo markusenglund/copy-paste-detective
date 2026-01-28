@@ -2,10 +2,30 @@ import { FastifyInstance } from "fastify";
 import { getArticlesForManualUpload } from "../services/articlesService";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
+import {
+  isValidSortField,
+  isValidSortOrder,
+  DEFAULT_SORT,
+  SortParams,
+} from "../../shared/sortTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
-  fastify.get("/articles", async (_request, reply) => {
-    const articles = await getArticlesForManualUpload();
+  fastify.get<{
+    Querystring: { sortBy?: string; sortOrder?: string };
+  }>("/articles", async (request, reply) => {
+    const { sortBy, sortOrder } = request.query;
+
+    // Validate and build sort params, falling back to defaults for invalid values
+    const sortParams: SortParams = {
+      sortBy:
+        sortBy && isValidSortField(sortBy) ? sortBy : DEFAULT_SORT.sortBy,
+      sortOrder:
+        sortOrder && isValidSortOrder(sortOrder)
+          ? sortOrder
+          : DEFAULT_SORT.sortOrder,
+    };
+
+    const articles = await getArticlesForManualUpload(sortParams);
     return reply.send({ articles });
   });
 

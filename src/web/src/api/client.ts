@@ -1,9 +1,22 @@
 import { ArticleForUpload } from "../types/article";
+import { SortParams } from "../../../shared/sortTypes";
 
 const BASE_URL = "/api";
 
-export async function fetchArticles(): Promise<ArticleForUpload[]> {
-  const response = await fetch(`${BASE_URL}/articles`);
+export async function fetchArticles(
+  sortParams?: SortParams,
+): Promise<ArticleForUpload[]> {
+  let url = `${BASE_URL}/articles`;
+
+  if (sortParams) {
+    const params = new URLSearchParams({
+      sortBy: sortParams.sortBy,
+      sortOrder: sortParams.sortOrder,
+    });
+    url += `?${params.toString()}`;
+  }
+
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error("Failed to fetch articles");
   }

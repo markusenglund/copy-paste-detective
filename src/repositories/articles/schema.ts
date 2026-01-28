@@ -1,6 +1,7 @@
 import {
   date,
   decimal,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -16,31 +17,41 @@ import { funders } from "../funders/schema";
 import { institutions } from "../institutions/schema";
 import { downloadStatusEnum } from "../../db/shared/enums";
 
-export const articles = pgTable("articles", {
-  id: serial("id").primaryKey(),
-  doi: text("doi").unique(),
-  extOpenalexId: text("ext_openalex_id").notNull().unique(),
-  title: text("title").notNull(),
-  publicationDate: date("publication_date"),
-  numCitations: integer("num_citations").notNull(),
-  citationNormalizedPercentile: decimal("citation_normalized_percentile", {
-    mode: "number",
-  }),
-  citedByPercentileYearMin: decimal("cited_by_percentile_year_min", {
-    mode: "number",
-  }),
-  fullPdfUrl: text("full_pdf_url"),
-  pdfDownloadStatus: downloadStatusEnum("pdf_download_status"),
-  field: text("field"),
-  subfield: text("subfield"),
-  topic: text("topic"),
-  dryadDatasetId: integer("dryad_dataset_id").references(
-    () => dryadDatasets.id,
-  ),
-  journalId: integer("journal_id").references(() => journals.id),
-  createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
-  updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
-});
+export const articles = pgTable(
+  "articles",
+  {
+    id: serial("id").primaryKey(),
+    doi: text("doi").unique(),
+    extOpenalexId: text("ext_openalex_id").notNull().unique(),
+    title: text("title").notNull(),
+    publicationDate: date("publication_date"),
+    numCitations: integer("num_citations").notNull(),
+    citationNormalizedPercentile: decimal("citation_normalized_percentile", {
+      mode: "number",
+    }),
+    citedByPercentileYearMin: decimal("cited_by_percentile_year_min", {
+      mode: "number",
+    }),
+    fullPdfUrl: text("full_pdf_url"),
+    pdfDownloadStatus: downloadStatusEnum("pdf_download_status"),
+    field: text("field"),
+    subfield: text("subfield"),
+    topic: text("topic"),
+    dryadDatasetId: integer("dryad_dataset_id").references(
+      () => dryadDatasets.id,
+    ),
+    journalId: integer("journal_id").references(() => journals.id),
+    createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
+    updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_articles_publication_date").on(table.publicationDate),
+    index("idx_articles_num_citations").on(table.numCitations),
+    index("idx_articles_citation_percentile").on(
+      table.citationNormalizedPercentile,
+    ),
+  ],
+);
 
 export const authorPositionEnum = pgEnum("author_position", [
   "first",

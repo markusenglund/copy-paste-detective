@@ -2,17 +2,42 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ArticleForUpload } from "./types/article";
 import { fetchArticles } from "./api/client";
 import { ArticlesTable } from "./components/ArticlesTable";
+import {
+  SortField,
+  SortOrder,
+  SortParams,
+  DEFAULT_SORT,
+  SORT_ORDERS,
+  isValidSortField,
+  isValidSortOrder,
+} from "../../shared/sortTypes";
+
+function getSortFromUrl(): SortParams {
+  const params = new URLSearchParams(window.location.search);
+  const sortBy = params.get("sortBy");
+  const sortOrder = params.get("sortOrder");
+
+  return {
+    sortBy:
+      sortBy && isValidSortField(sortBy) ? sortBy : DEFAULT_SORT.sortBy,
+    sortOrder:
+      sortOrder && isValidSortOrder(sortOrder)
+        ? sortOrder
+        : DEFAULT_SORT.sortOrder,
+  };
+}
 
 function App(): React.ReactElement {
   const [articles, setArticles] = useState<ArticleForUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortParams, setSortParams] = useState<SortParams>(getSortFromUrl);
 
-  const loadArticles = useCallback(async () => {
+  const loadArticles = useCallback(async (params: SortParams) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchArticles();
+      const data = await fetchArticles(params);
       setArticles(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load articles");
@@ -21,8 +46,46 @@ function App(): React.ReactElement {
     }
   }, []);
 
+  const handleSort = useCallback(
+    (field: SortField) => {
+      const newSortParams: SortParams = {
+        sortBy: field,
+        sortOrder:
+          sortParams.sortBy === field && sortParams.sortOrder === SORT_ORDERS.DESC
+            ? SORT_ORDERS.ASC
+            : SORT_ORDERS.DESC,
+      };
+
+      setSortParams(newSortParams);
+
+      const params = new URLSearchParams({
+        sortBy: newSortParams.sortBy,
+        sortOrder: newSortParams.sortOrder,
+      });
+      window.history.pushState(
+        {},
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
+
+      loadArticles(newSortParams);
+    },
+    [sortParams, loadArticles],
+  );
+
   useEffect(() => {
-    loadArticles();
+    loadArticles(sortParams);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const newSortParams = getSortFromUrl();
+      setSortParams(newSortParams);
+      loadArticles(newSortParams);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [loadArticles]);
 
   return (
@@ -33,7 +96,7 @@ function App(): React.ReactElement {
             Science detective dashboard
           </h1>
           <button
-            onClick={loadArticles}
+            onClick={() => loadArticles(sortParams)}
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -51,7 +114,13 @@ function App(): React.ReactElement {
           {loading && articles.length === 0 ? (
             <div className="text-center py-8 text-gray-500">Loading...</div>
           ) : (
-            <ArticlesTable articles={articles} onUploadSuccess={loadArticles} />
+            <ArticlesTable
+              articles={articles}
+              onUploadSuccess={() => loadArticles(sortParams)}
+              currentSortBy={sortParams.sortBy}
+              currentSortOrder={sortParams.sortOrder}
+              onSort={handleSort}
+            />
           )}
         </div>
 

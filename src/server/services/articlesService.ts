@@ -5,11 +5,17 @@ import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
-import { desc, eq, sql, and } from "drizzle-orm";
+import { desc, eq, sql, and, asc, SQL } from "drizzle-orm";
 import {
   AI_REVIEW_MIN_DATE,
   PDF_REVIEW_MIN_DATE,
 } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
+import {
+  SortParams,
+  SORT_FIELDS,
+  SORT_ORDERS,
+  DEFAULT_SORT,
+} from "../../shared/sortTypes";
 
 export interface ArticleForUpload {
   id: number;
@@ -29,9 +35,9 @@ export interface ArticleForUpload {
   pdfFileSize: number | null;
 }
 
-export async function getArticlesForManualUpload(): Promise<
-  ArticleForUpload[]
-> {
+export async function getArticlesForManualUpload(
+  sortParams: SortParams = DEFAULT_SORT,
+): Promise<ArticleForUpload[]> {
   // Step 1: Get latest review timestamp per unique sheet
   const latestExcelReviewTimes = sql`(
     SELECT
@@ -90,6 +96,30 @@ export async function getArticlesForManualUpload(): Promise<
     .groupBy(aiReviewResults.dryadDatasetId)
     .as("max_scores");
 
+  // Helper function to map sort field to database column
+  const getSortColumn = (): SQL => {
+    switch (sortParams.sortBy) {
+      case SORT_FIELDS.PROBABILITY:
+        return maxScoresSubquery.maxTruePositiveProbability;
+      case SORT_FIELDS.IMPACT:
+        return maxScoresSubquery.maxImpactScore;
+      case SORT_FIELDS.PUBLISHED:
+        return articles.publicationDate;
+      case SORT_FIELDS.CITATIONS:
+        return articles.numCitations;
+      case SORT_FIELDS.CITATION_PERCENTILE:
+        return articles.citationNormalizedPercentile;
+      default:
+        return maxScoresSubquery.maxTruePositiveProbability;
+    }
+  };
+
+  const sortColumn = getSortColumn();
+  const orderByClause =
+    sortParams.sortOrder === SORT_ORDERS.DESC
+      ? sql`${sortColumn} DESC NULLS LAST`
+      : sql`${sortColumn} ASC NULLS LAST`;
+
   const result = await db
     .select({
       id: articles.id,
@@ -123,7 +153,7 @@ export async function getArticlesForManualUpload(): Promise<
       maxScoresSubquery,
       eq(maxScoresSubquery.dryadDatasetId, articles.dryadDatasetId),
     )
-    .orderBy(desc(maxScoresSubquery.maxTruePositiveProbability));
+    .orderBy(orderByClause);
 
   return result;
 }

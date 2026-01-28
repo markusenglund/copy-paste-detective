@@ -1,10 +1,15 @@
 import React from "react";
 import { ArticleForUpload } from "../types/article";
 import { PdfDropzone } from "./PdfDropzone";
+import { SortableColumnHeader } from "./SortableColumnHeader";
+import { SortField, SortOrder, SORT_FIELDS } from "../../../shared/sortTypes";
 
 interface ArticlesTableProps {
   articles: ArticleForUpload[];
   onUploadSuccess: () => void;
+  currentSortBy: SortField;
+  currentSortOrder: SortOrder;
+  onSort: (field: SortField) => void;
 }
 
 function getTruePositiveProbabilityColor(probability: number | null): string {
@@ -76,6 +81,9 @@ function formatSize(bytes: number): string {
 export function ArticlesTable({
   articles,
   onUploadSuccess,
+  currentSortBy,
+  currentSortOrder,
+  onSort,
 }: ArticlesTableProps): React.ReactElement {
   if (articles.length === 0) {
     return (
@@ -105,21 +113,41 @@ export function ArticlesTable({
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Country
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Probability
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Impact
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Published
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Citations
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Citation %
-            </th>
+            <SortableColumnHeader
+              label="Probability"
+              field={SORT_FIELDS.PROBABILITY}
+              currentSortBy={currentSortBy}
+              currentSortOrder={currentSortOrder}
+              onSort={onSort}
+            />
+            <SortableColumnHeader
+              label="Impact"
+              field={SORT_FIELDS.IMPACT}
+              currentSortBy={currentSortBy}
+              currentSortOrder={currentSortOrder}
+              onSort={onSort}
+            />
+            <SortableColumnHeader
+              label="Published"
+              field={SORT_FIELDS.PUBLISHED}
+              currentSortBy={currentSortBy}
+              currentSortOrder={currentSortOrder}
+              onSort={onSort}
+            />
+            <SortableColumnHeader
+              label="Citations"
+              field={SORT_FIELDS.CITATIONS}
+              currentSortBy={currentSortBy}
+              currentSortOrder={currentSortOrder}
+              onSort={onSort}
+            />
+            <SortableColumnHeader
+              label="Citation %"
+              field={SORT_FIELDS.CITATION_PERCENTILE}
+              currentSortBy={currentSortBy}
+              currentSortOrder={currentSortOrder}
+              onSort={onSort}
+            />
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               PDF File
             </th>
