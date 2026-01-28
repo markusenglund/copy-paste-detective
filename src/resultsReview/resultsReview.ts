@@ -346,7 +346,7 @@ ${duplicateRow.sharedColumns
 
   if (remainingDuplicateRows.length > 0) {
     section += `
-Not shown are an additional ${remainingDuplicateRows.length} duplicate rows flagged as having a high or medium level or suspiciosness.
+Not shown are an additional ${remainingDuplicateRows.length} duplicate rows flagged as having a high or medium level of suspiciosness.
 `;
   }
 
