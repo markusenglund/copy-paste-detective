@@ -17,8 +17,7 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
 
     // Validate and build sort params, falling back to defaults for invalid values
     const sortParams: SortParams = {
-      sortBy:
-        sortBy && isValidSortField(sortBy) ? sortBy : DEFAULT_SORT.sortBy,
+      sortBy: sortBy && isValidSortField(sortBy) ? sortBy : DEFAULT_SORT.sortBy,
       sortOrder:
         sortOrder && isValidSortOrder(sortOrder)
           ? sortOrder

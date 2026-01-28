@@ -18,8 +18,7 @@ function getSortFromUrl(): SortParams {
   const sortOrder = params.get("sortOrder");
 
   return {
-    sortBy:
-      sortBy && isValidSortField(sortBy) ? sortBy : DEFAULT_SORT.sortBy,
+    sortBy: sortBy && isValidSortField(sortBy) ? sortBy : DEFAULT_SORT.sortBy,
     sortOrder:
       sortOrder && isValidSortOrder(sortOrder)
         ? sortOrder
@@ -51,7 +50,8 @@ function App(): React.ReactElement {
       const newSortParams: SortParams = {
         sortBy: field,
         sortOrder:
-          sortParams.sortBy === field && sortParams.sortOrder === SORT_ORDERS.DESC
+          sortParams.sortBy === field &&
+          sortParams.sortOrder === SORT_ORDERS.DESC
             ? SORT_ORDERS.ASC
             : SORT_ORDERS.DESC,
       };

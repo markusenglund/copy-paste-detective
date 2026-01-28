@@ -2,20 +2,20 @@
 // Used by both frontend and backend to ensure type safety
 
 export const SORT_FIELDS = {
-  PROBABILITY: 'probability',
-  IMPACT: 'impact',
-  PUBLISHED: 'published',
-  CITATIONS: 'citations',
-  CITATION_PERCENTILE: 'citationPercentile',
+  PROBABILITY: "probability",
+  IMPACT: "impact",
+  PUBLISHED: "published",
+  CITATIONS: "citations",
+  CITATION_PERCENTILE: "citationPercentile",
 } as const;
 
 export const SORT_ORDERS = {
-  ASC: 'asc',
-  DESC: 'desc',
+  ASC: "asc",
+  DESC: "desc",
 } as const;
 
-export type SortField = typeof SORT_FIELDS[keyof typeof SORT_FIELDS];
-export type SortOrder = typeof SORT_ORDERS[keyof typeof SORT_ORDERS];
+export type SortField = (typeof SORT_FIELDS)[keyof typeof SORT_FIELDS];
+export type SortOrder = (typeof SORT_ORDERS)[keyof typeof SORT_ORDERS];
 
 export interface SortParams {
   sortBy: SortField;
@@ -29,9 +29,15 @@ export const DEFAULT_SORT: SortParams = {
 
 // Validation helpers
 export function isValidSortField(value: unknown): value is SortField {
-  return typeof value === 'string' && Object.values(SORT_FIELDS).includes(value as SortField);
+  return (
+    typeof value === "string" &&
+    Object.values(SORT_FIELDS).includes(value as SortField)
+  );
 }
 
 export function isValidSortOrder(value: unknown): value is SortOrder {
-  return typeof value === 'string' && Object.values(SORT_ORDERS).includes(value as SortOrder);
+  return (
+    typeof value === "string" &&
+    Object.values(SORT_ORDERS).includes(value as SortOrder)
+  );
 }

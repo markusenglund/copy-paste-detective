@@ -14,13 +14,13 @@ export function SortableColumnHeader({
   currentSortBy,
   currentSortOrder,
   onSort,
-}: SortableColumnHeaderProps) {
+}: SortableColumnHeaderProps): React.ReactElement {
   const isActive = currentSortBy === field;
   const sortIndicator = isActive
     ? currentSortOrder === SORT_ORDERS.DESC
-      ? " ↓"
-      : " ↑"
-    : "";
+      ? "↓"
+      : "↑"
+    : "↕";
 
   return (
     <th
@@ -29,10 +29,19 @@ export function SortableColumnHeader({
         cursor: "pointer",
         userSelect: "none",
       }}
-      className="sortable-header"
+      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
     >
-      {label}
-      {sortIndicator}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.375rem",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span>{label}</span>
+        <span style={{ opacity: isActive ? 1 : 0.4 }}>{sortIndicator}</span>
+      </div>
     </th>
   );
 }
