@@ -12,6 +12,8 @@ import {
   FilterParams,
   FILTER_KEYS,
   HighProbabilityFilter,
+  PdfAvailabilityFilter,
+  PdfAvailabilityOption,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -45,6 +47,27 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
         threshold: 0.5,
       };
       filters.push(highProbabilityFilter);
+    }
+
+    const pdfAvailabilityParam =
+      queryParams[`filter_${FILTER_KEYS.PDF_AVAILABILITY}`];
+    if (pdfAvailabilityParam !== undefined) {
+      const validOptions: PdfAvailabilityOption[] = [
+        "all",
+        "available",
+        "not-available",
+      ];
+      const option = validOptions.includes(
+        pdfAvailabilityParam as PdfAvailabilityOption,
+      )
+        ? (pdfAvailabilityParam as PdfAvailabilityOption)
+        : "all";
+
+      const pdfAvailabilityFilter: PdfAvailabilityFilter = {
+        key: FILTER_KEYS.PDF_AVAILABILITY,
+        option,
+      };
+      filters.push(pdfAvailabilityFilter);
     }
 
     const filterParams: FilterParams = { filters };

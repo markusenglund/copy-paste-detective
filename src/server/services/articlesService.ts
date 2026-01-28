@@ -5,7 +5,17 @@ import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
-import { desc, eq, sql, and, asc, SQL, gt } from "drizzle-orm";
+import {
+  desc,
+  eq,
+  sql,
+  and,
+  asc,
+  SQL,
+  gt,
+  isNull,
+  isNotNull,
+} from "drizzle-orm";
 import {
   AI_REVIEW_MIN_DATE,
   PDF_REVIEW_MIN_DATE,
@@ -131,12 +141,18 @@ export async function getArticlesForManualUpload(
   const filterConditions: SQL[] = [];
 
   for (const filter of filterParams.filters) {
-    if (!filter.enabled) continue;
-
     if (filter.key === FILTER_KEYS.HIGH_PROBABILITY) {
-      filterConditions.push(
-        gt(maxScoresSubquery.maxTruePositiveProbability, filter.threshold),
-      );
+      if (filter.enabled) {
+        filterConditions.push(
+          gt(maxScoresSubquery.maxTruePositiveProbability, filter.threshold),
+        );
+      }
+    } else if (filter.key === FILTER_KEYS.PDF_AVAILABILITY) {
+      if (filter.option === "available") {
+        filterConditions.push(isNotNull(pdfFiles.filename));
+      } else if (filter.option === "not-available") {
+        filterConditions.push(isNull(pdfFiles.filename));
+      }
     }
   }
 

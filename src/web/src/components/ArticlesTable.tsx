@@ -95,22 +95,40 @@ export function ArticlesTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
+      <table
+        className="divide-y divide-gray-200"
+        style={{ tableLayout: "fixed", width: "100%" }}
+      >
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-xs">
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "320px" }}
+            >
               Title
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[80px]">
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "120px" }}
+            >
               PDF URL
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[200px]">
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "160px" }}
+            >
               Journal
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider max-w-[200px]">
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "160px" }}
+            >
               Subfield
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "100px" }}
+            >
               Country
             </th>
             <SortableColumnHeader
@@ -119,6 +137,7 @@ export function ArticlesTable({
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
+              width="130px"
             />
             <SortableColumnHeader
               label="Impact"
@@ -126,6 +145,7 @@ export function ArticlesTable({
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
+              width="110px"
             />
             <SortableColumnHeader
               label="Published"
@@ -133,6 +153,7 @@ export function ArticlesTable({
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
+              width="140px"
             />
             <SortableColumnHeader
               label="Citations"
@@ -140,6 +161,7 @@ export function ArticlesTable({
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
+              width="110px"
             />
             <SortableColumnHeader
               label="Citation %"
@@ -147,8 +169,12 @@ export function ArticlesTable({
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
+              width="110px"
             />
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "200px" }}
+            >
               PDF File
             </th>
           </tr>
@@ -156,7 +182,7 @@ export function ArticlesTable({
         <tbody className="bg-white divide-y divide-gray-200">
           {articles.map((article) => (
             <tr key={article.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-sm max-w-xs">
+              <td className="px-4 py-3 text-sm">
                 {article.doi ? (
                   <a
                     href={`https://doi.org/${article.doi}`}
@@ -173,38 +199,36 @@ export function ArticlesTable({
                   </span>
                 )}
               </td>
-              <td className="px-4 py-3 text-sm max-w-[80px]">
+              <td className="px-4 py-3 text-sm">
                 {article.fullPdfUrl ? (
                   <a
                     href={article.fullPdfUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                    className="text-blue-600 hover:text-blue-800 hover:underline truncate block"
+                    title="Open PDF"
                   >
                     Open PDF
                   </a>
                 ) : (
-                  <span className="text-gray-400">No URL</span>
+                  <span className="text-gray-400 truncate block">No URL</span>
                 )}
               </td>
-              <td
-                className="px-4 py-3 text-sm max-w-[160px]"
-                title={article.journalTitle || undefined}
-              >
+              <td className="px-4 py-3 text-sm">
                 {article.journalTitle ? (
-                  <span className="line-clamp-3" title={article.journalTitle}>
+                  <span
+                    className="line-clamp-2 block"
+                    title={article.journalTitle}
+                  >
                     {article.journalTitle}
                   </span>
                 ) : (
                   <span className="text-gray-400">-</span>
                 )}
               </td>
-              <td
-                className="px-4 py-3 text-sm max-w-[200px]"
-                title={article.subfield || undefined}
-              >
+              <td className="px-4 py-3 text-sm">
                 {article.subfield ? (
-                  <span className="line-clamp-3" title={article.subfield}>
+                  <span className="line-clamp-2 block" title={article.subfield}>
                     {article.subfield}
                   </span>
                 ) : (
@@ -213,7 +237,7 @@ export function ArticlesTable({
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
                 {article.countryCode ? (
-                  <span>
+                  <span className="truncate block" title={article.countryCode}>
                     {getCountryFlag(article.countryCode)} {article.countryCode}
                   </span>
                 ) : (
@@ -223,39 +247,45 @@ export function ArticlesTable({
               <td
                 className={`px-4 py-3 text-sm ${getTruePositiveProbabilityColor(article.truePositiveProbability)}`}
               >
-                {article.truePositiveProbability !== null
-                  ? `${(article.truePositiveProbability * 100).toFixed(0)}%`
-                  : "-"}
+                <span className="truncate block">
+                  {article.truePositiveProbability !== null
+                    ? `${(article.truePositiveProbability * 100).toFixed(0)}%`
+                    : "-"}
+                </span>
               </td>
               <td
                 className={`px-4 py-3 text-sm ${getImpactScoreColor(article.impactScore)}`}
               >
-                {getImpactScoreLabel(article.impactScore)}
+                <span className="truncate block">
+                  {getImpactScoreLabel(article.impactScore)}
+                </span>
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
-                {formatDate(article.publicationDate)}
+                <span className="truncate block">
+                  {formatDate(article.publicationDate)}
+                </span>
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
-                {article.numCitations}
+                <span className="truncate block">{article.numCitations}</span>
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
-                {article.citationNormalizedPercentile !== null
-                  ? `${(article.citationNormalizedPercentile * 100).toFixed(1)}%`
-                  : "-"}
+                <span className="truncate block">
+                  {article.citationNormalizedPercentile !== null
+                    ? `${(article.citationNormalizedPercentile * 100).toFixed(1)}%`
+                    : "-"}
+                </span>
               </td>
               <td className="px-4 py-3 text-sm">
                 {article.pdfFilename ? (
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <a
                       href={`/api/articles/${article.id}/pdf/${article.pdfFilename}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                      className="text-blue-600 hover:text-blue-800 hover:underline truncate block"
                       title={article.pdfFilename}
                     >
-                      {article.pdfFilename.length > 30
-                        ? `${article.pdfFilename.substring(0, 27)}...`
-                        : article.pdfFilename}
+                      {article.pdfFilename}
                     </a>
                     {article.pdfFileSize && (
                       <span className="text-xs text-gray-500">

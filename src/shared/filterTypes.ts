@@ -1,8 +1,11 @@
 export const FILTER_KEYS = {
   HIGH_PROBABILITY: "highProbability",
+  PDF_AVAILABILITY: "pdfAvailability",
 } as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS];
+
+export type PdfAvailabilityOption = "all" | "available" | "not-available";
 
 export interface HighProbabilityFilter {
   key: typeof FILTER_KEYS.HIGH_PROBABILITY;
@@ -10,7 +13,12 @@ export interface HighProbabilityFilter {
   threshold: number;
 }
 
-export type FilterConfig = HighProbabilityFilter;
+export interface PdfAvailabilityFilter {
+  key: typeof FILTER_KEYS.PDF_AVAILABILITY;
+  option: PdfAvailabilityOption;
+}
+
+export type FilterConfig = HighProbabilityFilter | PdfAvailabilityFilter;
 
 export interface FilterParams {
   filters: FilterConfig[];
@@ -22,6 +30,10 @@ export const DEFAULT_FILTERS: FilterParams = {
       key: FILTER_KEYS.HIGH_PROBABILITY,
       enabled: true,
       threshold: 0.5,
+    },
+    {
+      key: FILTER_KEYS.PDF_AVAILABILITY,
+      option: "all",
     },
   ],
 };
@@ -38,6 +50,8 @@ export function serializeFilters(
   for (const filter of filterParams.filters) {
     if (filter.key === FILTER_KEYS.HIGH_PROBABILITY) {
       params[`filter_${filter.key}`] = filter.enabled.toString();
+    } else if (filter.key === FILTER_KEYS.PDF_AVAILABILITY) {
+      params[`filter_${filter.key}`] = filter.option;
     }
   }
 
@@ -63,6 +77,26 @@ export function deserializeFilters(
       key: FILTER_KEYS.HIGH_PROBABILITY,
       enabled: true,
       threshold: 0.5,
+    });
+  }
+
+  const pdfAvailabilityParam = searchParams.get(
+    `filter_${FILTER_KEYS.PDF_AVAILABILITY}`,
+  );
+  if (
+    pdfAvailabilityParam !== null &&
+    (pdfAvailabilityParam === "all" ||
+      pdfAvailabilityParam === "available" ||
+      pdfAvailabilityParam === "not-available")
+  ) {
+    filters.push({
+      key: FILTER_KEYS.PDF_AVAILABILITY,
+      option: pdfAvailabilityParam as PdfAvailabilityOption,
+    });
+  } else {
+    filters.push({
+      key: FILTER_KEYS.PDF_AVAILABILITY,
+      option: "all",
     });
   }
 

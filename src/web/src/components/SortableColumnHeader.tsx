@@ -6,6 +6,8 @@ interface SortableColumnHeaderProps {
   currentSortBy: SortField;
   currentSortOrder: SortOrder;
   onSort: (field: SortField) => void;
+  className?: string;
+  width?: string;
 }
 
 export function SortableColumnHeader({
@@ -14,6 +16,8 @@ export function SortableColumnHeader({
   currentSortBy,
   currentSortOrder,
   onSort,
+  className,
+  width,
 }: SortableColumnHeaderProps): React.ReactElement {
   const isActive = currentSortBy === field;
   const sortIndicator = isActive
@@ -28,8 +32,9 @@ export function SortableColumnHeader({
       style={{
         cursor: "pointer",
         userSelect: "none",
+        width: width,
       }}
-      className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+      className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className || ""}`}
     >
       <div
         style={{
