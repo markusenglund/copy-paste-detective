@@ -126,7 +126,7 @@ export function DatasetDetails({
             </div>
           )}
           <div>
-            <span className="font-semibold">Dataset ID:</span>{" "}
+            <span className="font-semibold">Dryad external ID:</span>{" "}
             {data.dataset.extId}
           </div>
         </div>

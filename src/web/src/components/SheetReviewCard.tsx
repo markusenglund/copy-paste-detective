@@ -28,7 +28,7 @@ export function SheetReviewCard({
         <MarkdownRenderer content={aiReview.prompt} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="AI Review Response" defaultOpen={true}>
+      <CollapsibleSection title="AI Review Response" defaultOpen={false}>
         <div className="mb-4">
           <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
             <span>
