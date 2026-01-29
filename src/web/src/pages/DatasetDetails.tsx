@@ -153,9 +153,10 @@ export function DatasetDetails({
         {data.dataset.abstract && (
           <div className="mt-4">
             <span className="font-semibold">Abstract:</span>
-            <p className="text-sm text-gray-700 mt-2">
-              {data.dataset.abstract}
-            </p>
+            <div
+              className="text-sm text-gray-700 mt-2"
+              dangerouslySetInnerHTML={{ __html: data.dataset.abstract }}
+            />
           </div>
         )}
       </div>
