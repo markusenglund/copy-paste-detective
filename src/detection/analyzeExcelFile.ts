@@ -13,7 +13,7 @@ import {
   CategorizedColumn,
 } from "../columnCategorization/columnCategorization";
 import { findDuplicateValues } from "./findDuplicateValues";
-import { DuplicateValuesResult } from "../types";
+import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { logger } from "../utils/logger";
 import { generateHighlightedExcel } from "../strategies/repeatedColumnSequences/generateHighlightedExcel";
 
@@ -50,7 +50,7 @@ export async function analyzeExcelFile(
   await Promise.all(
     sheets.map(async (sheet) => {
       const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
-        excludeAiProfile: true,
+        excludeAiProfile: options?.excludeAiProfile ?? false,
       });
 
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);
@@ -95,11 +95,17 @@ export async function analyzeExcelFile(
 
     // Generate highlighted Excel file if sequences were found and file path is available
     if (result.sequences.length > 0 && excelFileData.excelFilePath) {
-      await generateHighlightedExcel(
-        excelFileData,
-        excelFileData.excelFilePath,
-        result.sequences,
+      // Filter to only include sequences with at least Low suspicion level
+      const suspiciousSequences = result.sequences.filter(
+        (seq) => seq.suspicionLevel !== SuspicionLevel.None,
       );
+      if (suspiciousSequences.length > 0) {
+        await generateHighlightedExcel(
+          excelFileData,
+          excelFileData.excelFilePath,
+          suspiciousSequences,
+        );
+      }
     }
   }
 

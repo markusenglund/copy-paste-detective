@@ -96,7 +96,6 @@ function applyStylesToSheet(
       const cell = sheet[cellAddress] as
         | {
           s?: Record<string, unknown>;
-          c?: Array<{ a: string; t: string; hidden: boolean }>;
         }
         | undefined;
 
