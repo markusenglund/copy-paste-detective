@@ -1,8 +1,10 @@
 import { CollapsibleSection } from "./CollapsibleSection";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { AIReview, PDFReview } from "../types/dataset";
+import { getExcelDownloadUrl } from "../api/client";
 
 interface SheetReviewCardProps {
+  datasetId: number;
   sheetName: string;
   excelFileName: string;
   aiReview: AIReview;
@@ -10,6 +12,7 @@ interface SheetReviewCardProps {
 }
 
 export function SheetReviewCard({
+  datasetId,
   sheetName,
   excelFileName,
   aiReview,
@@ -22,7 +25,16 @@ export function SheetReviewCard({
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
       <h3 className="text-xl font-semibold mb-2">{sheetName}</h3>
-      <p className="text-sm text-gray-600 mb-4">File: {excelFileName}</p>
+      <p className="text-sm text-gray-600 mb-4">
+        File:{" "}
+        <a
+          href={getExcelDownloadUrl(datasetId, excelFileName)}
+          download
+          className="text-blue-600 hover:underline"
+        >
+          {excelFileName}
+        </a>
+      </p>
 
       <CollapsibleSection title="AI Review Prompt" defaultOpen={false}>
         <MarkdownRenderer content={aiReview.prompt} />

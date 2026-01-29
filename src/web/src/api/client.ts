@@ -66,3 +66,10 @@ export async function fetchDatasetDetails(
   }
   return response.json();
 }
+
+export function getExcelDownloadUrl(
+  datasetId: number,
+  filename: string,
+): string {
+  return `${BASE_URL}/datasets/${datasetId}/excel/${encodeURIComponent(filename)}`;
+}

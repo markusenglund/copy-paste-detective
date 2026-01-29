@@ -165,6 +165,7 @@ export function DatasetDetails({
       {data.sheetReviews.map((review, idx) => (
         <SheetReviewCard
           key={idx}
+          datasetId={data.dataset.id}
           sheetName={review.sheetName}
           excelFileName={review.excelFileName}
           aiReview={review.aiReview}
