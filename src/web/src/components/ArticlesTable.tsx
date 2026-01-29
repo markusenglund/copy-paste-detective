@@ -10,6 +10,7 @@ interface ArticlesTableProps {
   currentSortBy: SortField;
   currentSortOrder: SortOrder;
   onSort: (field: SortField) => void;
+  onTitleClick?: (datasetId: number) => void;
 }
 
 function getTruePositiveProbabilityColor(probability: number | null): string {
@@ -84,6 +85,7 @@ export function ArticlesTable({
   currentSortBy,
   currentSortOrder,
   onSort,
+  onTitleClick,
 }: ArticlesTableProps): React.ReactElement {
   if (articles.length === 0) {
     return (
@@ -183,7 +185,15 @@ export function ArticlesTable({
           {articles.map((article) => (
             <tr key={article.id} className="hover:bg-gray-50">
               <td className="px-4 py-3 text-sm">
-                {article.doi ? (
+                {article.dryadDatasetId && onTitleClick ? (
+                  <button
+                    onClick={() => onTitleClick(article.dryadDatasetId!)}
+                    className="text-blue-600 hover:text-blue-800 hover:underline line-clamp-3 text-left cursor-pointer"
+                    title={article.title}
+                  >
+                    {article.title}
+                  </button>
+                ) : article.doi ? (
                   <a
                     href={`https://doi.org/${article.doi}`}
                     target="_blank"

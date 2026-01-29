@@ -48,6 +48,7 @@ export interface ArticleForUpload {
   countryCode: string | null;
   pdfFilename: string | null;
   pdfFileSize: number | null;
+  dryadDatasetId: number | null;
 }
 
 export async function getArticlesForManualUpload(
@@ -177,6 +178,7 @@ export async function getArticlesForManualUpload(
       countryCode: institutions.countryCode,
       pdfFilename: pdfFiles.filename,
       pdfFileSize: pdfFiles.size,
+      dryadDatasetId: articles.dryadDatasetId,
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))

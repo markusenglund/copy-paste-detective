@@ -1,180 +1,52 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArticleForUpload } from "./types/article";
-import { fetchArticles } from "./api/client";
-import { ArticlesTable } from "./components/ArticlesTable";
-import {
-  SortField,
-  SortParams,
-  DEFAULT_SORT,
-  SORT_ORDERS,
-  isValidSortField,
-  isValidSortOrder,
-} from "../../shared/sortTypes";
-import {
-  FilterParams,
-  deserializeFilters,
-  serializeFilters,
-} from "../../shared/filterTypes";
-import { FilterPanel } from "./components/FilterPanel";
+import { Dashboard } from "./pages/Dashboard";
+import { DatasetDetails } from "./pages/DatasetDetails";
 
-function getSortFromUrl(): SortParams {
-  const params = new URLSearchParams(window.location.search);
-  const sortBy = params.get("sortBy");
-  const sortOrder = params.get("sortOrder");
+type Route = { page: "dashboard" } | { page: "dataset"; datasetId: number };
 
-  return {
-    sortBy: sortBy && isValidSortField(sortBy) ? sortBy : DEFAULT_SORT.sortBy,
-    sortOrder:
-      sortOrder && isValidSortOrder(sortOrder)
-        ? sortOrder
-        : DEFAULT_SORT.sortOrder,
-  };
-}
+function parseRoute(): Route {
+  const path = window.location.pathname;
+  const datasetMatch = path.match(/^\/dataset\/(\d+)$/);
 
-function getFiltersFromUrl(): FilterParams {
-  const params = new URLSearchParams(window.location.search);
-  return deserializeFilters(params);
+  if (datasetMatch) {
+    return { page: "dataset", datasetId: parseInt(datasetMatch[1], 10) };
+  }
+
+  return { page: "dashboard" };
 }
 
 function App(): React.ReactElement {
-  const [articles, setArticles] = useState<ArticleForUpload[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sortParams, setSortParams] = useState<SortParams>(getSortFromUrl);
-  const [filterParams, setFilterParams] =
-    useState<FilterParams>(getFiltersFromUrl);
+  const [route, setRoute] = useState<Route>(parseRoute);
 
-  const loadArticles = useCallback(
-    async (params: SortParams, filters: FilterParams) => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchArticles(params, filters);
-        setArticles(data);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load articles",
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  const navigateToDataset = useCallback((datasetId: number) => {
+    window.history.pushState({}, "", `/dataset/${datasetId}`);
+    setRoute({ page: "dataset", datasetId });
+  }, []);
 
-  const updateUrlParams = useCallback(
-    (sortParams: SortParams, filterParams: FilterParams): void => {
-      const params = new URLSearchParams({
-        sortBy: sortParams.sortBy,
-        sortOrder: sortParams.sortOrder,
-      });
-
-      const serializedFilters = serializeFilters(filterParams);
-      Object.entries(serializedFilters).forEach(([key, value]) => {
-        params.append(key, value);
-      });
-
-      window.history.pushState(
-        {},
-        "",
-        `${window.location.pathname}?${params.toString()}`,
-      );
-    },
-    [],
-  );
-
-  const handleSort = useCallback(
-    (field: SortField): void => {
-      const newSortParams: SortParams = {
-        sortBy: field,
-        sortOrder:
-          sortParams.sortBy === field &&
-          sortParams.sortOrder === SORT_ORDERS.DESC
-            ? SORT_ORDERS.ASC
-            : SORT_ORDERS.DESC,
-      };
-
-      setSortParams(newSortParams);
-      updateUrlParams(newSortParams, filterParams);
-      loadArticles(newSortParams, filterParams);
-    },
-    [sortParams, filterParams, loadArticles, updateUrlParams],
-  );
-
-  const handleFilterChange = useCallback(
-    (newFilterParams: FilterParams) => {
-      setFilterParams(newFilterParams);
-      updateUrlParams(sortParams, newFilterParams);
-      loadArticles(sortParams, newFilterParams);
-    },
-    [sortParams, loadArticles, updateUrlParams],
-  );
-
-  useEffect(() => {
-    loadArticles(sortParams, filterParams);
+  const navigateToDashboard = useCallback(() => {
+    window.history.pushState({}, "", "/");
+    setRoute({ page: "dashboard" });
   }, []);
 
   useEffect(() => {
     const handlePopState = (): void => {
-      const newSortParams = getSortFromUrl();
-      const newFilterParams = getFiltersFromUrl();
-      setSortParams(newSortParams);
-      setFilterParams(newFilterParams);
-      loadArticles(newSortParams, newFilterParams);
+      setRoute(parseRoute());
     };
 
     window.addEventListener("popstate", handlePopState);
     return (): void => window.removeEventListener("popstate", handlePopState);
-  }, [loadArticles]);
+  }, []);
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-8xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Science detective dashboard
-          </h1>
-          <button
-            onClick={() => loadArticles(sortParams, filterParams)}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Loading..." : "Refresh"}
-          </button>
-        </div>
+  if (route.page === "dataset") {
+    return (
+      <DatasetDetails
+        datasetId={route.datasetId}
+        onNavigateBack={navigateToDashboard}
+      />
+    );
+  }
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
-            {error}
-          </div>
-        )}
-
-        <FilterPanel
-          filterParams={filterParams}
-          onFilterChange={handleFilterChange}
-        />
-
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          {loading && articles.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Loading...</div>
-          ) : (
-            <ArticlesTable
-              articles={articles}
-              onUploadSuccess={() => loadArticles(sortParams, filterParams)}
-              currentSortBy={sortParams.sortBy}
-              currentSortOrder={sortParams.sortOrder}
-              onSort={handleSort}
-            />
-          )}
-        </div>
-
-        <div className="mt-4 text-sm text-gray-500">
-          {articles.length} article{articles.length !== 1 ? "s" : ""} pending
-          PDF upload
-        </div>
-      </div>
-    </div>
-  );
+  return <Dashboard onNavigateToDataset={navigateToDataset} />;
 }
 
 export default App;

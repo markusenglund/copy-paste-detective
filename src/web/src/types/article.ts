@@ -14,4 +14,5 @@ export interface ArticleForUpload {
   countryCode: string | null;
   pdfFilename: string | null;
   pdfFileSize: number | null;
+  dryadDatasetId: number | null;
 }

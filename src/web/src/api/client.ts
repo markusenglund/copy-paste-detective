@@ -1,6 +1,7 @@
 import { ArticleForUpload } from "../types/article";
 import { SortParams } from "../../../shared/sortTypes";
 import { FilterParams, serializeFilters } from "../../../shared/filterTypes";
+import { DatasetDetails } from "../types/dataset";
 
 const BASE_URL = "/api";
 
@@ -53,5 +54,15 @@ export async function uploadPdf(
     throw new Error(error.error || "Failed to upload PDF");
   }
 
+  return response.json();
+}
+
+export async function fetchDatasetDetails(
+  datasetId: number,
+): Promise<DatasetDetails> {
+  const response = await fetch(`${BASE_URL}/datasets/${datasetId}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch dataset details");
+  }
   return response.json();
 }
