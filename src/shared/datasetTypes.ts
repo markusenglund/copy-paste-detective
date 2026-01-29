@@ -36,7 +36,7 @@ export interface ArticleInfo {
   citations: number | null;
   publicationDate: Date | null;
   journalName: string | null;
-  journalImpactFactor: number | null;
+  journalSjrScore: number | null;
   authors: Array<{
     name: string;
     position: number;

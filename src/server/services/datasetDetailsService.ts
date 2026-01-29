@@ -194,7 +194,7 @@ export async function getDatasetDetails(
         ? new Date(info.publicationDate)
         : null,
       journalName: info.journalName,
-      journalImpactFactor: info.journalSjrScore,
+      journalSjrScore: info.journalSjrScore,
       authors: authorsList.map((a) => ({
         name: a.name,
         position: a.position === "first" ? 1 : a.position === "last" ? 999 : 2,
