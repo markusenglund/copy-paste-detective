@@ -50,7 +50,7 @@ export async function analyzeExcelFile(
   await Promise.all(
     sheets.map(async (sheet) => {
       const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
-        excludeAiProfile: options?.excludeAiProfile ?? false,
+        excludeAiProfile: true,
       });
 
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);

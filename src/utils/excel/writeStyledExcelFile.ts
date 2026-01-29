@@ -85,14 +85,7 @@ function applyStylesToSheet(
   ranges: StyledCellRange[],
 ): void {
   ranges.forEach((range) => {
-    const {
-      columnIndex,
-      startRowIndex,
-      endRowIndex,
-      color,
-      comment,
-      isFirstInSequence,
-    } = range;
+    const { columnIndex, startRowIndex, endRowIndex, color } = range;
 
     // Apply styles to each cell in the range
     for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++) {
@@ -103,7 +96,7 @@ function applyStylesToSheet(
       const cell = sheet[cellAddress] as
         | {
           s?: Record<string, unknown>;
-          c?: Array<{ a: string; t: string }>;
+          c?: Array<{ a: string; t: string; hidden: boolean }>;
         }
         | undefined;
 
@@ -133,16 +126,6 @@ function applyStylesToSheet(
         ...(isFirstRow && { top: SEQUENCE_BORDER_STYLE.top }),
         ...(isLastRow && { bottom: SEQUENCE_BORDER_STYLE.bottom }),
       };
-
-      // Add comment to first cell of first sequence occurrence
-      if (isFirstInSequence && rowIndex === startRowIndex && comment) {
-        // xlsx-js-style supports comments via the 'c' property
-        cell.c = cell.c || [];
-        cell.c.push({
-          a: "Science detective",
-          t: comment,
-        });
-      }
     }
   });
 }

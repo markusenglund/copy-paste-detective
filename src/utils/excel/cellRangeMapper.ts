@@ -10,7 +10,6 @@ export interface StyledCellRange {
   startRowIndex: number;
   endRowIndex: number;
   color: string;
-  comment?: string;
   isFirstInSequence: boolean;
 }
 
@@ -35,9 +34,6 @@ export function mapSequencesToCellRanges(
       color = getColorForSequenceIndex(sequenceIndex + colorOffset * 10);
     }
     usedColors.add(color);
-
-    // Create comment text with all matching sequence locations
-    const comment = generateSequenceComment(sequence);
 
     // Process each sequence occurrence (usually 2, but can be more after deduplication)
     sequence.sequences.forEach((seq, occurrenceIndex) => {
@@ -67,32 +63,12 @@ export function mapSequencesToCellRanges(
         startRowIndex,
         endRowIndex,
         color,
-        comment: occurrenceIndex === 0 ? comment : undefined, // Only add comment to first occurrence
         isFirstInSequence: occurrenceIndex === 0,
       });
     });
   });
 
   return cellRanges;
-}
-
-/**
- * Generate comment text for a sequence showing all matching locations
- */
-function generateSequenceComment(sequence: RepeatedColumnSequence): string {
-  const length = sequence.values.length;
-
-  const locations = sequence.sequences.map((seq) => {
-    const columnId = seq.column.id;
-    const startRow = seq.startRowIndex + 1; // Convert to 1-indexed
-    const endRow = seq.startRowIndex + length;
-    const startCell = `${columnId}${startRow}`;
-    const endCell = `${columnId}${endRow}`;
-    return `- ${startCell}-${endCell}`;
-  });
-
-  return `Matching sequences:
-${locations.join("\n")}`;
 }
 
 /**
