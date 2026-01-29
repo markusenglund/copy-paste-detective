@@ -80,27 +80,19 @@ export function mapSequencesToCellRanges(
  * Generate comment text for a sequence showing all matching locations
  */
 function generateSequenceComment(sequence: RepeatedColumnSequence): string {
-  const firstValue = sequence.values[0];
-  const lastValue = sequence.values[sequence.values.length - 1];
   const length = sequence.values.length;
-  const score = sequence.matrixSizeAdjustedEntropyScore.toFixed(2);
 
-  const locations = sequence.sequences.map((seq, idx) => {
+  const locations = sequence.sequences.map((seq) => {
     const columnId = seq.column.id;
     const startRow = seq.startRowIndex + 1; // Convert to 1-indexed
     const endRow = seq.startRowIndex + length;
     const startCell = `${columnId}${startRow}`;
     const endCell = `${columnId}${endRow}`;
-    return `${idx + 1}. Column ${seq.column.name || columnId} rows ${startRow}-${endRow} (cells ${startCell}-${endCell})`;
+    return `- ${startCell}-${endCell}`;
   });
 
-  return `Duplicate sequence detected!
-
-Matching sequences:
-${locations.join("\n")}
-
-Sequence values: ${firstValue} -> ${lastValue} (length: ${length})
-Suspicion score: ${score}`;
+  return `Matching sequences:
+${locations.join("\n")}`;
 }
 
 /**
