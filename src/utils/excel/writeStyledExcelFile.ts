@@ -102,9 +102,9 @@ function applyStylesToSheet(
       });
       const cell = sheet[cellAddress] as
         | {
-            s?: Record<string, unknown>;
-            c?: Array<{ a: string; t: string }>;
-          }
+          s?: Record<string, unknown>;
+          c?: Array<{ a: string; t: string }>;
+        }
         | undefined;
 
       if (!cell) {
@@ -139,7 +139,7 @@ function applyStylesToSheet(
         // xlsx-js-style supports comments via the 'c' property
         cell.c = cell.c || [];
         cell.c.push({
-          a: "Fraud Detector",
+          a: "Science detective",
           t: comment,
         });
       }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Common Commands
 
-- **Run fraud detection**: `npm run detect excel <folder> [fileIndex] [--strategies <strategies>]`
+- **Run copy-paste detection**: `npm run detect excel <folder> [fileIndex] [--strategies <strategies>]`
   - Example: `npm run detect excel benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418 1 --strategies duplicateRows,individualNumbers` (analyzes second Excel file in the folder)
 - **Review PDFs for suspicious datasets**: `npm run pdf-review [--limit <number>] [--ext-id <number>]`
   - Example: `npm run pdf-review --limit 5` (reviews up to 5 PDFs)
@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-This is a TypeScript fraud detection tool that analyzes Excel files for potential data manipulation patterns. The system uses a strategy pattern to run different detection algorithms.
+This is a TypeScript copy-paste detection tool that analyzes Excel files for potential data manipulation patterns. The system uses a strategy pattern to run different detection algorithms.
 
 ### Core Components
 
@@ -54,6 +54,7 @@ The system includes optional AI-powered column categorization via Google's Gemin
 ### Excel Highlighting
 
 When the `repeatedColumnSequences` strategy detects suspicious patterns, it automatically generates a highlighted Excel file:
+
 - **Output location**: `highlighted-output/{extId}/{filename}.xlsx` (extId from dataset metadata, or "unknown" if not available)
 - **Visual indicators**: Matching sequences are highlighted with the same light color and surrounded by black borders
 - **Comments**: Hover over the first cell of a highlighted sequence to see details about all matching locations
