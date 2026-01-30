@@ -29,12 +29,13 @@ export const HIGHLIGHT_COLORS = [
 /**
  * Border style for creating boxes around sequences.
  * Uses thin black borders on all sides.
+ * ARGB format (FF prefix for full opacity) required by ExcelJS.
  */
 export const SEQUENCE_BORDER_STYLE = {
-  top: { style: "thin", color: { rgb: "000000" } },
-  bottom: { style: "thin", color: { rgb: "000000" } },
-  left: { style: "thin", color: { rgb: "000000" } },
-  right: { style: "thin", color: { rgb: "000000" } },
+  top: { style: "thin" as const, color: { argb: "FF000000" } },
+  bottom: { style: "thin" as const, color: { argb: "FF000000" } },
+  left: { style: "thin" as const, color: { argb: "FF000000" } },
+  right: { style: "thin" as const, color: { argb: "FF000000" } },
 };
 
 /**

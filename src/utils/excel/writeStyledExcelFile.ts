@@ -1,6 +1,5 @@
 import fs from "fs";
-import xlsx from "xlsx";
-import xlsxStyle from "xlsx-js-style";
+import ExcelJS from "exceljs";
 import { StyledCellRange } from "./cellRangeMapper";
 import { SEQUENCE_BORDER_STYLE } from "./styleConstants";
 import { logger } from "../logger";
@@ -35,8 +34,9 @@ export async function writeStyledExcelFile(
   }
 
   logger.debug(`Reading workbook from: ${outputFilePath}`);
-  // Read the base workbook with xlsx-js-style (preserves styles)
-  const workbook = xlsxStyle.readFile(outputFilePath);
+  // Read the base workbook with ExcelJS (automatically preserves styles)
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(outputFilePath);
   logger.debug(`Workbook read successfully`);
 
   // Group cell ranges by sheet for efficient processing
@@ -49,8 +49,8 @@ export async function writeStyledExcelFile(
 
   // Apply styles to each sheet
   rangesBySheet.forEach((ranges, sheetName) => {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) {
+    const worksheet = workbook.getWorksheet(sheetName);
+    if (!worksheet) {
       logger.warn(
         `Sheet "${sheetName}" not found in workbook, skipping highlights`,
       );
@@ -58,12 +58,12 @@ export async function writeStyledExcelFile(
     }
 
     logger.debug(`Applying ${ranges.length} highlights to sheet: ${sheetName}`);
-    applyStylesToSheet(sheet, ranges);
+    applyStylesToSheet(worksheet, ranges);
   });
 
   logger.debug(`Writing workbook to: ${outputFilePath}`);
   // Write the styled workbook back to file
-  xlsxStyle.writeFile(workbook, outputFilePath);
+  await workbook.xlsx.writeFile(outputFilePath);
   logger.info(`Highlighted file saved to: ${outputFilePath}`);
 }
 
@@ -71,45 +71,34 @@ export async function writeStyledExcelFile(
  * Apply highlighting styles to a single sheet.
  */
 function applyStylesToSheet(
-  sheet: Record<string, unknown>,
+  worksheet: ExcelJS.Worksheet,
   ranges: StyledCellRange[],
 ): void {
   ranges.forEach((range) => {
     const { columnIndex, startRowIndex, endRowIndex, color } = range;
 
     // Apply styles to each cell in the range
+    // Note: StyledCellRange uses 0-based indexing, ExcelJS uses 1-based
     for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++) {
-      const cellAddress = xlsx.utils.encode_cell({
-        r: rowIndex,
-        c: columnIndex,
-      });
-      const cell = sheet[cellAddress] as
-        | {
-            s?: Record<string, unknown>;
-          }
-        | undefined;
+      const cell = worksheet.getCell(rowIndex + 1, columnIndex + 1);
 
-      if (!cell) {
-        // Cell doesn't exist (empty cell), skip it
+      // Skip empty cells
+      if (cell.value === null || cell.value === undefined) {
         continue;
       }
 
-      // Initialize cell style if not present
-      if (!cell.s) {
-        cell.s = {};
-      }
-
-      // Apply background color
-      cell.s.fill = {
-        fgColor: { rgb: color },
-        patternType: "solid",
+      // Apply background color (ARGB format requires 'FF' prefix for full opacity)
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF" + color },
       };
 
       // Apply borders (creates box around sequence)
       const isFirstRow = rowIndex === startRowIndex;
       const isLastRow = rowIndex === endRowIndex;
 
-      cell.s.border = {
+      cell.border = {
         left: SEQUENCE_BORDER_STYLE.left,
         right: SEQUENCE_BORDER_STYLE.right,
         ...(isFirstRow && { top: SEQUENCE_BORDER_STYLE.top }),

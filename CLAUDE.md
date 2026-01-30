@@ -53,13 +53,13 @@ The system includes optional AI-powered column categorization via Google's Gemin
 
 ### Excel Highlighting
 
-When the `repeatedColumnSequences` strategy detects suspicious patterns, it automatically generates a highlighted Excel file:
+When detection strategies (`repeatedColumnSequences` or `duplicateRows`) find suspicious patterns, they automatically generate a highlighted Excel file:
 
 - **Output location**: `highlighted-output/{extId}/{filename}.xlsx` (extId from dataset metadata, or "unknown" if not available)
 - **Visual indicators**: Matching sequences are highlighted with the same light color and surrounded by black borders
 - **Comments**: Hover over the first cell of a highlighted sequence to see details about all matching locations
 - **Multi-strategy support**: Multiple strategies can write highlights to the same file - existing highlights are preserved and new colors are chosen to avoid conflicts
-- **Charts/images**: Not preserved due to xlsx-js-style library limitations
+- **Implementation**: Uses ExcelJS library for reading and writing styled Excel files
 - **Gitignore**: The `highlighted-output/` folder is gitignored and not checked into version control
 
 ## Instructions
