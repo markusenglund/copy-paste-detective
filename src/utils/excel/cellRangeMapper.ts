@@ -1,4 +1,5 @@
 import { RepeatedColumnSequence } from "../../entities/RepeatedColumnSequence";
+import { logger } from "../logger";
 import { getColorForSequenceIndex } from "./styleConstants";
 
 /**
@@ -10,7 +11,6 @@ export interface StyledCellRange {
   startRowIndex: number;
   endRowIndex: number;
   color: string;
-  isFirstInSequence: boolean;
 }
 
 /**
@@ -19,98 +19,45 @@ export interface StyledCellRange {
  */
 export function mapSequencesToCellRanges(
   sequences: RepeatedColumnSequence[],
-  usedColors: Set<string> = new Set(),
 ): StyledCellRange[] {
   const cellRanges: StyledCellRange[] = [];
   const styledCells = new Set<string>(); // Track already-styled cells to detect overlaps
-
-  sequences.forEach((sequence, sequenceIndex) => {
-    // Find a color that hasn't been used by other strategies
-    let color = getColorForSequenceIndex(sequenceIndex);
-    let colorOffset = 0;
-    const maxAttempts = 100; // Prevent infinite loop
-    while (usedColors.has(color) && colorOffset < maxAttempts) {
-      colorOffset++;
-      color = getColorForSequenceIndex(sequenceIndex + colorOffset * 10);
-    }
-    usedColors.add(color);
+  let skippedSequences = 0;
+  sequences.forEach((repeatedSequence, i) => {
+    const color = getColorForSequenceIndex(i);
 
     // Process each sequence occurrence (usually 2, but can be more after deduplication)
-    sequence.sequences.forEach((seq, occurrenceIndex) => {
-      const columnIndex = seq.column.index;
-      const startRowIndex = seq.startRowIndex;
-      const endRowIndex = startRowIndex + sequence.values.length - 1;
+    for (const sequence of repeatedSequence.sequences) {
+      const columnIndex = sequence.column.index;
+      const startRowIndex = sequence.startRowIndex;
+      const endRowIndex = startRowIndex + repeatedSequence.values.length - 1;
 
       // Check for overlapping cells
       for (let row = startRowIndex; row <= endRowIndex; row++) {
-        const cellKey = `${sequence.sheetName}-${columnIndex}-${row}`;
+        const cellKey = `${repeatedSequence.sheetName}-${columnIndex}-${row}`;
         if (styledCells.has(cellKey)) {
-          console.warn(
-            `Warning: Overlapping highlight at ${sequence.sheetName} column ${seq.column.id} row ${row + 1}. Keeping first style.`,
-          );
-          return; // Skip this occurrence to avoid overwriting existing style
+          skippedSequences++;
+          return; // Skip entire sequence to avoid overwriting existing style
         }
       }
 
       // Mark cells as styled
-      for (let row = startRowIndex; row <= endRowIndex; row++) {
-        styledCells.add(`${sequence.sheetName}-${columnIndex}-${row}`);
+      for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++) {
+        styledCells.add(`${repeatedSequence.sheetName}-${columnIndex}-${rowIndex}`);
       }
 
       cellRanges.push({
-        sheetName: sequence.sheetName,
+        sheetName: repeatedSequence.sheetName,
         columnIndex,
         startRowIndex,
         endRowIndex,
         color,
-        isFirstInSequence: occurrenceIndex === 0,
       });
-    });
+    }
   });
-
-  return cellRanges;
-}
-
-/**
- * Get colors already used in existing highlighted file.
- * Used to avoid color conflicts when multiple strategies write to same file.
- */
-export function getUsedColorsFromWorkbook(
-  workbook: { Sheets?: Record<string, unknown> } | undefined,
-): Set<string> {
-  const usedColors = new Set<string>();
-
-  if (!workbook || !workbook.Sheets) {
-    return usedColors;
+  if (skippedSequences > 0) {
+    logger.warn(`Skipped ${skippedSequences} sequences out of ${sequences.length} due to overlapping highlights`);
   }
 
-  Object.values(workbook.Sheets).forEach((sheet: unknown) => {
-    if (typeof sheet !== "object" || !sheet) return;
-
-    Object.keys(sheet).forEach((cellAddress) => {
-      // Skip special keys like !ref, !margins
-      if (cellAddress.startsWith("!")) return;
-
-      const cell = (sheet as Record<string, unknown>)[cellAddress];
-      if (
-        cell &&
-        typeof cell === "object" &&
-        "s" in cell &&
-        cell.s &&
-        typeof cell.s === "object" &&
-        "fill" in cell.s &&
-        cell.s.fill &&
-        typeof cell.s.fill === "object" &&
-        "fgColor" in cell.s.fill &&
-        cell.s.fill.fgColor &&
-        typeof cell.s.fill.fgColor === "object" &&
-        "rgb" in cell.s.fill.fgColor &&
-        typeof cell.s.fill.fgColor.rgb === "string"
-      ) {
-        usedColors.add(cell.s.fill.fgColor.rgb);
-      }
-    });
-  });
-
-  return usedColors;
+  return cellRanges;
 }

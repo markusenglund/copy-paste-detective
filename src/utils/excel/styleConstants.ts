@@ -1,9 +1,6 @@
-/**
- * Light color palette for highlighting repeated sequences in Excel files.
- * Colors are designed to be easily distinguishable and pleasant to view.
- * When more than 10 sequences exist, colors will cycle.
- */
+
 export const HIGHLIGHT_COLORS = [
+  // Light pastel colors (original palette)
   "FFD6D6", // Light red
   "D6F0FF", // Light blue
   "FFF0D6", // Light orange
@@ -14,6 +11,21 @@ export const HIGHLIGHT_COLORS = [
   "E3D6FF", // Light purple
   "FFD6F0", // Light pink
   "D6E3D6", // Light sage
+  "FFB3B3", // Medium red
+  "B3D9FF", // Medium blue
+  "FFD9B3", // Medium orange
+  "B3FFB3", // Medium green
+  "FFB3FF", // Medium magenta
+  "FFFFB3", // Medium yellow
+  "B3FFFF", // Medium cyan
+  "C6B3FF", // Medium purple
+  "FFB3D9", // Medium pink
+  "B3C6B3", // Medium sage
+  "FF9999", // Deeper red
+  "99CCFF", // Deeper blue
+  "FFCC99", // Deeper orange
+  "99FF99", // Deeper green
+  "FF99FF", // Deeper magenta
 ];
 
 /**
