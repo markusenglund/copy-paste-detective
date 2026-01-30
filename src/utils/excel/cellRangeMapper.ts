@@ -43,7 +43,9 @@ export function mapSequencesToCellRanges(
 
       // Mark cells as styled
       for (let rowIndex = startRowIndex; rowIndex <= endRowIndex; rowIndex++) {
-        styledCells.add(`${repeatedSequence.sheetName}-${columnIndex}-${rowIndex}`);
+        styledCells.add(
+          `${repeatedSequence.sheetName}-${columnIndex}-${rowIndex}`,
+        );
       }
 
       cellRanges.push({
@@ -56,7 +58,9 @@ export function mapSequencesToCellRanges(
     }
   });
   if (skippedSequences > 0) {
-    logger.warn(`Skipped ${skippedSequences} sequences out of ${sequences.length} due to overlapping highlights`);
+    logger.warn(
+      `Skipped ${skippedSequences} sequences out of ${sequences.length} due to overlapping highlights`,
+    );
   }
 
   return cellRanges;

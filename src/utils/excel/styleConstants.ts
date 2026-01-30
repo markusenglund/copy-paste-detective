@@ -1,31 +1,29 @@
-
 export const HIGHLIGHT_COLORS = [
-  // Light pastel colors (original palette)
-  "FFD6D6", // Light red
-  "D6F0FF", // Light blue
-  "FFF0D6", // Light orange
-  "D6FFD6", // Light green
-  "FFD6FF", // Light magenta
-  "FFFFD6", // Light yellow
-  "D6FFFF", // Light cyan
-  "E3D6FF", // Light purple
-  "FFD6F0", // Light pink
-  "D6E3D6", // Light sage
-  "FFB3B3", // Medium red
-  "B3D9FF", // Medium blue
-  "FFD9B3", // Medium orange
-  "B3FFB3", // Medium green
-  "FFB3FF", // Medium magenta
-  "FFFFB3", // Medium yellow
-  "B3FFFF", // Medium cyan
-  "C6B3FF", // Medium purple
-  "FFB3D9", // Medium pink
-  "B3C6B3", // Medium sage
-  "FF9999", // Deeper red
-  "99CCFF", // Deeper blue
-  "FFCC99", // Deeper orange
-  "99FF99", // Deeper green
-  "FF99FF", // Deeper magenta
+  "FFB6C1",
+  "FF1493",
+  "FF69B4",
+  "FA8072",
+  "FF7F50",
+  "FFA500",
+  "F5DEB3",
+  "D2691E",
+  "FFFFE0",
+  "FFD700",
+  "F0E68C",
+  "98FB98",
+  "7FFF00",
+  "2E8B57",
+  "32CD32",
+  "E0FFFF",
+  "40E0D0",
+  "87CEEB",
+  "1E90FF",
+  "0000CD",
+  "E6E6FA",
+  "DDA0DD",
+  "9400D3",
+  "F0F8FF",
+  "FFFFFF",
 ];
 
 /**

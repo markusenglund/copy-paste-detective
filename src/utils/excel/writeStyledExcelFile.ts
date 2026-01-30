@@ -31,9 +31,7 @@ export async function writeStyledExcelFile(
     );
     fs.copyFileSync(originalFilePath, outputFilePath);
   } else {
-    logger.info(
-      `Using existing highlighted file as base: ${outputFilePath}`,
-    );
+    logger.info(`Using existing highlighted file as base: ${outputFilePath}`);
   }
 
   logger.debug(`Reading workbook from: ${outputFilePath}`);
@@ -59,9 +57,7 @@ export async function writeStyledExcelFile(
       return;
     }
 
-    logger.debug(
-      `Applying ${ranges.length} highlights to sheet: ${sheetName}`,
-    );
+    logger.debug(`Applying ${ranges.length} highlights to sheet: ${sheetName}`);
     applyStylesToSheet(sheet, ranges);
   });
 
@@ -89,8 +85,8 @@ function applyStylesToSheet(
       });
       const cell = sheet[cellAddress] as
         | {
-          s?: Record<string, unknown>;
-        }
+            s?: Record<string, unknown>;
+          }
         | undefined;
 
       if (!cell) {

@@ -1,16 +1,9 @@
 import { ExcelFileData } from "../../types/ExcelFileData";
 import { RepeatedColumnSequence } from "../../entities/RepeatedColumnSequence";
-import {
-  getHighlightedOutputPath,
-  checkHighlightedFileExists,
-} from "../../utils/paths/getHighlightedOutputPath";
-import {
-  mapSequencesToCellRanges,
-  getUsedColorsFromWorkbook,
-} from "../../utils/excel/cellRangeMapper";
+import { getHighlightedOutputPath } from "../../utils/paths/getHighlightedOutputPath";
+import { mapSequencesToCellRanges } from "../../utils/excel/cellRangeMapper";
 import { writeStyledExcelFile } from "../../utils/excel/writeStyledExcelFile";
 import { logger } from "../../utils/logger";
-import xlsxStyle from "xlsx-js-style";
 
 /**
  * Generate highlighted Excel file with repeated column sequences marked with colors and borders.
@@ -30,7 +23,9 @@ export async function generateHighlightedExcel(
     return null;
   }
 
-  logger.info(`[${excelFileData.extId}] Generating highlighted Excel file for '${excelFileData.excelFileName}'`);
+  logger.info(
+    `[${excelFileData.extId}] Generating highlighted Excel file for '${excelFileData.excelFileName}'`,
+  );
 
   // Generate output path
   const outputPath = getHighlightedOutputPath(
@@ -38,19 +33,23 @@ export async function generateHighlightedExcel(
     excelFileData.extId,
   );
 
-
   // Convert sequences to styled cell ranges
   logger.debug(`Mapping ${sequences.length} sequences to cell ranges`);
   // Limit to top 50 sequences to safeguard performance
   const maxCellRanges = 50;
 
-  const cellRanges = mapSequencesToCellRanges(sequences).slice(0, maxCellRanges);
+  const cellRanges = mapSequencesToCellRanges(sequences).slice(
+    0,
+    maxCellRanges,
+  );
   logger.debug(`Mapped to ${cellRanges.length} cell ranges`);
 
   // Write styled Excel file
   await writeStyledExcelFile(originalFilePath, outputPath, cellRanges);
 
-  logger.info(`Successfully generated highlighted Excel file at '${outputPath}'`);
+  logger.info(
+    `Successfully generated highlighted Excel file at '${outputPath}'`,
+  );
 
   return outputPath;
 }
