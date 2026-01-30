@@ -4,16 +4,16 @@
  * When more than 10 sequences exist, colors will cycle.
  */
 export const HIGHLIGHT_COLORS = [
-  "FFE6E6", // Light red
-  "E6F3FF", // Light blue
-  "FFF4E6", // Light orange
-  "E6FFE6", // Light green
-  "FFE6FF", // Light magenta
-  "FFFFE6", // Light yellow
-  "E6FFFF", // Light cyan
-  "F0E6FF", // Light purple
-  "FFE6F0", // Light pink
-  "E6F0E6", // Light sage
+  "FFD6D6", // Light red
+  "D6F0FF", // Light blue
+  "FFF0D6", // Light orange
+  "D6FFD6", // Light green
+  "FFD6FF", // Light magenta
+  "FFFFD6", // Light yellow
+  "D6FFFF", // Light cyan
+  "E3D6FF", // Light purple
+  "FFD6F0", // Light pink
+  "D6E3D6", // Light sage
 ];
 
 /**
