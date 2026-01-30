@@ -16,6 +16,7 @@ import { findDuplicateValues } from "./findDuplicateValues";
 import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { logger } from "../utils/logger";
 import { generateHighlightedExcel } from "../strategies/repeatedColumnSequences/generateHighlightedExcel";
+import { generateHighlightedExcelForDuplicateRows } from "../strategies/duplicateRows/generateHighlightedExcelForDuplicateRows";
 
 export type ExcelFileAnalysisResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -76,6 +77,23 @@ export async function analyzeExcelFile(
     );
     duplicateRowsStrategy.printResults(duplicateRowsResult);
     results[StrategyName.DuplicateRows] = duplicateRowsResult;
+
+    // Generate highlighted Excel file if duplicate rows were found
+    if (
+      duplicateRowsResult.duplicateRows.length > 0 &&
+      excelFileData.excelFilePath
+    ) {
+      const suspiciousDuplicateRows = duplicateRowsResult.duplicateRows.filter(
+        (row) => row.suspicionLevel !== SuspicionLevel.None,
+      );
+      if (suspiciousDuplicateRows.length > 0) {
+        await generateHighlightedExcelForDuplicateRows(
+          excelFileData,
+          excelFileData.excelFilePath,
+          suspiciousDuplicateRows,
+        );
+      }
+    }
   }
 
   // 2. Run repeatedColumnSequences second if requested
