@@ -51,7 +51,16 @@ export function highlightDuplicateRowPair(
     sheetName,
   );
 
-  // FUTURE: Add comment to row 1 and row 2 here
+  // Add comments if rows are far apart (>50 rows)
+  const rowDistance = Math.abs(row2Index - row1Index);
+  if (rowDistance > 50) {
+    const row1DisplayNum = row1Index + 1;
+    const row2DisplayNum = row2Index + 1;
+    const commentText = `Row ${row1DisplayNum} <-> Row ${row2DisplayNum}`;
+
+    addRowPairComment(worksheet, row1Index, sharedColumnIndices, commentText);
+    addRowPairComment(worksheet, row2Index, sharedColumnIndices, commentText);
+  }
 
   return true;
 }
@@ -92,4 +101,23 @@ function highlightRowCells(
     // Mark as styled
     styledCells.add(`${sheetName}-${colIndex}-${rowIndex}`);
   }
+}
+
+/**
+ * Helper function to add a comment to the first shared cell in a row.
+ */
+function addRowPairComment(
+  worksheet: ExcelJS.Worksheet,
+  rowIndex: number,
+  columnIndices: number[],
+  commentText: string,
+): void {
+  if (columnIndices.length === 0) return;
+
+  const firstColIndex = columnIndices[0];
+  const cell = worksheet.getCell(rowIndex + 1, firstColIndex + 1);
+  const comment: ExcelJS.Comment = {
+    texts: [{ text: commentText }],
+  };
+  cell.note = comment;
 }
