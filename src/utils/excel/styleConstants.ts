@@ -1,5 +1,9 @@
 export const HIGHLIGHT_COLORS = [
   "FFB6C1",
+  "FFD700",
+  "F0E68C",
+  "98FB98",
+  "7FFF00",
   "FF1493",
   "FF69B4",
   "FA8072",
@@ -8,10 +12,6 @@ export const HIGHLIGHT_COLORS = [
   "F5DEB3",
   "D2691E",
   "FFFFE0",
-  "FFD700",
-  "F0E68C",
-  "98FB98",
-  "7FFF00",
   "2E8B57",
   "32CD32",
   "E0FFFF",
@@ -23,7 +23,6 @@ export const HIGHLIGHT_COLORS = [
   "DDA0DD",
   "A433D3",
   "F0F8FF",
-  "FFFFFF",
 ];
 
 /**
