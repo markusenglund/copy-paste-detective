@@ -36,13 +36,7 @@ function getFiltersFromUrl(): FilterParams {
   return deserializeFilters(params);
 }
 
-interface DashboardProps {
-  onNavigateToDataset: (datasetId: number) => void;
-}
-
-export function Dashboard({
-  onNavigateToDataset,
-}: DashboardProps): React.ReactElement {
+export function Dashboard(): React.ReactElement {
   const [articles, setArticles] = useState<ArticleForUpload[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,7 +164,6 @@ export function Dashboard({
               currentSortBy={sortParams.sortBy}
               currentSortOrder={sortParams.sortOrder}
               onSort={handleSort}
-              onTitleClick={onNavigateToDataset}
             />
           )}
         </div>

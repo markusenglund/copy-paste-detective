@@ -1,27 +1,44 @@
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { fetchDatasetDetails } from "../api/client";
 import { DatasetDetails as DatasetDetailsType } from "../types/dataset";
 import { SheetReviewCard } from "../components/SheetReviewCard";
 
-interface DatasetDetailsProps {
-  datasetId: number;
-  onNavigateBack: () => void;
-}
+export function DatasetDetails(): React.ReactElement {
+  const { datasetId } = useParams<{ datasetId: string }>();
+  const navigate = useNavigate();
 
-export function DatasetDetails({
-  datasetId,
-  onNavigateBack,
-}: DatasetDetailsProps): React.ReactElement {
+  // Parse datasetId from URL parameter
+  const parsedDatasetId = datasetId ? parseInt(datasetId, 10) : null;
+
   const [data, setData] = useState<DatasetDetailsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Handle invalid datasetId
+  if (!parsedDatasetId || isNaN(parsedDatasetId)) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
+          <p className="text-red-700">Invalid dataset ID</p>
+        </div>
+        <button
+          onClick={() => navigate("/")}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const loadData = async (): Promise<void> => {
       try {
         setLoading(true);
         setError(null);
-        const details = await fetchDatasetDetails(datasetId);
+        const details = await fetchDatasetDetails(parsedDatasetId);
         setData(details);
       } catch (err) {
         setError(
@@ -33,7 +50,7 @@ export function DatasetDetails({
     };
 
     loadData();
-  }, [datasetId]);
+  }, [parsedDatasetId]);
 
   if (loading) {
     return (
@@ -51,7 +68,7 @@ export function DatasetDetails({
           <p className="text-red-700">{error || "Dataset not found"}</p>
         </div>
         <button
-          onClick={onNavigateBack}
+          onClick={() => navigate("/")}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Back to Dashboard
@@ -68,7 +85,7 @@ export function DatasetDetails({
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <button
-        onClick={onNavigateBack}
+        onClick={() => navigate("/")}
         className="mb-6 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
       >
         Back to Dashboard
