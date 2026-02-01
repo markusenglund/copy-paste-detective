@@ -26,23 +26,28 @@ export interface StatisticsResponse {
     notAnalyzed: number; // excluding failed
   };
 
-  // Suspicious datasets pipeline
-  suspiciousDatasets: {
-    total: number; // datasets with at least one aiReview with truePositiveProbability > 0.5
-    withArticle: number;
-    withPdf: number;
-    pdfReviewed: number;
-    pdfReviewBreakdown: {
-      highImpact: number; // impactScore >= 3
-      lowImpact: number; // impactScore <= 2
+  // Step 3: AI Review Results
+  aiReviewStatus: {
+    total: number; // datasets with at least one non-obsolete ai_review_result
+    breakdown: {
+      suspicious: number; // datasets with suspicious findings (>50%)
+      notSuspicious: number; // datasets with no suspicious findings
     };
+  };
+
+  // Step 4: PDF Review Pipeline (for suspicious datasets)
+  pdfPipeline: {
+    pdfNotDownloaded: number; // suspicious datasets with article but no PDF
+    pdfDownloadedNotReviewed: number; // suspicious datasets with PDF but no review
+    pdfReviewedHighImpact: number; // impactScore >= 3
+    pdfReviewedLowImpact: number; // impactScore <= 2
   };
 
   // Percentages for funnel visualization
   percentages: {
     downloadedOfIndexed: number;
     analyzedOfDownloaded: number;
-    flaggedOfAnalyzed: number;
-    pdfReviewedOfFlagged: number;
+    aiReviewedOfAnalyzed: number; // Step 3: suspicious / flagged
+    pdfReviewedOfSuspicious: number; // Step 4: highImpact / suspicious
   };
 }

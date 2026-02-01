@@ -84,8 +84,19 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     notAnalyzed,
   };
 
-  // 4. Get suspicious datasets pipeline
-  // Find datasets with suspicious reviews (MUST filter by AI_REVIEW_MIN_DATE)
+  // 4. Step 3: AI Review Status
+  // Find all datasets with at least one non-obsolete ai_review_result
+  const allReviewedDatasetsResult = await db
+    .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
+    .from(aiReviewResults)
+    .where(gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE));
+
+  const allReviewedDatasetIds = allReviewedDatasetsResult.map(
+    (r) => r.datasetId,
+  );
+  const totalAiReviewed = allReviewedDatasetIds.length;
+
+  // Find datasets with suspicious reviews (>50%)
   const suspiciousDatasetIdsResult = await db
     .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
     .from(aiReviewResults)
@@ -100,36 +111,74 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     (r) => r.datasetId,
   );
   const totalSuspicious = suspiciousDatasetIds.length;
+  const totalNotSuspicious = totalAiReviewed - totalSuspicious;
 
-  let suspiciousWithArticle = 0;
-  let suspiciousWithPdf = 0;
-  let pdfReviewed = 0;
-  let highImpact = 0;
-  let lowImpact = 0;
+  const aiReviewStatus = {
+    total: totalAiReviewed,
+    breakdown: {
+      suspicious: totalSuspicious,
+      notSuspicious: totalNotSuspicious,
+    },
+  };
+
+  // 5. Step 4: PDF Pipeline (for suspicious datasets)
+  let pdfNotDownloaded = 0;
+  let pdfDownloadedNotReviewed = 0;
+  let pdfReviewedHighImpact = 0;
+  let pdfReviewedLowImpact = 0;
 
   if (totalSuspicious > 0) {
-    // Count those with articles
-    const withArticleResult = await db
+    // Count suspicious datasets with article but no PDF
+    const withArticleNoPdfResult = await db
       .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
       .from(dryadDatasets)
       .innerJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
-      .where(inArray(dryadDatasets.id, suspiciousDatasetIds));
+      .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
+      .where(
+        and(
+          inArray(dryadDatasets.id, suspiciousDatasetIds),
+          sql`${pdfFiles.id} IS NULL`,
+        ),
+      );
 
-    suspiciousWithArticle = withArticleResult[0]?.count ?? 0;
+    pdfNotDownloaded = withArticleNoPdfResult[0]?.count ?? 0;
 
-    // Count those with PDFs
-    const withPdfResult = await db
+    // Count suspicious datasets with PDF but no review
+    const withPdfNoReviewResult = await db
       .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
       .from(dryadDatasets)
       .innerJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
       .innerJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
-      .where(inArray(dryadDatasets.id, suspiciousDatasetIds));
+      .leftJoin(
+        aiReviewResults,
+        and(
+          eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
+          gt(aiReviewResults.truePositiveProbability, 0.5),
+          gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
+        ),
+      )
+      .leftJoin(
+        aiPdfReviewResults,
+        and(
+          eq(aiPdfReviewResults.aiReviewResultId, aiReviewResults.id),
+          gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
+        ),
+      )
+      .where(
+        and(
+          inArray(dryadDatasets.id, suspiciousDatasetIds),
+          sql`${aiPdfReviewResults.id} IS NULL`,
+        ),
+      );
 
-    suspiciousWithPdf = withPdfResult[0]?.count ?? 0;
+    pdfDownloadedNotReviewed = withPdfNoReviewResult[0]?.count ?? 0;
 
-    // Count PDF reviewed datasets (MUST filter by PDF_REVIEW_MIN_DATE)
-    const pdfReviewedResult = await db
-      .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
+    // PDF review breakdown by impact score (MUST filter by both date thresholds)
+    const impactBreakdownResult = await db
+      .select({
+        highImpact: sql<number>`count(distinct ${dryadDatasets.id}) filter (where ${aiPdfReviewResults.impactScore} >= 3)::int`,
+        lowImpact: sql<number>`count(distinct ${dryadDatasets.id}) filter (where ${aiPdfReviewResults.impactScore} <= 2)::int`,
+      })
       .from(dryadDatasets)
       .innerJoin(
         aiReviewResults,
@@ -148,44 +197,19 @@ export async function getStatistics(): Promise<StatisticsResponse> {
         ),
       );
 
-    pdfReviewed = pdfReviewedResult[0]?.count ?? 0;
-
-    // PDF review breakdown by impact score (MUST filter by both date thresholds)
-    const impactBreakdownResult = await db
-      .select({
-        highImpact: sql<number>`count(*) filter (where ${aiPdfReviewResults.impactScore} >= 3)::int`,
-        lowImpact: sql<number>`count(*) filter (where ${aiPdfReviewResults.impactScore} <= 2)::int`,
-      })
-      .from(aiPdfReviewResults)
-      .innerJoin(
-        aiReviewResults,
-        eq(aiPdfReviewResults.aiReviewResultId, aiReviewResults.id),
-      )
-      .where(
-        and(
-          inArray(aiReviewResults.dryadDatasetId, suspiciousDatasetIds),
-          gt(aiReviewResults.truePositiveProbability, 0.5),
-          gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-          gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
-        ),
-      );
-
-    highImpact = impactBreakdownResult[0]?.highImpact ?? 0;
-    lowImpact = impactBreakdownResult[0]?.lowImpact ?? 0;
+    pdfReviewedHighImpact = impactBreakdownResult[0]?.highImpact ?? 0;
+    pdfReviewedLowImpact = impactBreakdownResult[0]?.lowImpact ?? 0;
   }
 
-  const suspiciousDatasets = {
-    total: totalSuspicious,
-    withArticle: suspiciousWithArticle,
-    withPdf: suspiciousWithPdf,
-    pdfReviewed,
-    pdfReviewBreakdown: {
-      highImpact,
-      lowImpact,
-    },
+  const pdfPipeline = {
+    pdfNotDownloaded,
+    pdfDownloadedNotReviewed,
+    pdfReviewedHighImpact,
+    pdfReviewedLowImpact,
   };
 
-  // 5. Calculate percentages for funnel visualization
+  // 6. Calculate percentages for funnel visualization
+  const totalFlagged = flagged + reviewedByAi + pdfReviewedByAi;
   const percentages = {
     downloadedOfIndexed:
       totalDatasets > 0
@@ -195,19 +219,11 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       downloadStatus.completed > 0
         ? Math.round((analysisStatus.analyzed / downloadStatus.completed) * 100)
         : 0,
-    flaggedOfAnalyzed:
-      analysisStatus.analyzed > 0
-        ? Math.round(
-            ((analysisStatus.breakdown.flagged +
-              analysisStatus.breakdown.reviewedByAi +
-              analysisStatus.breakdown.pdfReviewedByAi) /
-              analysisStatus.analyzed) *
-              100,
-          )
-        : 0,
-    pdfReviewedOfFlagged:
+    aiReviewedOfAnalyzed:
+      totalFlagged > 0 ? Math.round((totalSuspicious / totalFlagged) * 100) : 0,
+    pdfReviewedOfSuspicious:
       totalSuspicious > 0
-        ? Math.round((pdfReviewed / totalSuspicious) * 100)
+        ? Math.round((pdfReviewedHighImpact / totalSuspicious) * 100)
         : 0,
   };
 
@@ -217,7 +233,8 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     totalArticles,
     downloadStatus,
     analysisStatus,
-    suspiciousDatasets,
+    aiReviewStatus,
+    pdfPipeline,
     percentages,
   };
 }

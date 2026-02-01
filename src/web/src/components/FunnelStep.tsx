@@ -16,6 +16,19 @@ const colorClasses: Record<string, string> = {
   red: "border-red-500 bg-red-50",
   purple: "border-purple-500 bg-purple-50",
   orange: "border-orange-500 bg-orange-50",
+  gray: "border-gray-500 bg-gray-50",
+};
+
+const barColorClasses: Record<string, string> = {
+  blue: "#3b82f6",
+  green: "#10b981",
+  "muted-green": "#7da87a",
+  yellow: "#f59e0b",
+  red: "#ef4444",
+  purple: "#a855f7",
+  orange: "#f97316",
+  gray: "#6b7280",
+  "light-gray": "#9ca3af",
 };
 
 export const FunnelStep: React.FC<FunnelStepProps> = ({
@@ -44,38 +57,57 @@ export const FunnelStep: React.FC<FunnelStepProps> = ({
         </div>
 
         {breakdown && breakdown.length > 0 && (
-          <div className="mt-4 space-y-2 border-t pt-3">
-            {breakdown.map((item, index) => (
-              <div
-                key={index}
-                className="flex justify-between items-center text-sm"
-              >
-                <span className="text-gray-700">
-                  {item.color && (
-                    <span
-                      className="inline-block w-3 h-3 rounded-full mr-2"
+          <>
+            {/* Horizontal stacked bar chart */}
+            {total > 0 && (
+              <div className="flex h-8 rounded-lg overflow-hidden mb-4 border border-gray-300">
+                {breakdown.map((item, index) => {
+                  const percentage = (item.count / total) * 100;
+                  if (percentage === 0) return null;
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-center text-xs text-white font-medium"
                       style={{
+                        width: `${percentage}%`,
                         backgroundColor:
-                          item.color === "green"
-                            ? "#10b981"
-                            : item.color === "red"
-                              ? "#ef4444"
-                              : item.color === "yellow"
-                                ? "#f59e0b"
-                                : item.color === "orange"
-                                  ? "#f97316"
-                                  : item.color === "purple"
-                                    ? "#a855f7"
-                                    : "#3b82f6",
+                          barColorClasses[item.color || "blue"] ||
+                          barColorClasses.blue,
                       }}
-                    />
-                  )}
-                  {item.label}
-                </span>
-                <span className="font-medium text-gray-900">{item.count}</span>
+                      title={`${item.label}: ${item.count} (${percentage.toFixed(1)}%)`}
+                    >
+                      {percentage > 10 && `${percentage.toFixed(0)}%`}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            )}
+
+            <div className="mt-4 space-y-2 border-t pt-3">
+              {breakdown.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center text-sm"
+                >
+                  <span className="text-gray-700">
+                    {item.color && (
+                      <span
+                        className="inline-block w-3 h-3 rounded-full mr-2"
+                        style={{
+                          backgroundColor:
+                            barColorClasses[item.color] || barColorClasses.blue,
+                        }}
+                      />
+                    )}
+                    {item.label}
+                  </span>
+                  <span className="font-medium text-gray-900">
+                    {item.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

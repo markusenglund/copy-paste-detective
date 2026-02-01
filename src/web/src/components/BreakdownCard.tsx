@@ -9,11 +9,13 @@ interface BreakdownCardProps {
 const colorClasses: Record<string, string> = {
   blue: "#3b82f6",
   green: "#10b981",
+  "muted-green": "#7da87a",
   yellow: "#f59e0b",
   red: "#ef4444",
   purple: "#a855f7",
   orange: "#f97316",
   gray: "#6b7280",
+  "light-gray": "#9ca3af",
 };
 
 export const BreakdownCard: React.FC<BreakdownCardProps> = ({
