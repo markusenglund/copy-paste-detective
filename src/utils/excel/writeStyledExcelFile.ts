@@ -86,24 +86,26 @@ function applyStylesToSheet(
       if (cell.value === null || cell.value === undefined) {
         continue;
       }
-
-      // Apply background color (ARGB format requires 'FF' prefix for full opacity)
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF" + color },
-      };
-
       // Apply borders (creates box around sequence)
       const isFirstRow = rowIndex === startRowIndex;
       const isLastRow = rowIndex === endRowIndex;
 
-      cell.border = {
-        left: SEQUENCE_BORDER_STYLE.left,
-        right: SEQUENCE_BORDER_STYLE.right,
-        ...(isFirstRow && { top: SEQUENCE_BORDER_STYLE.top }),
-        ...(isLastRow && { bottom: SEQUENCE_BORDER_STYLE.bottom }),
-      };
+      // Apply background color and borders to a completely new style object.
+      // exceljs uses the same style object for many cells so mutating it directly causes unrelated cells to have their styles changed.
+      cell.style = {
+        ...cell.style,
+        fill: {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF" + color },
+        },
+        border: {
+          left: SEQUENCE_BORDER_STYLE.left,
+          right: SEQUENCE_BORDER_STYLE.right,
+          ...(isFirstRow && { top: SEQUENCE_BORDER_STYLE.top }),
+          ...(isLastRow && { bottom: SEQUENCE_BORDER_STYLE.bottom }),
+        },
+      }
     }
   });
 }
