@@ -61,6 +61,7 @@ export function loadExcelFileFromDryadIndex(
   return {
     sheets,
     excelFileName: selectedFile.filename,
+    excelFilePath: excelPath,
     articleName: dataset.title,
     dataDescription,
     abstract: dataset.abstract ?? undefined,

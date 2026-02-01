@@ -17,6 +17,7 @@ export interface PDFReview {
 export interface SheetReview {
   sheetName: string;
   excelFileName: string;
+  hasHighlightedVersion: boolean;
   aiReview: AIReview;
   pdfReview: PDFReview | null;
 }
@@ -36,7 +37,7 @@ export interface ArticleInfo {
   citations: number | null;
   publicationDate: Date | null;
   journalName: string | null;
-  journalImpactFactor: number | null;
+  journalSjrScore: number | null;
   authors: Array<{
     name: string;
     position: number;

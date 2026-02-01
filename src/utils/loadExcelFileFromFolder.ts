@@ -56,6 +56,7 @@ export function loadExcelFileFromFolder(
   return {
     sheets,
     excelFileName: selectedFile.name,
+    excelFilePath: excelPath,
     articleName: metadata.name,
     dataDescription: readmeContent,
     abstract: metadata.abstract,

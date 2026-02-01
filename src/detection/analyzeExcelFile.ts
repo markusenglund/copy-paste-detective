@@ -13,8 +13,10 @@ import {
   CategorizedColumn,
 } from "../columnCategorization/columnCategorization";
 import { findDuplicateValues } from "./findDuplicateValues";
-import { DuplicateValuesResult } from "../types";
+import { DuplicateValuesResult, SuspicionLevel } from "../types";
 import { logger } from "../utils/logger";
+import { generateHighlightedExcel } from "../strategies/repeatedColumnSequences/generateHighlightedExcel";
+import { generateHighlightedExcelForDuplicateRows } from "../strategies/duplicateRows/generateHighlightedExcelForDuplicateRows";
 
 export type ExcelFileAnalysisResults = {
   [StrategyName.IndividualNumbers]?: IndividualNumbersResult;
@@ -75,6 +77,23 @@ export async function analyzeExcelFile(
     );
     duplicateRowsStrategy.printResults(duplicateRowsResult);
     results[StrategyName.DuplicateRows] = duplicateRowsResult;
+
+    // Generate highlighted Excel file if duplicate rows were found
+    if (
+      duplicateRowsResult.duplicateRows.length > 0 &&
+      excelFileData.excelFilePath
+    ) {
+      const suspiciousDuplicateRows = duplicateRowsResult.duplicateRows.filter(
+        (row) => row.suspicionLevel !== SuspicionLevel.None,
+      );
+      if (suspiciousDuplicateRows.length > 0) {
+        await generateHighlightedExcelForDuplicateRows(
+          excelFileData,
+          excelFileData.excelFilePath,
+          suspiciousDuplicateRows,
+        );
+      }
+    }
   }
 
   // 2. Run repeatedColumnSequences second if requested
@@ -91,6 +110,21 @@ export async function analyzeExcelFile(
     );
     repeatedColumnSequencesStrategy.printResults(result);
     results[StrategyName.RepeatedColumnSequences] = result;
+
+    // Generate highlighted Excel file if sequences were found and file path is available
+    if (result.sequences.length > 0 && excelFileData.excelFilePath) {
+      // Filter to only include sequences with at least Low suspicion level
+      const suspiciousSequences = result.sequences.filter(
+        (seq) => seq.suspicionLevel !== SuspicionLevel.None,
+      );
+      if (suspiciousSequences.length > 0) {
+        await generateHighlightedExcel(
+          excelFileData,
+          excelFileData.excelFilePath,
+          suspiciousSequences,
+        );
+      }
+    }
   }
 
   // 3. Run individualNumbers last if requested, with duplicate rows results

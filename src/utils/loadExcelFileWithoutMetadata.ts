@@ -44,6 +44,7 @@ export function loadExcelFileWithoutMetadata(filePath: string): ExcelFileData {
   return {
     sheets,
     excelFileName: fileName,
+    excelFilePath: filePath,
     articleName,
     dataDescription: "", // No description available
     abstract: undefined, // No abstract available

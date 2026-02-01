@@ -8,3 +8,4 @@ data
 tmp
 .cache
 drizzle/meta
+highlighted-output

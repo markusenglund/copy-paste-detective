@@ -107,10 +107,10 @@ export function DatasetDetails({
             <div>
               <span className="font-semibold">Journal:</span>{" "}
               {data.article.journalName}
-              {data.article.journalImpactFactor && (
+              {data.article.journalSjrScore && (
                 <span className="text-gray-600">
                   {" "}
-                  (IF: {data.article.journalImpactFactor.toFixed(2)})
+                  (SJR: {data.article.journalSjrScore.toFixed(2)})
                 </span>
               )}
             </div>
@@ -168,6 +168,7 @@ export function DatasetDetails({
           datasetId={data.dataset.id}
           sheetName={review.sheetName}
           excelFileName={review.excelFileName}
+          hasHighlightedVersion={review.hasHighlightedVersion}
           aiReview={review.aiReview}
           pdfReview={review.pdfReview}
         />
