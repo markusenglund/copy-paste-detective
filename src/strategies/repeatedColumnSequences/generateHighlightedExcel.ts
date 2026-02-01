@@ -1,9 +1,10 @@
 import { ExcelFileData } from "../../types/ExcelFileData";
 import { RepeatedColumnSequence } from "../../entities/RepeatedColumnSequence";
 import { getHighlightedOutputPath } from "../../utils/paths/getHighlightedOutputPath";
-import { mapSequencesToCellRanges } from "../../utils/excel/cellRangeMapper";
-import { writeStyledExcelFile } from "../../utils/excel/writeStyledExcelFile";
 import { logger } from "../../utils/logger";
+import { loadWorkbookForHighlighting } from "../../utils/excel/loadWorkbookForHighlighting";
+import { highlightRepeatedColumnSequence } from "./highlighting/highlightRepeatedColumnSequence";
+import { getColorForSequenceIndex } from "../../utils/excel/styleConstants";
 
 /**
  * Generate highlighted Excel file with repeated column sequences marked with colors and borders.
@@ -33,19 +34,53 @@ export async function generateHighlightedExcel(
     excelFileData.extId,
   );
 
-  // Convert sequences to styled cell ranges
-  logger.debug(`Mapping ${sequences.length} sequences to cell ranges`);
   // Limit to top 50 sequences to safeguard performance
-  const maxCellRanges = 50;
+  const maxSequences = 50;
+  const sequencesToHighlight = sequences.slice(0, maxSequences);
 
-  const cellRanges = mapSequencesToCellRanges(sequences).slice(
-    0,
-    maxCellRanges,
+  logger.debug(
+    `Highlighting ${sequencesToHighlight.length} column sequences (limited from ${sequences.length})`,
   );
-  logger.debug(`Mapped to ${cellRanges.length} cell ranges`);
 
-  // Write styled Excel file
-  await writeStyledExcelFile(originalFilePath, outputPath, cellRanges);
+  // Load workbook (preserving existing highlights if present)
+  const workbook = await loadWorkbookForHighlighting(
+    originalFilePath,
+    outputPath,
+  );
+
+  const styledCells = new Set<string>();
+  let skippedSequences = 0;
+  let highlightedSequences = 0;
+
+  for (let i = 0; i < sequencesToHighlight.length; i++) {
+    const repeatedSequence = sequencesToHighlight[i];
+    const color = getColorForSequenceIndex(i);
+    const worksheet = workbook.getWorksheet(repeatedSequence.sheetName);
+
+    if (!worksheet) {
+      logger.warn(`Sheet "${repeatedSequence.sheetName}" not found, skipping`);
+      continue;
+    }
+
+    const highlighted = highlightRepeatedColumnSequence(
+      worksheet,
+      repeatedSequence,
+      color,
+      styledCells,
+    );
+
+    if (highlighted) {
+      highlightedSequences++;
+    } else {
+      skippedSequences++;
+    }
+  }
+
+  logger.info(
+    `Highlighted ${highlightedSequences} column sequences, skipped ${skippedSequences} due to overlaps`,
+  );
+
+  await workbook.xlsx.writeFile(outputPath);
 
   logger.info(
     `Successfully generated highlighted Excel file at '${outputPath}'`,

@@ -1,9 +1,10 @@
 import { ExcelFileData } from "../../types/ExcelFileData";
 import { DuplicateRow } from "../../entities/DuplicateRow";
 import { getHighlightedOutputPath } from "../../utils/paths/getHighlightedOutputPath";
-import { mapDuplicateRowsToCellRanges } from "./duplicateRowCellRangeMapper";
-import { writeStyledExcelFile } from "../../utils/excel/writeStyledExcelFile";
 import { logger } from "../../utils/logger";
+import { loadWorkbookForHighlighting } from "../../utils/excel/loadWorkbookForHighlighting";
+import { highlightDuplicateRowPair } from "./highlighting/highlightDuplicateRowPair";
+import { getColorForSequenceIndex } from "../../utils/excel/styleConstants";
 
 /**
  * Generate highlighted Excel file with duplicate rows marked with colors and borders.
@@ -34,20 +35,53 @@ export async function generateHighlightedExcelForDuplicateRows(
     excelFileData.extId,
   );
 
-  // Convert duplicate rows to styled cell ranges
-  logger.debug(
-    `Mapping ${duplicateRows.length} duplicate row pairs to cell ranges`,
-  );
   // Limit to top 200 pairs to safeguard performance
   const maxPairs = 200;
+  const pairsToHighlight = duplicateRows.slice(0, maxPairs);
 
-  const cellRanges = mapDuplicateRowsToCellRanges(
-    duplicateRows.slice(0, maxPairs),
+  logger.debug(
+    `Highlighting ${pairsToHighlight.length} duplicate row pairs (limited from ${duplicateRows.length})`,
   );
-  logger.debug(`Mapped to ${cellRanges.length} cell ranges`);
 
-  // Write styled Excel file
-  await writeStyledExcelFile(originalFilePath, outputPath, cellRanges);
+  // Load workbook (preserving existing highlights if present)
+  const workbook = await loadWorkbookForHighlighting(
+    originalFilePath,
+    outputPath,
+  );
+
+  const styledCells = new Set<string>();
+  let skippedPairs = 0;
+  let highlightedPairs = 0;
+
+  for (let i = 0; i < pairsToHighlight.length; i++) {
+    const duplicateRow = pairsToHighlight[i];
+    const color = getColorForSequenceIndex(i);
+    const worksheet = workbook.getWorksheet(duplicateRow.sheet.name);
+
+    if (!worksheet) {
+      logger.warn(`Sheet "${duplicateRow.sheet.name}" not found, skipping`);
+      continue;
+    }
+
+    const highlighted = highlightDuplicateRowPair(
+      worksheet,
+      duplicateRow,
+      color,
+      styledCells,
+    );
+
+    if (highlighted) {
+      highlightedPairs++;
+    } else {
+      skippedPairs++;
+    }
+  }
+
+  logger.info(
+    `Highlighted ${highlightedPairs} duplicate row pairs, skipped ${skippedPairs} due to overlaps`,
+  );
+
+  await workbook.xlsx.writeFile(outputPath);
 
   logger.info(
     `Successfully generated highlighted Excel file at '${outputPath}'`,
