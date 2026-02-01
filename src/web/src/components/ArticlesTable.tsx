@@ -88,9 +88,7 @@ export function ArticlesTable({
 }: ArticlesTableProps): React.ReactElement {
   if (articles.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No articles pending PDF upload
-      </div>
+      <div className="text-center py-8 text-gray-500">No articles found</div>
     );
   }
 

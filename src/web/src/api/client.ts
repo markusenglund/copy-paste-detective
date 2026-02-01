@@ -2,6 +2,7 @@ import { ArticleForUpload } from "../types/article";
 import { SortParams } from "../../../shared/sortTypes";
 import { FilterParams, serializeFilters } from "../../../shared/filterTypes";
 import { DatasetDetails } from "../types/dataset";
+import { StatisticsResponse } from "../types/statistics";
 
 const BASE_URL = "/api";
 
@@ -79,4 +80,12 @@ export function getHighlightedExcelDownloadUrl(
   filename: string,
 ): string {
   return `${BASE_URL}/datasets/${datasetId}/excel-highlighted/${encodeURIComponent(filename)}`;
+}
+
+export async function fetchStatistics(): Promise<StatisticsResponse> {
+  const response = await fetch(`${BASE_URL}/statistics`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch statistics");
+  }
+  return response.json();
 }

@@ -131,9 +131,7 @@ export function Dashboard(): React.ReactElement {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-8xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Science detective dashboard
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Articles</h1>
           <button
             onClick={() => loadArticles(sortParams, filterParams)}
             disabled={loading}
@@ -169,8 +167,7 @@ export function Dashboard(): React.ReactElement {
         </div>
 
         <div className="mt-4 text-sm text-gray-500">
-          {articles.length} article{articles.length !== 1 ? "s" : ""} pending
-          PDF upload
+          Showing {articles.length} article{articles.length !== 1 ? "s" : ""}
         </div>
       </div>
     </div>

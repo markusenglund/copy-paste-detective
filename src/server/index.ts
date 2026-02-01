@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { articlesRoutes } from "./routes/articles";
 import { uploadRoutes } from "./routes/upload";
 import { datasetDetailsRoutes } from "./routes/datasetDetails";
+import { statisticsRoutes } from "./routes/statistics";
 
 const fastify = Fastify({
   logger: true,
@@ -26,6 +27,7 @@ async function start(): Promise<void> {
   await fastify.register(articlesRoutes, { prefix: "/api" });
   await fastify.register(uploadRoutes, { prefix: "/api" });
   await fastify.register(datasetDetailsRoutes, { prefix: "/api" });
+  await fastify.register(statisticsRoutes, { prefix: "/api" });
 
   // Serve static files in production
   if (process.env.NODE_ENV === "production") {
