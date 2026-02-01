@@ -10,6 +10,8 @@ import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
 import { eq, sql, and, gt } from "drizzle-orm";
 import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
 import { DatasetDetails } from "../../shared/datasetTypes";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 export async function getDatasetDetails(
   datasetId: number,
@@ -148,6 +150,20 @@ export async function getDatasetDetails(
 
   const fileIdToName = new Map(excelFiles.map((f) => [f.id, f.fileName]));
 
+  // Check which files have highlighted versions
+  const highlightedFileIds = new Set<number>();
+  for (const file of excelFiles) {
+    const highlightedPath = join(
+      process.cwd(),
+      "highlighted-output",
+      info.extId.toString(),
+      file.fileName,
+    );
+    if (existsSync(highlightedPath)) {
+      highlightedFileIds.add(file.id);
+    }
+  }
+
   // Build PDF review map by AI review result ID
   const pdfReviewMap = new Map(
     latestPdfReviews.map((pr) => [pr.aiReviewResultId, pr]),
@@ -158,6 +174,7 @@ export async function getDatasetDetails(
     return {
       sheetName: aiReview.sheetName,
       excelFileName: fileIdToName.get(aiReview.dryadExcelFileId) || "Unknown",
+      hasHighlightedVersion: highlightedFileIds.has(aiReview.dryadExcelFileId),
       aiReview: {
         prompt: aiReview.prompt,
         response: aiReview.response,

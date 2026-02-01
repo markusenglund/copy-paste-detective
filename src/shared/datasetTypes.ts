@@ -17,6 +17,7 @@ export interface PDFReview {
 export interface SheetReview {
   sheetName: string;
   excelFileName: string;
+  hasHighlightedVersion: boolean;
   aiReview: AIReview;
   pdfReview: PDFReview | null;
 }

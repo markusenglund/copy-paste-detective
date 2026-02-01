@@ -73,3 +73,10 @@ export function getExcelDownloadUrl(
 ): string {
   return `${BASE_URL}/datasets/${datasetId}/excel/${encodeURIComponent(filename)}`;
 }
+
+export function getHighlightedExcelDownloadUrl(
+  datasetId: number,
+  filename: string,
+): string {
+  return `${BASE_URL}/datasets/${datasetId}/excel-highlighted/${encodeURIComponent(filename)}`;
+}

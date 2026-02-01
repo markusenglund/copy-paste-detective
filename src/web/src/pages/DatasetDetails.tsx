@@ -168,6 +168,7 @@ export function DatasetDetails({
           datasetId={data.dataset.id}
           sheetName={review.sheetName}
           excelFileName={review.excelFileName}
+          hasHighlightedVersion={review.hasHighlightedVersion}
           aiReview={review.aiReview}
           pdfReview={review.pdfReview}
         />
