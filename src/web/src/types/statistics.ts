@@ -1,3 +1,1 @@
-export interface StatisticsResponse {
-  totalDatasets: number;
-}
+export type { StatisticsResponse } from "../../../../shared/statisticsTypes";
