@@ -18,10 +18,10 @@ export const HIGHLIGHT_COLORS = [
   "40E0D0",
   "87CEEB",
   "1E90FF",
-  "0000CD",
+  "6666CD",
   "E6E6FA",
   "DDA0DD",
-  "9400D3",
+  "A433D3",
   "F0F8FF",
   "FFFFFF",
 ];
