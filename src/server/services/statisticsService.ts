@@ -97,24 +97,16 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   const totalAiReviewed = allReviewedDatasetIds.length;
 
   // Find datasets with suspicious reviews (>50%) - only considering latest review per sheet
-  const latestReviewsSubquery = sql`(
-    SELECT dryad_dataset_id, dryad_excel_file_id, sheet_name, MAX(created_at) as max_created_at
-    FROM ai_review_results
-    WHERE created_at > ${AI_REVIEW_MIN_DATE}
-    GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
-  )`;
-
   const suspiciousDatasetIdsResult = await db
     .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
     .from(aiReviewResults)
-    .innerJoin(
-      sql`${latestReviewsSubquery} latest`,
-      sql`ai_review_results.dryad_dataset_id = latest.dryad_dataset_id
-          AND ai_review_results.dryad_excel_file_id = latest.dryad_excel_file_id
-          AND ai_review_results.sheet_name = latest.sheet_name
-          AND ai_review_results.created_at = latest.max_created_at`,
-    )
-    .where(gt(aiReviewResults.truePositiveProbability, 0.5));
+    .where(
+      and(
+        eq(aiReviewResults.isLatestReview, true),
+        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
+        gt(aiReviewResults.truePositiveProbability, 0.5),
+      ),
+    );
 
   const suspiciousDatasetIds = suspiciousDatasetIdsResult.map(
     (r) => r.datasetId,
@@ -181,17 +173,12 @@ export async function getStatistics(): Promise<StatisticsResponse> {
           sql`EXISTS (
             SELECT 1
             FROM ai_review_results arr
-            INNER JOIN ${latestReviewsSubquery} latest ON (
-              arr.dryad_dataset_id = latest.dryad_dataset_id
-              AND arr.dryad_excel_file_id = latest.dryad_excel_file_id
-              AND arr.sheet_name = latest.sheet_name
-              AND arr.created_at = latest.max_created_at
-            )
             LEFT JOIN ai_pdf_review_results pdfr ON (
               pdfr.ai_review_result_id = arr.id
               AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
             )
             WHERE arr.dryad_dataset_id = ${dryadDatasets.id}
+              AND arr.is_latest_review = true
               AND arr.true_positive_probability > 0.5
               AND pdfr.id IS NULL
           )`,
@@ -215,13 +202,6 @@ export async function getStatistics(): Promise<StatisticsResponse> {
         eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
       )
       .innerJoin(
-        sql`${latestReviewsSubquery} latest`,
-        sql`ai_review_results.dryad_dataset_id = latest.dryad_dataset_id
-            AND ai_review_results.dryad_excel_file_id = latest.dryad_excel_file_id
-            AND ai_review_results.sheet_name = latest.sheet_name
-            AND ai_review_results.created_at = latest.max_created_at`,
-      )
-      .innerJoin(
         aiPdfReviewResults,
         eq(aiPdfReviewResults.aiReviewResultId, aiReviewResults.id),
       )
@@ -229,23 +209,20 @@ export async function getStatistics(): Promise<StatisticsResponse> {
         and(
           inArray(dryadDatasets.id, suspiciousDatasetIds),
           inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
+          eq(aiReviewResults.isLatestReview, true),
+          gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
           gt(aiReviewResults.truePositiveProbability, 0.5),
           gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
           // Exclude datasets that have at least one latest review without PDF review
           sql`NOT EXISTS (
             SELECT 1
             FROM ai_review_results arr2
-            INNER JOIN ${latestReviewsSubquery} latest2 ON (
-              arr2.dryad_dataset_id = latest2.dryad_dataset_id
-              AND arr2.dryad_excel_file_id = latest2.dryad_excel_file_id
-              AND arr2.sheet_name = latest2.sheet_name
-              AND arr2.created_at = latest2.max_created_at
-            )
             LEFT JOIN ai_pdf_review_results pdfr2 ON (
               pdfr2.ai_review_result_id = arr2.id
               AND pdfr2.created_at >= ${PDF_REVIEW_MIN_DATE}
             )
             WHERE arr2.dryad_dataset_id = ${dryadDatasets.id}
+              AND arr2.is_latest_review = true
               AND arr2.true_positive_probability > 0.5
               AND pdfr2.id IS NULL
           )`,

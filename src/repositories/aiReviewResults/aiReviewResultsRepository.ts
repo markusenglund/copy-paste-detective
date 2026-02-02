@@ -40,8 +40,33 @@ export async function insertResult(data: {
   truePositiveProbability: number;
   hash: string;
 }): Promise<AiReviewResultRow> {
-  const [inserted] = await db.insert(aiReviewResults).values(data).returning();
-  return inserted;
+  return await db.transaction(async (tx) => {
+    // Step 1: Set is_latest_review = false for existing "latest" review of this sheet
+    // This is required before inserting the new one due to the unique constraint
+    await tx
+      .update(aiReviewResults)
+      .set({ isLatestReview: false })
+      .where(
+        and(
+          eq(aiReviewResults.dryadDatasetId, data.dryadDatasetId),
+          eq(aiReviewResults.dryadExcelFileId, data.dryadExcelFileId),
+          eq(aiReviewResults.sheetName, data.sheetName),
+          eq(aiReviewResults.isLatestReview, true),
+        ),
+      );
+
+    // Step 2: Insert new review with is_latest_review = true
+    // If step 1 didn't run (bug), the unique index will reject this insert
+    const [inserted] = await tx
+      .insert(aiReviewResults)
+      .values({
+        ...data,
+        isLatestReview: true,
+      })
+      .returning();
+
+    return inserted;
+  });
 }
 
 /**
@@ -52,26 +77,21 @@ export async function insertResult(data: {
 export async function getLatestReviewsPerSheet(): Promise<
   Map<number, AiReviewResultRow[]>
 > {
-  // Fetch all reviews ordered by createdAt descending
-  const allReviews = await db
+  // Fetch all latest reviews using the is_latest_review flag
+  const latestReviews = await db
     .select()
     .from(aiReviewResults)
-    .where(gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE))
+    .where(
+      and(
+        eq(aiReviewResults.isLatestReview, true),
+        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
+      ),
+    )
     .orderBy(desc(aiReviewResults.createdAt));
-
-  // Group by unique sheet (dryadExcelFileId + sheetName) and keep only the latest
-  const latestBySheet = new Map<string, AiReviewResultRow>();
-  for (const review of allReviews) {
-    const sheetKey = `${review.dryadExcelFileId}:${review.sheetName}`;
-    // Since we're ordered by createdAt desc, the first one we encounter is the latest
-    if (!latestBySheet.has(sheetKey)) {
-      latestBySheet.set(sheetKey, review);
-    }
-  }
 
   // Group latest reviews by dryadDatasetId
   const reviewsByDatasetId = new Map<number, AiReviewResultRow[]>();
-  for (const review of latestBySheet.values()) {
+  for (const review of latestReviews) {
     const existing = reviewsByDatasetId.get(review.dryadDatasetId) ?? [];
     existing.push(review);
     reviewsByDatasetId.set(review.dryadDatasetId, existing);
@@ -100,6 +120,7 @@ export async function getHighSuspicionReviewsWithArticles(
   }>
 > {
   const whereConditions = [
+    eq(aiReviewResults.isLatestReview, true),
     gt(aiReviewResults.truePositiveProbability, suspicionThreshold),
     gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
   ];
@@ -181,6 +202,7 @@ export async function getDatasetsForPdfReview(
       INNER JOIN articles a ON a.dryad_dataset_id = arr.dryad_dataset_id
       INNER JOIN pdf_files pf ON pf.article_id = a.id
       WHERE arr.dryad_dataset_id = dryad_datasets.id
+        AND arr.is_latest_review = true
         AND arr.true_positive_probability > ${suspicionThreshold}
         AND arr.created_at > ${AI_REVIEW_MIN_DATE}
         AND a.pdf_download_status IN ('completed', 'manually_added')
@@ -190,23 +212,14 @@ export async function getDatasetsForPdfReview(
     const hasLatestReviewWithoutPdfReview = sql<boolean>`EXISTS (
       SELECT 1
       FROM ai_review_results arr
-      INNER JOIN (
-        SELECT dryad_dataset_id, dryad_excel_file_id, sheet_name, MAX(created_at) as max_created_at
-        FROM ai_review_results
-        WHERE created_at > ${AI_REVIEW_MIN_DATE}
-        GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
-      ) latest ON (
-        arr.dryad_dataset_id = latest.dryad_dataset_id
-        AND arr.dryad_excel_file_id = latest.dryad_excel_file_id
-        AND arr.sheet_name = latest.sheet_name
-        AND arr.created_at = latest.max_created_at
-      )
       LEFT JOIN ai_pdf_review_results pdfr ON (
         pdfr.ai_review_result_id = arr.id
         AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
       )
       WHERE arr.dryad_dataset_id = dryad_datasets.id
+        AND arr.is_latest_review = true
         AND arr.true_positive_probability > ${suspicionThreshold}
+        AND arr.created_at > ${AI_REVIEW_MIN_DATE}
         AND pdfr.id IS NULL
     )`;
 
@@ -223,22 +236,7 @@ export async function getDatasetsForPdfReview(
     return [];
   }
 
-  // Step 2: Get the latest review for each (datasetId, excelFileId, sheetName) combo
-  // Using a subquery to find the max createdAt for each group
-  const datasetIdList = sql.join(
-    datasetIds.map((id) => sql`${id}`),
-    sql`, `,
-  );
-  const latestReviewsSubquery = sql`(
-    SELECT dryad_dataset_id, dryad_excel_file_id, sheet_name, MAX(created_at) as max_created_at
-    FROM ai_review_results
-    WHERE dryad_dataset_id IN (${datasetIdList})
-      AND true_positive_probability > ${suspicionThreshold}
-      AND created_at > ${AI_REVIEW_MIN_DATE}
-    GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
-  )`;
-
-  // Step 3: Join to get full review records with article and PDF data
+  // Step 2: Get the latest review for each sheet using is_latest_review flag
   const reviews = await db
     .select({
       aiReview: aiReviewResults,
@@ -248,13 +246,6 @@ export async function getDatasetsForPdfReview(
       excelFile: dryadExcelFiles,
     })
     .from(aiReviewResults)
-    .innerJoin(
-      sql`${latestReviewsSubquery} latest`,
-      sql`ai_review_results.dryad_dataset_id = latest.dryad_dataset_id
-          AND ai_review_results.dryad_excel_file_id = latest.dryad_excel_file_id
-          AND ai_review_results.sheet_name = latest.sheet_name
-          AND ai_review_results.created_at = latest.max_created_at`,
-    )
     .innerJoin(
       dryadDatasets,
       eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
@@ -268,12 +259,15 @@ export async function getDatasetsForPdfReview(
     .where(
       and(
         inArray(aiReviewResults.dryadDatasetId, datasetIds),
+        eq(aiReviewResults.isLatestReview, true),
+        gt(aiReviewResults.truePositiveProbability, suspicionThreshold),
+        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
         inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
       ),
     )
     .orderBy(desc(aiReviewResults.truePositiveProbability));
 
-  // Step 4: Group reviews by dataset
+  // Step 3: Group reviews by dataset
   const reviewsByDatasetId = new Map<
     number,
     Array<{

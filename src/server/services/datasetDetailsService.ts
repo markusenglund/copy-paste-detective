@@ -31,19 +31,7 @@ export async function getDatasetDetails(
     return null;
   }
 
-  // Get latest AI review per sheet using same pattern as articlesService
-  const latestExcelReviewTimes = sql`(
-    SELECT
-      dryad_dataset_id,
-      dryad_excel_file_id,
-      sheet_name,
-      MAX(created_at) as max_created_at
-    FROM ai_review_results
-    WHERE created_at > ${AI_REVIEW_MIN_DATE}
-      AND dryad_dataset_id = ${datasetId}
-    GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
-  )`;
-
+  // Get latest AI review per sheet using is_latest_review flag
   const latestAiReviews = await db
     .select({
       id: aiReviewResults.id,
@@ -56,12 +44,12 @@ export async function getDatasetDetails(
       createdAt: aiReviewResults.createdAt,
     })
     .from(aiReviewResults)
-    .innerJoin(
-      sql`${latestExcelReviewTimes} latest_excel`,
-      sql`${aiReviewResults.dryadDatasetId} = latest_excel.dryad_dataset_id
-          AND ${aiReviewResults.dryadExcelFileId} = latest_excel.dryad_excel_file_id
-          AND ${aiReviewResults.sheetName} = latest_excel.sheet_name
-          AND ${aiReviewResults.createdAt} = latest_excel.max_created_at`,
+    .where(
+      and(
+        eq(aiReviewResults.dryadDatasetId, datasetId),
+        eq(aiReviewResults.isLatestReview, true),
+        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
+      ),
     );
 
   if (latestAiReviews.length === 0) {

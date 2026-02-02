@@ -55,19 +55,7 @@ export async function getArticlesForManualUpload(
   sortParams: SortParams = DEFAULT_SORT,
   filterParams: FilterParams = DEFAULT_FILTERS,
 ): Promise<ArticleForUpload[]> {
-  // Step 1: Get latest review timestamp per unique sheet
-  const latestExcelReviewTimes = sql`(
-    SELECT
-      dryad_dataset_id,
-      dryad_excel_file_id,
-      sheet_name,
-      MAX(created_at) as max_created_at
-    FROM ai_review_results
-    WHERE created_at > ${AI_REVIEW_MIN_DATE}
-    GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
-  )`;
-
-  // Step 2: Get latest PDF review for each ai_review_result (in case multiple PDF reviews exist)
+  // Step 1: Get latest PDF review for each ai_review_result (in case multiple PDF reviews exist)
   const latestPdfPerReview = sql`(
     SELECT
       ai_review_result_id,
@@ -77,7 +65,8 @@ export async function getArticlesForManualUpload(
     GROUP BY ai_review_result_id
   )`;
 
-  // Step 3: Get max probability and max impact score from those latest reviews per dataset
+  // Step 2: Get max probability and max impact score from latest reviews per dataset
+  // Only consider reviews marked as is_latest_review = true
   // The key is that impactScore comes from the PDF review of the SAME ai_review_result
   const maxScoresSubquery = db
     .select({
@@ -91,13 +80,6 @@ export async function getArticlesForManualUpload(
       ),
     })
     .from(aiReviewResults)
-    .innerJoin(
-      sql`${latestExcelReviewTimes} latest_excel`,
-      sql`${aiReviewResults.dryadDatasetId} = latest_excel.dryad_dataset_id
-          AND ${aiReviewResults.dryadExcelFileId} = latest_excel.dryad_excel_file_id
-          AND ${aiReviewResults.sheetName} = latest_excel.sheet_name
-          AND ${aiReviewResults.createdAt} = latest_excel.max_created_at`,
-    )
     .leftJoin(
       aiPdfReviewResults,
       eq(aiPdfReviewResults.aiReviewResultId, aiReviewResults.id),
@@ -108,7 +90,11 @@ export async function getArticlesForManualUpload(
           AND ${aiPdfReviewResults.createdAt} = latest_pdf.max_pdf_created_at`,
     )
     .where(
-      sql`latest_pdf.ai_review_result_id IS NOT NULL OR ${aiPdfReviewResults.id} IS NULL`,
+      and(
+        eq(aiReviewResults.isLatestReview, true),
+        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
+        sql`latest_pdf.ai_review_result_id IS NOT NULL OR ${aiPdfReviewResults.id} IS NULL`,
+      ),
     )
     .groupBy(aiReviewResults.dryadDatasetId)
     .as("max_scores");

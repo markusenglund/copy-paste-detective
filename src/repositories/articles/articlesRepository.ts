@@ -94,6 +94,7 @@ export async function getArticlesForPdfDownload(
   const hasSuspiciousReview = sql<boolean>`EXISTS (
     SELECT 1 FROM ai_review_results
     WHERE ai_review_results.dryad_dataset_id = articles.dryad_dataset_id
+    AND ai_review_results.is_latest_review = true
     AND ai_review_results.true_positive_probability > 0.5
     AND ai_review_results.created_at > ${AI_REVIEW_MIN_DATE}
   )`;
