@@ -105,10 +105,11 @@ program
 
         try {
           // Analyze all files in the dataset together
+          logger.debug(`[${i}] Analyzing dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`);
           const allStrategies = Object.values(StrategyName);
           const { analyses, wasFlaggedForReview, aiReviewCompleted } =
             await analyzeDataset(excelFilesData, allStrategies);
-
+          logger.debug(`[${i}] Analyzed dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`);
           // Save results from each analysis to JSON (backward compatibility)
           // Protect JSON file writes with mutex
           await dbMutex.withLock(async () => {
@@ -143,6 +144,7 @@ program
 
             await analysisResultsDb.write();
           });
+          logger.debug(`[${i}] Saved analysis results for dataset extId=${dataset.extId}`);
 
           // Update analysis status based on the result (SQL updates are safe without mutex)
           if (!wasFlaggedForReview) {
@@ -170,7 +172,7 @@ program
           }
         } catch (error) {
           logger.error(
-            `[${i}] Error analyzing dataset ${dataset.extId}: ${error}`,
+            `[${i}] Error analyzing dataset extId=${dataset.extId}: ${error}`,
           );
           await updateDatasetAnalysisStatus(dataset.extId, "failed");
           logger.info(`[${i}] Dataset ${dataset.extId} marked as failed.`);
