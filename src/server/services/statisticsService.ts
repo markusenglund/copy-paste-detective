@@ -96,16 +96,25 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   );
   const totalAiReviewed = allReviewedDatasetIds.length;
 
-  // Find datasets with suspicious reviews (>50%)
+  // Find datasets with suspicious reviews (>50%) - only considering latest review per sheet
+  const latestReviewsSubquery = sql`(
+    SELECT dryad_dataset_id, dryad_excel_file_id, sheet_name, MAX(created_at) as max_created_at
+    FROM ai_review_results
+    WHERE created_at > ${AI_REVIEW_MIN_DATE}
+    GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
+  )`;
+
   const suspiciousDatasetIdsResult = await db
     .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
     .from(aiReviewResults)
-    .where(
-      and(
-        gt(aiReviewResults.truePositiveProbability, 0.5),
-        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-      ),
-    );
+    .innerJoin(
+      sql`${latestReviewsSubquery} latest`,
+      sql`ai_review_results.dryad_dataset_id = latest.dryad_dataset_id
+          AND ai_review_results.dryad_excel_file_id = latest.dryad_excel_file_id
+          AND ai_review_results.sheet_name = latest.sheet_name
+          AND ai_review_results.created_at = latest.max_created_at`,
+    )
+    .where(gt(aiReviewResults.truePositiveProbability, 0.5));
 
   const suspiciousDatasetIds = suspiciousDatasetIdsResult.map(
     (r) => r.datasetId,
