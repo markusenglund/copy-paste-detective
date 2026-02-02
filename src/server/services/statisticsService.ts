@@ -131,12 +131,27 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   };
 
   // 5. Step 4: PDF Pipeline (for suspicious datasets)
+  let suspiciousWithoutArticles = 0;
   let pdfNotDownloaded = 0;
   let pdfDownloadedNotReviewed = 0;
   let pdfReviewedHighImpact = 0;
   let pdfReviewedLowImpact = 0;
 
   if (totalSuspicious > 0) {
+    // Count suspicious datasets with NO article at all
+    const withoutArticleResult = await db
+      .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
+      .from(dryadDatasets)
+      .leftJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
+      .where(
+        and(
+          inArray(dryadDatasets.id, suspiciousDatasetIds),
+          sql`${articles.id} IS NULL`,
+        ),
+      );
+
+    suspiciousWithoutArticles = withoutArticleResult[0]?.count ?? 0;
+
     // Count suspicious datasets with article but no PDF
     const withArticleNoPdfResult = await db
       .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
@@ -152,46 +167,57 @@ export async function getStatistics(): Promise<StatisticsResponse> {
 
     pdfNotDownloaded = withArticleNoPdfResult[0]?.count ?? 0;
 
-    // Count suspicious datasets with PDF but no review
+    // Count suspicious datasets with PDF but at least one latest review without PDF review
     const withPdfNoReviewResult = await db
       .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
       .from(dryadDatasets)
       .innerJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
       .innerJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
-      .leftJoin(
-        aiReviewResults,
-        and(
-          eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
-          gt(aiReviewResults.truePositiveProbability, 0.5),
-          gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-        ),
-      )
-      .leftJoin(
-        aiPdfReviewResults,
-        and(
-          eq(aiPdfReviewResults.aiReviewResultId, aiReviewResults.id),
-          gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
-        ),
-      )
       .where(
         and(
           inArray(dryadDatasets.id, suspiciousDatasetIds),
-          sql`${aiPdfReviewResults.id} IS NULL`,
+          // At least one latest review for this dataset has no PDF review
+          sql`EXISTS (
+            SELECT 1
+            FROM ai_review_results arr
+            INNER JOIN ${latestReviewsSubquery} latest ON (
+              arr.dryad_dataset_id = latest.dryad_dataset_id
+              AND arr.dryad_excel_file_id = latest.dryad_excel_file_id
+              AND arr.sheet_name = latest.sheet_name
+              AND arr.created_at = latest.max_created_at
+            )
+            LEFT JOIN ai_pdf_review_results pdfr ON (
+              pdfr.ai_review_result_id = arr.id
+              AND pdfr.created_at > ${PDF_REVIEW_MIN_DATE}
+            )
+            WHERE arr.dryad_dataset_id = ${dryadDatasets.id}
+              AND arr.true_positive_probability > 0.5
+              AND pdfr.id IS NULL
+          )`,
         ),
       );
 
     pdfDownloadedNotReviewed = withPdfNoReviewResult[0]?.count ?? 0;
 
-    // PDF review breakdown by impact score (MUST filter by both date thresholds)
+    // PDF review breakdown by impact score
+    // Only count datasets where ALL latest reviews have PDF reviews
+    // For each dataset, take the MAXIMUM impact score across all its latest reviews
     const impactBreakdownResult = await db
       .select({
-        highImpact: sql<number>`count(distinct ${dryadDatasets.id}) filter (where ${aiPdfReviewResults.impactScore} >= 3)::int`,
-        lowImpact: sql<number>`count(distinct ${dryadDatasets.id}) filter (where ${aiPdfReviewResults.impactScore} <= 2)::int`,
+        datasetId: dryadDatasets.id,
+        maxImpact: sql<number>`MAX(${aiPdfReviewResults.impactScore})::int`,
       })
       .from(dryadDatasets)
       .innerJoin(
         aiReviewResults,
         eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
+      )
+      .innerJoin(
+        sql`${latestReviewsSubquery} latest`,
+        sql`ai_review_results.dryad_dataset_id = latest.dryad_dataset_id
+            AND ai_review_results.dryad_excel_file_id = latest.dryad_excel_file_id
+            AND ai_review_results.sheet_name = latest.sheet_name
+            AND ai_review_results.created_at = latest.max_created_at`,
       )
       .innerJoin(
         aiPdfReviewResults,
@@ -201,16 +227,40 @@ export async function getStatistics(): Promise<StatisticsResponse> {
         and(
           inArray(dryadDatasets.id, suspiciousDatasetIds),
           gt(aiReviewResults.truePositiveProbability, 0.5),
-          gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
           gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
+          // Exclude datasets that have at least one latest review without PDF review
+          sql`NOT EXISTS (
+            SELECT 1
+            FROM ai_review_results arr2
+            INNER JOIN ${latestReviewsSubquery} latest2 ON (
+              arr2.dryad_dataset_id = latest2.dryad_dataset_id
+              AND arr2.dryad_excel_file_id = latest2.dryad_excel_file_id
+              AND arr2.sheet_name = latest2.sheet_name
+              AND arr2.created_at = latest2.max_created_at
+            )
+            LEFT JOIN ai_pdf_review_results pdfr2 ON (
+              pdfr2.ai_review_result_id = arr2.id
+              AND pdfr2.created_at > ${PDF_REVIEW_MIN_DATE}
+            )
+            WHERE arr2.dryad_dataset_id = ${dryadDatasets.id}
+              AND arr2.true_positive_probability > 0.5
+              AND pdfr2.id IS NULL
+          )`,
         ),
-      );
+      )
+      .groupBy(dryadDatasets.id);
 
-    pdfReviewedHighImpact = impactBreakdownResult[0]?.highImpact ?? 0;
-    pdfReviewedLowImpact = impactBreakdownResult[0]?.lowImpact ?? 0;
+    // Split by impact score
+    pdfReviewedHighImpact = impactBreakdownResult.filter(
+      (r) => r.maxImpact >= 3,
+    ).length;
+    pdfReviewedLowImpact = impactBreakdownResult.filter(
+      (r) => r.maxImpact <= 2,
+    ).length;
   }
 
   const pdfPipeline = {
+    suspiciousWithoutArticles,
     pdfNotDownloaded,
     pdfDownloadedNotReviewed,
     pdfReviewedHighImpact,

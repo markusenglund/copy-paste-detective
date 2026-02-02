@@ -29,6 +29,7 @@ const barColorClasses: Record<string, string> = {
   orange: "#f97316",
   gray: "#6b7280",
   "light-gray": "#9ca3af",
+  "dark-gray": "#4b5563",
 };
 
 export const FunnelStep: React.FC<FunnelStepProps> = ({

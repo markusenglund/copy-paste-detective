@@ -37,6 +37,7 @@ export interface StatisticsResponse {
 
   // Step 4: PDF Review Pipeline (for suspicious datasets)
   pdfPipeline: {
+    suspiciousWithoutArticles: number; // suspicious datasets with no article link
     pdfNotDownloaded: number; // suspicious datasets with article but no PDF
     pdfDownloadedNotReviewed: number; // suspicious datasets with PDF but no review
     pdfReviewedHighImpact: number; // impactScore >= 3

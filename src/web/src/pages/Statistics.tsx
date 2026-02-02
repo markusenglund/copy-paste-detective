@@ -92,7 +92,7 @@ export function Statistics(): React.ReactElement {
                       {
                         label: "Skipped",
                         count: statistics.downloadStatus.skipped,
-                        color: "gray",
+                        color: "dark-gray",
                       },
                     ]}
                   />
@@ -184,6 +184,11 @@ export function Statistics(): React.ReactElement {
                         label: "PDF not yet downloaded",
                         count: statistics.pdfPipeline.pdfNotDownloaded,
                         color: "light-gray",
+                      },
+                      {
+                        label: "Suspicious datasets without articles",
+                        count: statistics.pdfPipeline.suspiciousWithoutArticles,
+                        color: "dark-gray",
                       },
                     ]}
                   />
