@@ -176,6 +176,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       .where(
         and(
           inArray(dryadDatasets.id, suspiciousDatasetIds),
+          inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
           // At least one latest review for this dataset has no PDF review
           sql`EXISTS (
             SELECT 1
@@ -188,7 +189,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
             )
             LEFT JOIN ai_pdf_review_results pdfr ON (
               pdfr.ai_review_result_id = arr.id
-              AND pdfr.created_at > ${PDF_REVIEW_MIN_DATE}
+              AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
             )
             WHERE arr.dryad_dataset_id = ${dryadDatasets.id}
               AND arr.true_positive_probability > 0.5
@@ -208,6 +209,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
         maxImpact: sql<number>`MAX(${aiPdfReviewResults.impactScore})::int`,
       })
       .from(dryadDatasets)
+      .innerJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
       .innerJoin(
         aiReviewResults,
         eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
@@ -226,6 +228,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       .where(
         and(
           inArray(dryadDatasets.id, suspiciousDatasetIds),
+          inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
           gt(aiReviewResults.truePositiveProbability, 0.5),
           gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
           // Exclude datasets that have at least one latest review without PDF review
@@ -240,7 +243,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
             )
             LEFT JOIN ai_pdf_review_results pdfr2 ON (
               pdfr2.ai_review_result_id = arr2.id
-              AND pdfr2.created_at > ${PDF_REVIEW_MIN_DATE}
+              AND pdfr2.created_at >= ${PDF_REVIEW_MIN_DATE}
             )
             WHERE arr2.dryad_dataset_id = ${dryadDatasets.id}
               AND arr2.true_positive_probability > 0.5

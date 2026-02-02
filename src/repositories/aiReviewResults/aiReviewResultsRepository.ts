@@ -186,18 +186,34 @@ export async function getDatasetsForPdfReview(
         AND a.pdf_download_status IN ('completed', 'manually_added')
     )`;
 
-    // Check if dataset has a recent (non-obsolete) PDF review
-    const hasRecentPdfReview = sql<boolean>`EXISTS (
-      SELECT 1 FROM ai_pdf_review_results pdfr
-      INNER JOIN ai_review_results arr ON pdfr.ai_review_result_id = arr.id
-      WHERE arr.dryad_dataset_id = dryad_datasets.id
+    // Check if dataset has at least one latest suspicious review WITHOUT a PDF review
+    const hasLatestReviewWithoutPdfReview = sql<boolean>`EXISTS (
+      SELECT 1
+      FROM ai_review_results arr
+      INNER JOIN (
+        SELECT dryad_dataset_id, dryad_excel_file_id, sheet_name, MAX(created_at) as max_created_at
+        FROM ai_review_results
+        WHERE created_at > ${AI_REVIEW_MIN_DATE}
+        GROUP BY dryad_dataset_id, dryad_excel_file_id, sheet_name
+      ) latest ON (
+        arr.dryad_dataset_id = latest.dryad_dataset_id
+        AND arr.dryad_excel_file_id = latest.dryad_excel_file_id
+        AND arr.sheet_name = latest.sheet_name
+        AND arr.created_at = latest.max_created_at
+      )
+      LEFT JOIN ai_pdf_review_results pdfr ON (
+        pdfr.ai_review_result_id = arr.id
         AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
+      )
+      WHERE arr.dryad_dataset_id = dryad_datasets.id
+        AND arr.true_positive_probability > ${suspicionThreshold}
+        AND pdfr.id IS NULL
     )`;
 
     const datasets = await db
       .select({ id: dryadDatasets.id })
       .from(dryadDatasets)
-      .where(and(sql`NOT (${hasRecentPdfReview})`, hasQualifyingReview))
+      .where(and(hasLatestReviewWithoutPdfReview, hasQualifyingReview))
       .limit(limit);
 
     datasetIds = datasets.map((d) => d.id);
