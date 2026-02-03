@@ -214,7 +214,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
           inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
           eq(aiReviewResults.isLatestReview, true),
           gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-          gt(aiReviewResults.truePositiveProbability, 0.5),
+          gt(aiReviewResults.truePositiveProbability, SUSPICION_THRESHOLD),
           gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
           // Exclude datasets that have at least one latest review without PDF review
           sql`NOT EXISTS (
@@ -226,7 +226,8 @@ export async function getStatistics(): Promise<StatisticsResponse> {
             )
             WHERE arr2.dryad_dataset_id = ${dryadDatasets.id}
               AND arr2.is_latest_review = true
-              AND arr2.true_positive_probability > 0.5
+              AND arr2.true_positive_probability > ${SUSPICION_THRESHOLD}
+              AND arr2.created_at > ${AI_REVIEW_MIN_DATE}
               AND pdfr2.id IS NULL
           )`,
         ),
