@@ -1,5 +1,8 @@
 import { Command } from "@commander-js/extra-typings";
-import { getDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
+import {
+  getDatasetWithFiles,
+  updateDatasetAnalysisStatus,
+} from "../repositories/datasets/datasetsRepository";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
 import { parseIntArgument, parseStrategies } from "../utils/command";
@@ -67,7 +70,29 @@ program
         const excelFileData = loadExcelFileFromDryadIndex(dataset, i);
         downloadedExcelFiles.push(excelFileData);
       }
-      await analyzeDataset(downloadedExcelFiles, options.strategies);
+      const { wasFlaggedForReview, aiReviewCompleted } = await analyzeDataset(
+        downloadedExcelFiles,
+        options.strategies,
+      );
+
+      // Only update analysisStatus when the full dataset was analyzed
+      if (fileIndex === undefined) {
+        if (!wasFlaggedForReview) {
+          await updateDatasetAnalysisStatus(
+            datasetExtId,
+            "not_flagged_for_review",
+          );
+        } else if (aiReviewCompleted) {
+          await updateDatasetAnalysisStatus(datasetExtId, "reviewed_by_ai");
+        } else {
+          await updateDatasetAnalysisStatus(datasetExtId, "flagged_for_review");
+        }
+      }
+    } catch (error) {
+      if (fileIndex === undefined) {
+        await updateDatasetAnalysisStatus(datasetExtId, "failed");
+      }
+      throw error;
     } finally {
       await closeDb();
     }
