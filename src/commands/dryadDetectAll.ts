@@ -105,11 +105,15 @@ program
 
         try {
           // Analyze all files in the dataset together
-          logger.debug(`[${i}] Analyzing dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`);
+          logger.debug(
+            `[i=${i}] Analyzing dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`,
+          );
           const allStrategies = Object.values(StrategyName);
           const { analyses, wasFlaggedForReview, aiReviewCompleted } =
             await analyzeDataset(excelFilesData, allStrategies);
-          logger.debug(`[${i}] Analyzed dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`);
+          logger.debug(
+            `[i=${i}] Analyzed dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`,
+          );
           // Save results from each analysis to JSON (backward compatibility)
           // Protect JSON file writes with mutex
           await dbMutex.withLock(async () => {
@@ -138,13 +142,15 @@ program
                 analysis.excelFileName
               ] = analysisResults;
               logger.info(
-                `[${i}] Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId}.`,
+                `[i=${i}] Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId}.`,
               );
             }
 
             await analysisResultsDb.write();
           });
-          logger.debug(`[${i}] Saved analysis results for dataset extId=${dataset.extId}`);
+          logger.debug(
+            `[${i}] Saved analysis results for dataset extId=${dataset.extId}`,
+          );
 
           // Update analysis status based on the result (SQL updates are safe without mutex)
           if (!wasFlaggedForReview) {
@@ -172,10 +178,10 @@ program
           }
         } catch (error) {
           logger.error(
-            `[${i}] Error analyzing dataset extId=${dataset.extId}: ${error}`,
+            `[i=${i}] Error analyzing dataset extId=${dataset.extId}: ${error}`,
           );
           await updateDatasetAnalysisStatus(dataset.extId, "failed");
-          logger.info(`[${i}] Dataset ${dataset.extId} marked as failed.`);
+          logger.info(`[i=${i}] Dataset ${dataset.extId} marked as failed.`);
         }
       },
       { concurrency: 5 },
