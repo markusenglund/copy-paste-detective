@@ -69,7 +69,7 @@ program
           });
 
           logger.info(
-            `Loaded PDF: ${pdfFile.filename} (${pdfFile.size} bytes)`,
+            `Loaded PDF: ${article.id}/${pdfFile.filename} (${pdfFile.size} bytes)`,
           );
 
           for (const { aiReview, excelFile } of reviews) {
