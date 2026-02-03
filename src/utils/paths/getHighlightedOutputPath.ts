@@ -13,7 +13,10 @@ export function getHighlightedOutputPath(
   originalFilePath: string,
   extId?: string,
 ): string {
-  const filename = path.basename(originalFilePath);
+  let filename = path.basename(originalFilePath);
+  if (filename.endsWith(".xls")) {
+    filename = filename.replace(".xls", ".xlsx");
+  }
   const datasetFolder = extId || "unknown";
   const outputDir = path.join(
     process.cwd(),

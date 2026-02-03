@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import fs from "fs";
 import { logger } from "../logger.js";
-
+import xlsx from "xlsx";
 /**
  * Loads an Excel workbook for highlighting.
  * If output file already exists, uses it as base to preserve previous highlights.
@@ -19,7 +19,13 @@ export async function loadWorkbookForHighlighting(
     logger.info(
       `Creating new highlighted file from original: ${outputFilePath}`,
     );
-    fs.copyFileSync(originalFilePath, outputFilePath);
+    if (baseFilePath.endsWith(".xlsx")) {
+      fs.copyFileSync(originalFilePath, outputFilePath);
+    } else if (baseFilePath.endsWith(".xls")) {
+      // Convert .xls to .xlsx since exceljs doesn't support .xls
+      const workBook = xlsx.readFile(originalFilePath);
+      xlsx.writeFile(workBook, outputFilePath, { bookType: "xlsx" });
+    }
   } else {
     logger.info(`Using existing highlighted file as base: ${outputFilePath}`);
   }
