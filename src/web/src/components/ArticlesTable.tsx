@@ -46,16 +46,16 @@ function getVerdictLabel(verdict: string): string {
   return "-";
 }
 
-function getVerdictColor(verdict: string): string {
-  if (verdict === "true_positive") return "text-red-600 font-bold";
-  if (verdict === "false_positive") return "text-green-600 font-semibold";
-  if (verdict === "ambiguous") return "text-gray-500";
+function getVerdictClass(verdict: string): string {
+  if (verdict === "true_positive") return "font-bold";
+  if (verdict === "false_positive") return "font-semibold";
+  if (verdict === "ambiguous") return "font-semibold";
   return "";
 }
 
 function getVerdictEmoji(verdict: string): string {
-  if (verdict === "true_positive") return "❌";
-  if (verdict === "false_positive") return "✅";
+  if (verdict === "true_positive") return "✅";
+  if (verdict === "false_positive") return "❌";
   if (verdict === "ambiguous") return "❓";
   return "";
 }
@@ -298,7 +298,7 @@ export function ArticlesTable({
                 {article.humanReviewVerdict !== null ? (
                   <div className="flex flex-col">
                     <span
-                      className={getVerdictColor(article.humanReviewVerdict)}
+                      className={getVerdictClass(article.humanReviewVerdict)}
                     >
                       {getVerdictEmoji(article.humanReviewVerdict)}{" "}
                       {getVerdictLabel(article.humanReviewVerdict)}

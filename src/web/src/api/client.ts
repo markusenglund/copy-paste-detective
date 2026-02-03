@@ -1,7 +1,7 @@
 import { ArticleForUpload } from "../types/article";
 import { SortParams } from "../../../shared/sortTypes";
 import { FilterParams, serializeFilters } from "../../../shared/filterTypes";
-import { DatasetDetails } from "../types/dataset";
+import { DatasetDetails, HumanReview } from "../types/dataset";
 import { StatisticsResponse } from "../types/statistics";
 
 const BASE_URL = "/api";
@@ -87,5 +87,26 @@ export async function fetchStatistics(): Promise<StatisticsResponse> {
   if (!response.ok) {
     throw new Error("Failed to fetch statistics");
   }
+  return response.json();
+}
+
+export async function saveHumanReview(
+  datasetId: number,
+  review: { verdict: string; impactScore: number; notes: string | null },
+): Promise<HumanReview> {
+  const response = await fetch(
+    `${BASE_URL}/datasets/${datasetId}/human-review`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(review),
+    },
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to save human review");
+  }
+
   return response.json();
 }

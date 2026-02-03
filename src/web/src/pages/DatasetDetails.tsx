@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { fetchDatasetDetails } from "../api/client";
 import { DatasetDetails as DatasetDetailsType } from "../types/dataset";
 import { SheetReviewCard } from "../components/SheetReviewCard";
+import { HumanReviewSection } from "../components/HumanReviewSection";
 
 export function DatasetDetails(): React.ReactElement {
   const { datasetId } = useParams<{ datasetId: string }>();
@@ -183,6 +184,11 @@ export function DatasetDetails(): React.ReactElement {
           </div>
         )}
       </div>
+
+      <HumanReviewSection
+        datasetId={data.dataset.id}
+        initialReview={data.humanReview}
+      />
 
       <h2 className="text-2xl font-bold mb-4">Sheet Reviews</h2>
       {data.sheetReviews.map((review, idx) => (

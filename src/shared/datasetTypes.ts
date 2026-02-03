@@ -46,8 +46,16 @@ export interface ArticleInfo {
   }>;
 }
 
+export interface HumanReview {
+  verdict: "true_positive" | "false_positive" | "ambiguous";
+  impactScore: number;
+  notes: string | null;
+  updatedAt: Date;
+}
+
 export interface DatasetDetails {
   dataset: DatasetInfo;
   article: ArticleInfo;
+  humanReview: HumanReview | null;
   sheetReviews: SheetReview[];
 }

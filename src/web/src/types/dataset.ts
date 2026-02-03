@@ -4,5 +4,6 @@ export type {
   SheetReview,
   DatasetInfo,
   ArticleInfo,
+  HumanReview,
   DatasetDetails,
 } from "../../../shared/datasetTypes";

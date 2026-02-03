@@ -7,6 +7,7 @@ import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema
 import { authors } from "../../repositories/authors/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
+import { humanReviews } from "../../repositories/humanReview/schema";
 import { eq, sql, and, gt } from "drizzle-orm";
 import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
 import { DatasetDetails } from "../../shared/datasetTypes";
@@ -113,6 +114,13 @@ export async function getDatasetDetails(
 
   const info = datasetInfo[0];
 
+  // Get human review if it exists
+  const humanReview = await db
+    .select()
+    .from(humanReviews)
+    .where(eq(humanReviews.dryadDatasetId, datasetId))
+    .limit(1);
+
   // Get authors for the article
   const authorsList = info.articleId
     ? await db
@@ -211,6 +219,14 @@ export async function getDatasetDetails(
         institution: a.institutionName,
       })),
     },
+    humanReview: humanReview[0]
+      ? {
+          verdict: humanReview[0].verdict,
+          impactScore: humanReview[0].impactScore,
+          notes: humanReview[0].notes,
+          updatedAt: humanReview[0].updatedAt,
+        }
+      : null,
     sheetReviews,
   };
 }

@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { getDatasetDetails } from "../services/datasetDetailsService";
+import { upsertHumanReview } from "../../repositories/humanReview/humanReviewRepository";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import { db } from "../../db";
@@ -30,6 +31,56 @@ export async function datasetDetailsRoutes(
       return reply.send(details);
     } catch (error) {
       console.error("Error fetching dataset details:", error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
+
+  fastify.put<{
+    Params: { datasetId: string };
+    Body: { verdict: string; impactScore: number; notes?: string | null };
+  }>("/datasets/:datasetId/human-review", async (request, reply) => {
+    const datasetId = parseInt(request.params.datasetId, 10);
+
+    if (isNaN(datasetId)) {
+      return reply.status(400).send({ error: "Invalid dataset ID" });
+    }
+
+    const { verdict, impactScore, notes } = request.body;
+
+    const validVerdicts = ["true_positive", "false_positive", "ambiguous"];
+    if (!validVerdicts.includes(verdict)) {
+      return reply
+        .status(400)
+        .send({
+          error:
+            "Invalid verdict. Must be one of: true_positive, false_positive, ambiguous",
+        });
+    }
+
+    if (!Number.isInteger(impactScore) || impactScore < 1 || impactScore > 5) {
+      return reply
+        .status(400)
+        .send({
+          error: "Invalid impactScore. Must be an integer between 1 and 5",
+        });
+    }
+
+    try {
+      const review = await upsertHumanReview({
+        dryadDatasetId: datasetId,
+        verdict: verdict as "true_positive" | "false_positive" | "ambiguous",
+        impactScore,
+        notes: notes ?? null,
+      });
+
+      return reply.send({
+        verdict: review.verdict,
+        impactScore: review.impactScore,
+        notes: review.notes,
+        updatedAt: review.updatedAt,
+      });
+    } catch (error) {
+      console.error("Error saving human review:", error);
       return reply.status(500).send({ error: "Internal server error" });
     }
   });
