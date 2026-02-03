@@ -49,20 +49,16 @@ export async function datasetDetailsRoutes(
 
     const validVerdicts = ["true_positive", "false_positive", "ambiguous"];
     if (!validVerdicts.includes(verdict)) {
-      return reply
-        .status(400)
-        .send({
-          error:
-            "Invalid verdict. Must be one of: true_positive, false_positive, ambiguous",
-        });
+      return reply.status(400).send({
+        error:
+          "Invalid verdict. Must be one of: true_positive, false_positive, ambiguous",
+      });
     }
 
     if (!Number.isInteger(impactScore) || impactScore < 1 || impactScore > 5) {
-      return reply
-        .status(400)
-        .send({
-          error: "Invalid impactScore. Must be an integer between 1 and 5",
-        });
+      return reply.status(400).send({
+        error: "Invalid impactScore. Must be an integer between 1 and 5",
+      });
     }
 
     try {

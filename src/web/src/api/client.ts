@@ -3,6 +3,9 @@ import { SortParams } from "../../../shared/sortTypes";
 import { FilterParams, serializeFilters } from "../../../shared/filterTypes";
 import { DatasetDetails, HumanReview } from "../types/dataset";
 import { StatisticsResponse } from "../types/statistics";
+import { PubPeerResponseSchema } from "./pubpeerSchema";
+
+export type PubPeerResult = { url: string; totalComments: number };
 
 const BASE_URL = "/api";
 
@@ -88,6 +91,37 @@ export async function fetchStatistics(): Promise<StatisticsResponse> {
     throw new Error("Failed to fetch statistics");
   }
   return response.json();
+}
+
+export async function fetchPubPeerData(
+  doi: string,
+): Promise<PubPeerResult | null> {
+  try {
+    const bareDoi = doi.replace(/^https?:\/\/doi\.org\//, "");
+
+    const response = await fetch(
+      "https://pubpeer.com/v3/publications?devkey=PubMedChrome",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json;charset=UTF-8" },
+        body: JSON.stringify({
+          browser: "Chrome",
+          dois: [bareDoi],
+          version: "1.6.2",
+        }),
+      },
+    );
+
+    const parsed = PubPeerResponseSchema.safeParse(await response.json());
+    if (!parsed.success) return null;
+
+    const match = parsed.data.feedbacks.find((fb) => fb.id === bareDoi);
+    if (!match) return null;
+
+    return { url: match.url, totalComments: match.total_comments };
+  } catch {
+    return null;
+  }
 }
 
 export async function saveHumanReview(
