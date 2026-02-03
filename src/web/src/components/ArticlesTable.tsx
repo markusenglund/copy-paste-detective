@@ -163,8 +163,8 @@ export function ArticlesTable({
               width="110px"
             />
             <SortableColumnHeader
-              label="Citation %"
-              field={SORT_FIELDS.CITATION_PERCENTILE}
+              label="Citation Score"
+              field={SORT_FIELDS.CITATION_SCORE}
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
@@ -277,9 +277,7 @@ export function ArticlesTable({
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
                 <span className="truncate block">
-                  {article.citationNormalizedPercentile !== null
-                    ? `${(article.citationNormalizedPercentile * 100).toFixed(1)}%`
-                    : "-"}
+                  {article.citationScore.toFixed(2)}
                 </span>
               </td>
               <td className="px-4 py-3 text-sm">

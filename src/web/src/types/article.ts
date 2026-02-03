@@ -9,7 +9,7 @@ export interface ArticleForUpload {
   journalTitle: string | null;
   truePositiveProbability: number | null;
   impactScore: number | null;
-  citationNormalizedPercentile: number | null;
+  citationScore: number;
   subfield: string | null;
   countryCode: string | null;
   pdfFilename: string | null;

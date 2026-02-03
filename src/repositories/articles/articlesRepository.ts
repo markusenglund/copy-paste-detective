@@ -219,7 +219,7 @@ export interface DashboardArticle {
   journalTitle: string | null;
   truePositiveProbability: number | null;
   impactScore: number | null;
-  citationNormalizedPercentile: number | null;
+  citationScore: number;
   subfield: string | null;
   countryCode: string | null;
   pdfFilename: string | null;
@@ -259,6 +259,11 @@ export async function getDashboardArticles(
     .groupBy(aiReviewResults.dryadDatasetId)
     .as("max_scores");
 
+  const citationScoreExpr =
+    sql<number>`(${articles.numCitations} / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0))) + COALESCE(${journals.sjrScore}, 0.0)`.as(
+      "citationScore",
+    );
+
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const getSortColumn = () => {
     switch (sortParams.sortBy) {
@@ -270,8 +275,8 @@ export async function getDashboardArticles(
         return articles.publicationDate;
       case SORT_FIELDS.CITATIONS:
         return articles.numCitations;
-      case SORT_FIELDS.CITATION_PERCENTILE:
-        return articles.citationNormalizedPercentile;
+      case SORT_FIELDS.CITATION_SCORE:
+        return citationScoreExpr;
       default:
         return maxScoresSubquery.maxTruePositiveProbability;
     }
@@ -316,7 +321,7 @@ export async function getDashboardArticles(
       journalTitle: journals.title,
       truePositiveProbability: maxScoresSubquery.maxTruePositiveProbability,
       impactScore: maxScoresSubquery.maxImpactScore,
-      citationNormalizedPercentile: articles.citationNormalizedPercentile,
+      citationScore: citationScoreExpr,
       subfield: articles.subfield,
       countryCode: institutions.countryCode,
       pdfFilename: pdfFiles.filename,

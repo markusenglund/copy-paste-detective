@@ -6,7 +6,7 @@ export const SORT_FIELDS = {
   IMPACT: "impact",
   PUBLISHED: "published",
   CITATIONS: "citations",
-  CITATION_PERCENTILE: "citationPercentile",
+  CITATION_SCORE: "citationScore",
 } as const;
 
 export const SORT_ORDERS = {
