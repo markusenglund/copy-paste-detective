@@ -18,6 +18,7 @@ import {
   desc,
   asc,
   gt,
+  gte,
   SQL,
 } from "drizzle-orm";
 import { DownloadStatus } from "../../db/shared/enums";
@@ -302,6 +303,12 @@ export async function getDashboardArticles(
         filterConditions.push(isNotNull(pdfFiles.filename));
       } else if (filter.option === "not-available") {
         filterConditions.push(isNull(pdfFiles.filename));
+      }
+    } else if (filter.key === FILTER_KEYS.MIN_IMPACT_SCORE) {
+      if (filter.minScore !== null) {
+        filterConditions.push(
+          gte(maxScoresSubquery.maxImpactScore, filter.minScore),
+        );
       }
     }
   }

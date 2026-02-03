@@ -22,12 +22,18 @@ export function FilterPanel({
     (f) => f.key === FILTER_KEYS.PDF_AVAILABILITY,
   );
 
+  const minImpactScoreFilter = filterParams.filters.find(
+    (f) => f.key === FILTER_KEYS.MIN_IMPACT_SCORE,
+  );
+
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
   const pdfAvailabilityOption = pdfAvailabilityFilter?.option ?? "all";
+  const minImpactScore = minImpactScoreFilter?.minScore ?? null;
 
   const activeFilterCount =
     (isHighProbabilityEnabled ? 1 : 0) +
-    (pdfAvailabilityOption !== "all" ? 1 : 0);
+    (pdfAvailabilityOption !== "all" ? 1 : 0) +
+    (minImpactScore !== null ? 1 : 0);
 
   const handleHighProbabilityChange = (enabled: boolean): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
@@ -43,6 +49,16 @@ export function FilterPanel({
     const updatedFilters = filterParams.filters.map((filter) =>
       filter.key === FILTER_KEYS.PDF_AVAILABILITY
         ? { ...filter, option }
+        : filter,
+    );
+
+    onFilterChange({ filters: updatedFilters });
+  };
+
+  const handleMinImpactScoreChange = (value: number | null): void => {
+    const updatedFilters = filterParams.filters.map((filter) =>
+      filter.key === FILTER_KEYS.MIN_IMPACT_SCORE
+        ? { ...filter, minScore: value }
         : filter,
     );
 
@@ -105,6 +121,27 @@ export function FilterPanel({
               />
               <span>Not available</span>
             </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 font-medium">
+              Min Impact:
+            </span>
+            <select
+              value={minImpactScore ?? ""}
+              onChange={(e) =>
+                handleMinImpactScoreChange(
+                  e.target.value === "" ? null : parseInt(e.target.value, 10),
+                )
+              }
+              className="text-sm text-gray-700 border border-gray-300 rounded bg-white px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All</option>
+              <option value={1}>None (1)</option>
+              <option value={2}>Low (2)</option>
+              <option value={3}>Medium (3)</option>
+              <option value={4}>High (4)</option>
+              <option value={5}>Severe (5)</option>
+            </select>
           </div>
         </div>
       </div>

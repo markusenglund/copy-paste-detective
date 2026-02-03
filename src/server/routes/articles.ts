@@ -14,6 +14,7 @@ import {
   HighProbabilityFilter,
   PdfAvailabilityFilter,
   PdfAvailabilityOption,
+  MinImpactScoreFilter,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -68,6 +69,17 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
         option,
       };
       filters.push(pdfAvailabilityFilter);
+    }
+
+    const minImpactScoreParam =
+      queryParams[`filter_${FILTER_KEYS.MIN_IMPACT_SCORE}`];
+    if (minImpactScoreParam !== undefined) {
+      const parsed = parseInt(minImpactScoreParam, 10);
+      const minImpactScoreFilter: MinImpactScoreFilter = {
+        key: FILTER_KEYS.MIN_IMPACT_SCORE,
+        minScore: !isNaN(parsed) && parsed >= 1 && parsed <= 5 ? parsed : null,
+      };
+      filters.push(minImpactScoreFilter);
     }
 
     const filterParams: FilterParams = { filters };

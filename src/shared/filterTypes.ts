@@ -1,6 +1,7 @@
 export const FILTER_KEYS = {
   HIGH_PROBABILITY: "highProbability",
   PDF_AVAILABILITY: "pdfAvailability",
+  MIN_IMPACT_SCORE: "minImpactScore",
 } as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS];
@@ -18,7 +19,15 @@ export interface PdfAvailabilityFilter {
   option: PdfAvailabilityOption;
 }
 
-export type FilterConfig = HighProbabilityFilter | PdfAvailabilityFilter;
+export interface MinImpactScoreFilter {
+  key: typeof FILTER_KEYS.MIN_IMPACT_SCORE;
+  minScore: number | null;
+}
+
+export type FilterConfig =
+  | HighProbabilityFilter
+  | PdfAvailabilityFilter
+  | MinImpactScoreFilter;
 
 export interface FilterParams {
   filters: FilterConfig[];
@@ -34,6 +43,10 @@ export const DEFAULT_FILTERS: FilterParams = {
     {
       key: FILTER_KEYS.PDF_AVAILABILITY,
       option: "all",
+    },
+    {
+      key: FILTER_KEYS.MIN_IMPACT_SCORE,
+      minScore: null,
     },
   ],
 };
@@ -52,6 +65,10 @@ export function serializeFilters(
       params[`filter_${filter.key}`] = filter.enabled.toString();
     } else if (filter.key === FILTER_KEYS.PDF_AVAILABILITY) {
       params[`filter_${filter.key}`] = filter.option;
+    } else if (filter.key === FILTER_KEYS.MIN_IMPACT_SCORE) {
+      if (filter.minScore !== null) {
+        params[`filter_${filter.key}`] = filter.minScore.toString();
+      }
     }
   }
 
@@ -99,6 +116,21 @@ export function deserializeFilters(
       option: "all",
     });
   }
+
+  const minImpactScoreParam = searchParams.get(
+    `filter_${FILTER_KEYS.MIN_IMPACT_SCORE}`,
+  );
+  const parsedMinImpactScore =
+    minImpactScoreParam !== null ? parseInt(minImpactScoreParam, 10) : NaN;
+  filters.push({
+    key: FILTER_KEYS.MIN_IMPACT_SCORE,
+    minScore:
+      !isNaN(parsedMinImpactScore) &&
+      parsedMinImpactScore >= 1 &&
+      parsedMinImpactScore <= 5
+        ? parsedMinImpactScore
+        : null,
+  });
 
   return { filters };
 }
