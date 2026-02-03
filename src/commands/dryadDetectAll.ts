@@ -74,6 +74,13 @@ program
 
     const dbMutex = new Mutex();
 
+    const statusCounts: Record<string, number> = {
+      not_flagged_for_review: 0,
+      reviewed_by_ai: 0,
+      flagged_for_review: 0,
+      failed: 0,
+    };
+
     await pMap(
       downloadedDatasets.slice(0, numDatasetsToAnalyze),
       async (dataset, i) => {
@@ -158,11 +165,13 @@ program
               dataset.extId,
               "not_flagged_for_review",
             );
+            statusCounts.not_flagged_for_review++;
             logger.info(
               `[${i}] Dataset ${dataset.extId} analyzed - no suspicious findings requiring AI review.`,
             );
           } else if (aiReviewCompleted) {
             await updateDatasetAnalysisStatus(dataset.extId, "reviewed_by_ai");
+            statusCounts.reviewed_by_ai++;
             logger.info(
               `[${i}] Dataset ${dataset.extId} analyzed and AI review completed.`,
             );
@@ -172,6 +181,7 @@ program
               dataset.extId,
               "flagged_for_review",
             );
+            statusCounts.flagged_for_review++;
             logger.info(
               `[${i}] Dataset ${dataset.extId} flagged for AI review but review incomplete.`,
             );
@@ -181,10 +191,19 @@ program
             `[i=${i}] Error analyzing dataset extId=${dataset.extId}: ${error}`,
           );
           await updateDatasetAnalysisStatus(dataset.extId, "failed");
+          statusCounts.failed++;
           logger.info(`[i=${i}] Dataset ${dataset.extId} marked as failed.`);
         }
       },
       { concurrency: 5 },
+    );
+
+    const total = Object.values(statusCounts).reduce((sum, n) => sum + n, 0);
+    logger.info(
+      `Done. ${total} dataset(s) processed: ` +
+        Object.entries(statusCounts)
+          .map(([status, count]) => `${status}: ${count}`)
+          .join(", "),
     );
 
     await closeDb();
