@@ -9,11 +9,39 @@ import {
   Article,
 } from "./schema";
 import { processInBatches } from "../../utils/batch";
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  isNotNull,
+  isNull,
+  sql,
+  desc,
+  asc,
+  gt,
+  SQL,
+} from "drizzle-orm";
 import { DownloadStatus } from "../../db/shared/enums";
-import { AI_REVIEW_MIN_DATE } from "../aiReviewResults/aiReviewResultsRepository";
+import {
+  AI_REVIEW_MIN_DATE,
+  PDF_REVIEW_MIN_DATE,
+} from "../aiReviewResults/aiReviewResultsRepository";
 import { dryadDatasets } from "../datasets/schema";
 import { pdfFiles } from "../pdfFiles/schema";
+import { journals } from "../journals/schema";
+import { aiReviewResults } from "../aiReviewResults/schema";
+import { aiPdfReviewResults } from "../aiPdfReviewResults/schema";
+import { institutions } from "../institutions/schema";
+import {
+  SortParams,
+  SORT_FIELDS,
+  SORT_ORDERS,
+  DEFAULT_SORT,
+} from "../../shared/sortTypes";
+import {
+  FilterParams,
+  FILTER_KEYS,
+  DEFAULT_FILTERS,
+} from "../../shared/filterTypes";
 
 const BATCH_SIZE = 500;
 
@@ -178,4 +206,144 @@ export async function updateArticlePdfDownloadStatus(
       updatedTimestamp: new Date(),
     })
     .where(eq(articles.id, articleId));
+}
+
+export interface DashboardArticle {
+  id: number;
+  doi: string | null;
+  title: string;
+  fullPdfUrl: string | null;
+  publicationDate: string | null;
+  numCitations: number;
+  pdfDownloadStatus: string | null;
+  journalTitle: string | null;
+  truePositiveProbability: number | null;
+  impactScore: number | null;
+  citationNormalizedPercentile: number | null;
+  subfield: string | null;
+  countryCode: string | null;
+  pdfFilename: string | null;
+  pdfFileSize: number | null;
+  dryadDatasetId: number | null;
+}
+
+export async function getDashboardArticles(
+  sortParams: SortParams = DEFAULT_SORT,
+  filterParams: FilterParams = DEFAULT_FILTERS,
+): Promise<DashboardArticle[]> {
+  const maxScoresSubquery = db
+    .select({
+      dryadDatasetId: aiReviewResults.dryadDatasetId,
+      maxTruePositiveProbability:
+        sql<number>`MAX(${aiReviewResults.truePositiveProbability})`.as(
+          "max_true_positive_probability",
+        ),
+      maxImpactScore: sql<number>`MAX(${aiPdfReviewResults.impactScore})`.as(
+        "max_impact_score",
+      ),
+    })
+    .from(aiReviewResults)
+    .leftJoin(
+      aiPdfReviewResults,
+      and(
+        eq(aiPdfReviewResults.aiReviewResultId, aiReviewResults.id),
+        gt(aiPdfReviewResults.createdAt, PDF_REVIEW_MIN_DATE),
+      ),
+    )
+    .where(
+      and(
+        eq(aiReviewResults.isLatestReview, true),
+        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
+      ),
+    )
+    .groupBy(aiReviewResults.dryadDatasetId)
+    .as("max_scores");
+
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  const getSortColumn = () => {
+    switch (sortParams.sortBy) {
+      case SORT_FIELDS.PROBABILITY:
+        return maxScoresSubquery.maxTruePositiveProbability;
+      case SORT_FIELDS.IMPACT:
+        return maxScoresSubquery.maxImpactScore;
+      case SORT_FIELDS.PUBLISHED:
+        return articles.publicationDate;
+      case SORT_FIELDS.CITATIONS:
+        return articles.numCitations;
+      case SORT_FIELDS.CITATION_PERCENTILE:
+        return articles.citationNormalizedPercentile;
+      default:
+        return maxScoresSubquery.maxTruePositiveProbability;
+    }
+  };
+
+  const sortColumn = getSortColumn();
+  const orderByClause =
+    sortParams.sortOrder === SORT_ORDERS.DESC
+      ? desc(sortColumn)
+      : asc(sortColumn);
+
+  const filterConditions: SQL[] = [];
+
+  for (const filter of filterParams.filters) {
+    if (filter.key === FILTER_KEYS.HIGH_PROBABILITY) {
+      if (filter.enabled) {
+        filterConditions.push(
+          gt(maxScoresSubquery.maxTruePositiveProbability, filter.threshold),
+        );
+      }
+    } else if (filter.key === FILTER_KEYS.PDF_AVAILABILITY) {
+      if (filter.option === "available") {
+        filterConditions.push(isNotNull(pdfFiles.filename));
+      } else if (filter.option === "not-available") {
+        filterConditions.push(isNull(pdfFiles.filename));
+      }
+    }
+  }
+
+  const whereClause =
+    filterConditions.length > 0 ? and(...filterConditions) : undefined;
+
+  let query = db
+    .select({
+      id: articles.id,
+      doi: articles.doi,
+      title: articles.title,
+      fullPdfUrl: articles.fullPdfUrl,
+      publicationDate: articles.publicationDate,
+      numCitations: articles.numCitations,
+      pdfDownloadStatus: articles.pdfDownloadStatus,
+      journalTitle: journals.title,
+      truePositiveProbability: maxScoresSubquery.maxTruePositiveProbability,
+      impactScore: maxScoresSubquery.maxImpactScore,
+      citationNormalizedPercentile: articles.citationNormalizedPercentile,
+      subfield: articles.subfield,
+      countryCode: institutions.countryCode,
+      pdfFilename: pdfFiles.filename,
+      pdfFileSize: pdfFiles.size,
+      dryadDatasetId: articles.dryadDatasetId,
+    })
+    .from(articles)
+    .leftJoin(journals, eq(articles.journalId, journals.id))
+    .leftJoin(
+      articleAuthors,
+      and(
+        eq(articleAuthors.articleId, articles.id),
+        eq(articleAuthors.authorPosition, "first"),
+      ),
+    )
+    .leftJoin(institutions, eq(articleAuthors.institutionId, institutions.id))
+    .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
+    .innerJoin(
+      maxScoresSubquery,
+      eq(maxScoresSubquery.dryadDatasetId, articles.dryadDatasetId),
+    );
+
+  if (whereClause) {
+    query = query.where(whereClause) as typeof query;
+  }
+
+  const result = await query.orderBy(orderByClause);
+
+  return result;
 }

@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { getArticlesForManualUpload } from "../services/articlesService";
+import { getDashboardArticles } from "../../repositories/articles/articlesRepository";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import {
@@ -72,7 +72,7 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
 
     const filterParams: FilterParams = { filters };
 
-    const articles = await getArticlesForManualUpload(sortParams, filterParams);
+    const articles = await getDashboardArticles(sortParams, filterParams);
     return reply.send({ articles });
   });
 

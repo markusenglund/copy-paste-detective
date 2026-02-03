@@ -84,7 +84,11 @@ export async function downloadPdf({
 
   // Validate Content-Type header
   const contentType = response.headers.get("content-type");
-  if (contentType && !contentType.includes("application/pdf") && !contentType.includes("application/octet-stream")) {
+  if (
+    contentType &&
+    !contentType.includes("application/pdf") &&
+    !contentType.includes("application/octet-stream")
+  ) {
     throw new Error(
       `Invalid Content-Type for article ${articleId} PDF: expected "application/pdf", got "${contentType}"`,
     );
