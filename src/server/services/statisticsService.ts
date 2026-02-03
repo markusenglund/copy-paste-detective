@@ -12,6 +12,8 @@ import {
 } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
 import type { StatisticsResponse } from "../../shared/statisticsTypes";
 
+export const SUSPICION_THRESHOLD = 0.5;
+
 export async function getStatistics(): Promise<StatisticsResponse> {
   // 1. Get basic counts in parallel
   const [totalDatasetsResult, totalExcelFilesResult, totalArticlesResult] =
@@ -104,7 +106,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       and(
         eq(aiReviewResults.isLatestReview, true),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-        gt(aiReviewResults.truePositiveProbability, 0.5),
+        gt(aiReviewResults.truePositiveProbability, SUSPICION_THRESHOLD),
       ),
     );
 
@@ -177,9 +179,10 @@ export async function getStatistics(): Promise<StatisticsResponse> {
               pdfr.ai_review_result_id = arr.id
               AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
             )
-            WHERE arr.dryad_dataset_id = ${dryadDatasets.id}
+            WHERE arr.dryad_dataset_id = dryad_datasets.id
               AND arr.is_latest_review = true
-              AND arr.true_positive_probability > 0.5
+              AND arr.true_positive_probability > ${SUSPICION_THRESHOLD}
+              AND arr.created_at > ${AI_REVIEW_MIN_DATE}
               AND pdfr.id IS NULL
           )`,
         ),
