@@ -39,6 +39,27 @@ function getImpactScoreLabel(score: number | null): string {
   return "-";
 }
 
+function getVerdictLabel(verdict: string): string {
+  if (verdict === "true_positive") return "True Positive";
+  if (verdict === "false_positive") return "False Positive";
+  if (verdict === "ambiguous") return "Ambiguous";
+  return "-";
+}
+
+function getVerdictColor(verdict: string): string {
+  if (verdict === "true_positive") return "text-red-600 font-bold";
+  if (verdict === "false_positive") return "text-green-600 font-semibold";
+  if (verdict === "ambiguous") return "text-gray-500";
+  return "";
+}
+
+function getVerdictEmoji(verdict: string): string {
+  if (verdict === "true_positive") return "❌";
+  if (verdict === "false_positive") return "✅";
+  if (verdict === "ambiguous") return "❓";
+  return "";
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString();
@@ -146,6 +167,12 @@ export function ArticlesTable({
               onSort={onSort}
               width="110px"
             />
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "150px" }}
+            >
+              Human Review
+            </th>
             <SortableColumnHeader
               label="Published"
               field={SORT_FIELDS.PUBLISHED}
@@ -266,6 +293,25 @@ export function ArticlesTable({
                 <span className="truncate block">
                   {getImpactScoreLabel(article.impactScore)}
                 </span>
+              </td>
+              <td className="px-4 py-3 text-sm">
+                {article.humanReviewVerdict !== null ? (
+                  <div className="flex flex-col">
+                    <span
+                      className={getVerdictColor(article.humanReviewVerdict)}
+                    >
+                      {getVerdictEmoji(article.humanReviewVerdict)}{" "}
+                      {getVerdictLabel(article.humanReviewVerdict)}
+                    </span>
+                    <span
+                      className={`text-xs ${getImpactScoreColor(article.humanReviewImpactScore)}`}
+                    >
+                      {getImpactScoreLabel(article.humanReviewImpactScore)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-gray-400">No review</span>
+                )}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
                 <span className="truncate block">

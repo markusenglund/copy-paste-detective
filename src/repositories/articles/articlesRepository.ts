@@ -28,6 +28,7 @@ import {
 } from "../aiReviewResults/aiReviewResultsRepository";
 import { dryadDatasets } from "../datasets/schema";
 import { pdfFiles } from "../pdfFiles/schema";
+import { humanReviews } from "../humanReview/schema";
 import { journals } from "../journals/schema";
 import { aiReviewResults } from "../aiReviewResults/schema";
 import { aiPdfReviewResults } from "../aiPdfReviewResults/schema";
@@ -226,6 +227,8 @@ export interface DashboardArticle {
   pdfFilename: string | null;
   pdfFileSize: number | null;
   dryadDatasetId: number | null;
+  humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
+  humanReviewImpactScore: number | null;
 }
 
 export async function getDashboardArticles(
@@ -334,6 +337,8 @@ export async function getDashboardArticles(
       pdfFilename: pdfFiles.filename,
       pdfFileSize: pdfFiles.size,
       dryadDatasetId: articles.dryadDatasetId,
+      humanReviewVerdict: humanReviews.verdict,
+      humanReviewImpactScore: humanReviews.impactScore,
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))
@@ -346,6 +351,10 @@ export async function getDashboardArticles(
     )
     .leftJoin(institutions, eq(articleAuthors.institutionId, institutions.id))
     .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
+    .leftJoin(
+      humanReviews,
+      eq(humanReviews.dryadDatasetId, articles.dryadDatasetId),
+    )
     .innerJoin(
       maxScoresSubquery,
       eq(maxScoresSubquery.dryadDatasetId, articles.dryadDatasetId),

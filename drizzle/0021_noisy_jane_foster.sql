@@ -1,0 +1,1 @@
+ALTER TABLE "human_reviews" ADD CONSTRAINT "human_reviews_dryad_dataset_id_unique" UNIQUE("dryad_dataset_id");
