@@ -9,10 +9,11 @@ import {
   Article,
 } from "./schema";
 import { processInBatches } from "../../utils/batch";
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { DownloadStatus } from "../../db/shared/enums";
 import { AI_REVIEW_MIN_DATE } from "../aiReviewResults/aiReviewResultsRepository";
 import { dryadDatasets } from "../datasets/schema";
+import { pdfFiles } from "../pdfFiles/schema";
 
 const BATCH_SIZE = 500;
 
@@ -134,12 +135,31 @@ export async function getArticlesForPdfDownload(
   }
 
   return db
-    .select()
+    .select({
+      id: articles.id,
+      doi: articles.doi,
+      extOpenalexId: articles.extOpenalexId,
+      title: articles.title,
+      publicationDate: articles.publicationDate,
+      numCitations: articles.numCitations,
+      citationNormalizedPercentile: articles.citationNormalizedPercentile,
+      citedByPercentileYearMin: articles.citedByPercentileYearMin,
+      fullPdfUrl: articles.fullPdfUrl,
+      pdfDownloadStatus: articles.pdfDownloadStatus,
+      field: articles.field,
+      subfield: articles.subfield,
+      topic: articles.topic,
+      dryadDatasetId: articles.dryadDatasetId,
+      journalId: articles.journalId,
+      createdTimestamp: articles.createdTimestamp,
+      updatedTimestamp: articles.updatedTimestamp,
+    })
     .from(articles)
+    .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
     .where(
       and(
         isNotNull(articles.fullPdfUrl),
-        eq(articles.pdfDownloadStatus, "not_started"),
+        isNull(pdfFiles.id),
         isNotNull(articles.dryadDatasetId),
         hasSuspiciousReview,
       ),

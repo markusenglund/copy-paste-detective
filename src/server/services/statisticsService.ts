@@ -170,7 +170,6 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       .where(
         and(
           inArray(dryadDatasets.id, suspiciousDatasetIds),
-          inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
           // At least one latest review for this dataset has no PDF review
           sql`EXISTS (
             SELECT 1
