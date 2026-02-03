@@ -260,7 +260,7 @@ export async function getDashboardArticles(
     .as("max_scores");
 
   const citationScoreExpr =
-    sql<number>`(${articles.numCitations} / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0))) + COALESCE(${journals.sjrScore}, 0.0)`.as(
+    sql<number>`(COALESCE(${journals.sjrScore}, 0.0) + ${articles.numCitations}) / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0))`.as(
       "citationScore",
     );
 

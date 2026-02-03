@@ -142,6 +142,12 @@ export function DatasetDetails(): React.ReactElement {
               {data.article.citations}
             </div>
           )}
+          {data.article.citationScore !== null && (
+            <div>
+              <span className="font-semibold">Citation Score:</span>{" "}
+              {data.article.citationScore.toFixed(2)}
+            </div>
+          )}
           <div>
             <span className="font-semibold">Dryad external ID:</span>{" "}
             {data.dataset.extId}

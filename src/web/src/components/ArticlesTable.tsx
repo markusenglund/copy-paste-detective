@@ -163,7 +163,7 @@ export function ArticlesTable({
               width="110px"
             />
             <SortableColumnHeader
-              label="Citation Score"
+              label="Cit Score"
               field={SORT_FIELDS.CITATION_SCORE}
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}

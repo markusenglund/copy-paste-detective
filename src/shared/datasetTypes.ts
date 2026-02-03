@@ -35,6 +35,7 @@ export interface ArticleInfo {
   title: string;
   doi: string | null;
   citations: number | null;
+  citationScore: number | null;
   publicationDate: Date | null;
   journalName: string | null;
   journalSjrScore: number | null;

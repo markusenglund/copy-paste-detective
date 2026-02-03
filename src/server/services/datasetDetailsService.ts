@@ -93,6 +93,10 @@ export async function getDatasetDetails(
       articleTitle: articles.title,
       articleDoi: articles.doi,
       citations: articles.numCitations,
+      citationScore:
+        sql<number>`(COALESCE(${journals.sjrScore}, 0.0) + ${articles.numCitations}) / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0))`.as(
+          "citationScore",
+        ),
       publicationDate: articles.publicationDate,
       journalName: journals.title,
       journalSjrScore: journals.sjrScore,
@@ -195,6 +199,7 @@ export async function getDatasetDetails(
       title: info.articleTitle || "Unknown Article",
       doi: info.articleDoi,
       citations: info.citations,
+      citationScore: info.citationScore,
       publicationDate: info.publicationDate
         ? new Date(info.publicationDate)
         : null,
