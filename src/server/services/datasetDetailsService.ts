@@ -7,7 +7,10 @@ import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema
 import { authors } from "../../repositories/authors/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
-import { humanReviews } from "../../repositories/humanReview/schema";
+import {
+  humanReviews,
+  prosecutionStatuses,
+} from "../../repositories/humanReview/schema";
 import { eq, sql, and, gt } from "drizzle-orm";
 import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
 import { DatasetDetails } from "../../shared/datasetTypes";
@@ -116,8 +119,19 @@ export async function getDatasetDetails(
 
   // Get human review if it exists
   const humanReview = await db
-    .select()
+    .select({
+      verdict: humanReviews.verdict,
+      impactScore: humanReviews.impactScore,
+      notes: humanReviews.notes,
+      updatedAt: humanReviews.updatedAt,
+      prosecutionStatusId: humanReviews.prosecutionStatusId,
+      caseName: prosecutionStatuses.name,
+    })
     .from(humanReviews)
+    .leftJoin(
+      prosecutionStatuses,
+      eq(prosecutionStatuses.id, humanReviews.prosecutionStatusId),
+    )
     .where(eq(humanReviews.dryadDatasetId, datasetId))
     .limit(1);
 
@@ -228,6 +242,8 @@ export async function getDatasetDetails(
           impactScore: humanReview[0].impactScore,
           notes: humanReview[0].notes,
           updatedAt: humanReview[0].updatedAt,
+          prosecutionStatusId: humanReview[0].prosecutionStatusId,
+          caseName: humanReview[0].caseName,
         }
       : null,
     sheetReviews,

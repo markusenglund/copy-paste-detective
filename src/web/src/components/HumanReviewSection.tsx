@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { HumanReview } from "../types/dataset";
-import { saveHumanReview } from "../api/client";
+import {
+  saveHumanReview,
+  fetchProsecutionStatuses,
+  createProsecutionStatus,
+  ProsecutionStatus,
+} from "../api/client";
 
 function getVerdictLabel(verdict: string): string {
   if (verdict === "true_positive") return "True Positive";
@@ -59,12 +64,32 @@ export function HumanReviewSection({
   const [formNotes, setFormNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formProsecutionStatusId, setFormProsecutionStatusId] =
+    useState("not_started");
+  const [prosecutionStatuses, setProsecutionStatuses] = useState<
+    ProsecutionStatus[]
+  >([]);
+  const [isCreatingStatus, setIsCreatingStatus] = useState(false);
+  const [newStatusName, setNewStatusName] = useState("");
+  const [statusError, setStatusError] = useState<string | null>(null);
 
-  const enterEditMode = (): void => {
+  const enterEditMode = async (): Promise<void> => {
     setFormVerdict(currentReview?.verdict ?? "true_positive");
     setFormImpactScore(currentReview?.impactScore ?? 3);
     setFormNotes(currentReview?.notes ?? "");
+    setFormProsecutionStatusId(
+      currentReview?.prosecutionStatusId ?? "not_started",
+    );
+    setIsCreatingStatus(false);
+    setNewStatusName("");
+    setStatusError(null);
     setError(null);
+    try {
+      const statuses = await fetchProsecutionStatuses();
+      setProsecutionStatuses(statuses);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch statuses");
+    }
     setIsEditing(true);
   };
 
@@ -76,6 +101,7 @@ export function HumanReviewSection({
         verdict: formVerdict,
         impactScore: formImpactScore,
         notes: formNotes || null,
+        prosecutionStatusId: formProsecutionStatusId,
       });
       setCurrentReview(updated);
       setIsEditing(false);
@@ -83,6 +109,25 @@ export function HumanReviewSection({
       setError(err instanceof Error ? err.message : "Failed to save review");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCreateStatus = async (): Promise<void> => {
+    if (!newStatusName.trim()) {
+      setStatusError("Status name cannot be empty");
+      return;
+    }
+    try {
+      const created = await createProsecutionStatus(newStatusName.trim());
+      setProsecutionStatuses((prev) => [...prev, created]);
+      setFormProsecutionStatusId(created.id);
+      setIsCreatingStatus(false);
+      setNewStatusName("");
+      setStatusError(null);
+    } catch (err) {
+      setStatusError(
+        err instanceof Error ? err.message : "Failed to create status",
+      );
     }
   };
 
@@ -102,6 +147,12 @@ export function HumanReviewSection({
             <span className="font-semibold">Impact Score:</span>{" "}
             <span className={getImpactScoreColor(currentReview.impactScore)}>
               {getImpactScoreLabel(currentReview.impactScore)}
+            </span>
+          </div>
+          <div>
+            <span className="font-semibold">Case:</span>{" "}
+            <span className="text-gray-700">
+              {currentReview.caseName ?? "-"}
             </span>
           </div>
           {currentReview.notes && (
@@ -171,6 +222,70 @@ export function HumanReviewSection({
             <option value={4}>4 - High</option>
             <option value={5}>5 - Severe</option>
           </select>
+        </div>
+        <div>
+          <label className="block font-semibold mb-1">Prosecution Status</label>
+          <div className="flex gap-2">
+            <select
+              value={formProsecutionStatusId}
+              onChange={(e) => setFormProsecutionStatusId(e.target.value)}
+              className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+            >
+              {prosecutionStatuses.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            {!isCreatingStatus && (
+              <button
+                onClick={() => {
+                  setIsCreatingStatus(true);
+                  setNewStatusName("");
+                  setStatusError(null);
+                }}
+                className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+              >
+                +
+              </button>
+            )}
+          </div>
+          {isCreatingStatus && (
+            <div className="flex gap-2 mt-2">
+              <input
+                type="text"
+                value={newStatusName}
+                onChange={(e) => setNewStatusName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void handleCreateStatus();
+                  }
+                }}
+                placeholder="New status name"
+                className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+              />
+              <button
+                onClick={() => void handleCreateStatus()}
+                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => {
+                  setIsCreatingStatus(false);
+                  setNewStatusName("");
+                  setStatusError(null);
+                }}
+                className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {statusError && (
+            <p className="text-red-600 text-sm mt-1">{statusError}</p>
+          )}
         </div>
         <div>
           <label className="block font-semibold mb-1">Notes</label>

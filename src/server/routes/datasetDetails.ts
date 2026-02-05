@@ -1,6 +1,13 @@
 import { FastifyInstance } from "fastify";
 import { getDatasetDetails } from "../services/datasetDetailsService";
-import { upsertHumanReview } from "../../repositories/humanReview/humanReviewRepository";
+import {
+  upsertHumanReview,
+  getAllProsecutionStatuses,
+  insertProsecutionStatus,
+  getProsecutionStatusById,
+} from "../../repositories/humanReview/humanReviewRepository";
+import { prosecutionStatuses } from "../../repositories/humanReview/schema";
+import { toSnakeCase } from "../../utils/slugify";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import { db } from "../../db";
@@ -37,7 +44,12 @@ export async function datasetDetailsRoutes(
 
   fastify.put<{
     Params: { datasetId: string };
-    Body: { verdict: string; impactScore: number; notes?: string | null };
+    Body: {
+      verdict: string;
+      impactScore: number;
+      notes?: string | null;
+      prosecutionStatusId: string;
+    };
   }>("/datasets/:datasetId/human-review", async (request, reply) => {
     const datasetId = parseInt(request.params.datasetId, 10);
 
@@ -45,7 +57,7 @@ export async function datasetDetailsRoutes(
       return reply.status(400).send({ error: "Invalid dataset ID" });
     }
 
-    const { verdict, impactScore, notes } = request.body;
+    const { verdict, impactScore, notes, prosecutionStatusId } = request.body;
 
     const validVerdicts = ["true_positive", "false_positive", "ambiguous"];
     if (!validVerdicts.includes(verdict)) {
@@ -61,19 +73,34 @@ export async function datasetDetailsRoutes(
       });
     }
 
+    if (!prosecutionStatusId || typeof prosecutionStatusId !== "string") {
+      return reply.status(400).send({
+        error: "Invalid prosecutionStatusId. Must be a non-empty string",
+      });
+    }
+
     try {
       const review = await upsertHumanReview({
         dryadDatasetId: datasetId,
         verdict: verdict as "true_positive" | "false_positive" | "ambiguous",
         impactScore,
         notes: notes ?? null,
+        prosecutionStatusId,
       });
+
+      const prosecutionStatus = await db
+        .select({ name: prosecutionStatuses.name })
+        .from(prosecutionStatuses)
+        .where(eq(prosecutionStatuses.id, review.prosecutionStatusId))
+        .limit(1);
 
       return reply.send({
         verdict: review.verdict,
         impactScore: review.impactScore,
         notes: review.notes,
         updatedAt: review.updatedAt,
+        prosecutionStatusId: review.prosecutionStatusId,
+        caseName: prosecutionStatus[0]?.name ?? null,
       });
     } catch (error) {
       console.error("Error saving human review:", error);
@@ -238,4 +265,51 @@ export async function datasetDetailsRoutes(
       }
     },
   );
+
+  fastify.get("/prosecution-statuses", async (_request, reply) => {
+    try {
+      const statuses = await getAllProsecutionStatuses();
+      return reply.send({ statuses });
+    } catch (error) {
+      console.error("Error fetching prosecution statuses:", error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
+
+  fastify.post<{
+    Body: { name: string };
+  }>("/prosecution-statuses", async (request, reply) => {
+    const { name } = request.body;
+
+    if (!name || typeof name !== "string" || name.trim() === "") {
+      return reply
+        .status(400)
+        .send({ error: "Name must be a non-empty string" });
+    }
+
+    const id = toSnakeCase(name.trim());
+
+    if (id === "") {
+      return reply
+        .status(400)
+        .send({
+          error: "Name must contain at least one alphanumeric character",
+        });
+    }
+
+    try {
+      const existing = await getProsecutionStatusById(id);
+      if (existing) {
+        return reply
+          .status(409)
+          .send({ error: `Prosecution status "${id}" already exists` });
+      }
+
+      const status = await insertProsecutionStatus({ id, name: name.trim() });
+      return reply.send({ status: { id: status.id, name: status.name } });
+    } catch (error) {
+      console.error("Error creating prosecution status:", error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  });
 }

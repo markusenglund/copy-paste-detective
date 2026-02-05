@@ -51,6 +51,8 @@ export interface HumanReview {
   impactScore: number;
   notes: string | null;
   updatedAt: Date;
+  prosecutionStatusId: string;
+  caseName: string | null;
 }
 
 export interface DatasetDetails {

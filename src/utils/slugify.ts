@@ -10,6 +10,18 @@ export function slugify(str: string): string {
     .replace(/--+/g, "-");
 }
 
+export function toSnakeCase(str: string): string {
+  return str
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^\w]+/g, "")
+    .replace(/_+/g, "_");
+}
+
 export function slugifyTruncated(text: string, maxChars: number): string {
   const slugified = slugify(text);
   const words = slugified.split("-");
