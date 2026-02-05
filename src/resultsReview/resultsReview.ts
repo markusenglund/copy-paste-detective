@@ -207,18 +207,26 @@ ${wrapInCodeBlock(truncatedDataDescription)}
 `;
 }
 
+function getColumnName(column: CategorizedColumn): string {
+  if (column.name) {
+    return column.name;
+  }
+  const fallback = `[Unnamed column] ID='${column.id}' (index=${column.index})`;
+  return fallback;
+}
+
 function createSpecialColumnsSection(
   categorizedColumns: CategorizedColumn[],
 ): string {
   const lnColumns = categorizedColumns
     .filter((column) => column.isLnArgument)
-    .map(({ name }) => name);
+    .map(getColumnName);
   const sqrtColumns = categorizedColumns
     .filter((column) => column.isSquareRoot)
-    .map(({ name }) => name);
+    .map(getColumnName);
   const fractionColumns = categorizedColumns
     .filter((column) => column.isRepeatingFraction)
-    .map(({ name }) => name);
+    .map(getColumnName);
 
   let section = ``;
 
@@ -254,7 +262,6 @@ The following columns are log-transformed:
 ${lnColumns.map((columnName) => "- " + columnName).join("\n")}
 `;
   }
-
   return section;
 }
 
