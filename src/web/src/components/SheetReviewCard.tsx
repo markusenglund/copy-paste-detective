@@ -6,6 +6,22 @@ import {
   getHighlightedExcelDownloadUrl,
 } from "../api/client";
 
+function getImpactScoreLabel(score: number): string {
+  if (score === 5) return "Severe";
+  if (score === 4) return "High";
+  if (score === 3) return "Medium";
+  if (score === 2) return "Low";
+  if (score === 1) return "None";
+  return "-";
+}
+
+function getImpactScoreColor(score: number): string {
+  if (score === 5) return "text-red-600 font-bold";
+  if (score === 4) return "text-orange-500 font-semibold";
+  if (score === 3) return "text-yellow-600";
+  return "text-gray-600";
+}
+
 interface SheetReviewCardProps {
   datasetId: number;
   sheetName: string;
@@ -52,6 +68,21 @@ export function SheetReviewCard({
           </>
         )}
       </p>
+
+      <div className="flex flex-wrap gap-4 text-sm mb-4">
+        <span className="bg-gray-100 rounded px-3 py-1">
+          <strong>True Positive Probability:</strong>{" "}
+          {(aiReview.truePositiveProbability * 100).toFixed(0)}%
+        </span>
+        {pdfReview && (
+          <span
+            className={`bg-gray-100 rounded px-3 py-1 ${getImpactScoreColor(pdfReview.impactScore)}`}
+          >
+            <strong>Impact Score:</strong> {pdfReview.impactScore} (
+            {getImpactScoreLabel(pdfReview.impactScore)})
+          </span>
+        )}
+      </div>
 
       <CollapsibleSection title="AI Review Prompt" defaultOpen={false}>
         <MarkdownRenderer content={aiReview.prompt} />
