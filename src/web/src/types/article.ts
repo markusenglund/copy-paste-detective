@@ -17,4 +17,5 @@ export interface ArticleForUpload {
   dryadDatasetId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
+  caseName: string | null;
 }

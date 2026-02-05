@@ -173,6 +173,12 @@ export function ArticlesTable({
             >
               Human Review
             </th>
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "120px" }}
+            >
+              Case
+            </th>
             <SortableColumnHeader
               label="Published"
               field={SORT_FIELDS.PUBLISHED}
@@ -349,6 +355,13 @@ export function ArticlesTable({
                   </div>
                 ) : (
                   <span className="text-gray-400">No review</span>
+                )}
+              </td>
+              <td className="px-4 py-3 text-sm">
+                {article.caseName ? (
+                  <span className="truncate block">{article.caseName}</span>
+                ) : (
+                  <span className="text-gray-400">-</span>
                 )}
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">

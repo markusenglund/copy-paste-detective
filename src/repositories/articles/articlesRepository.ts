@@ -28,7 +28,7 @@ import {
 } from "../aiReviewResults/aiReviewResultsRepository";
 import { dryadDatasets } from "../datasets/schema";
 import { pdfFiles } from "../pdfFiles/schema";
-import { humanReviews } from "../humanReview/schema";
+import { humanReviews, prosecutionStatuses } from "../humanReview/schema";
 import { journals } from "../journals/schema";
 import { aiReviewResults } from "../aiReviewResults/schema";
 import { aiPdfReviewResults } from "../aiPdfReviewResults/schema";
@@ -229,6 +229,7 @@ export interface DashboardArticle {
   dryadDatasetId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
+  caseName: string | null;
 }
 
 export async function getDashboardArticles(
@@ -339,6 +340,7 @@ export async function getDashboardArticles(
       dryadDatasetId: articles.dryadDatasetId,
       humanReviewVerdict: humanReviews.verdict,
       humanReviewImpactScore: humanReviews.impactScore,
+      caseName: prosecutionStatuses.name,
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))
@@ -354,6 +356,10 @@ export async function getDashboardArticles(
     .leftJoin(
       humanReviews,
       eq(humanReviews.dryadDatasetId, articles.dryadDatasetId),
+    )
+    .leftJoin(
+      prosecutionStatuses,
+      eq(prosecutionStatuses.id, humanReviews.prosecutionStatusId),
     )
     .innerJoin(
       maxScoresSubquery,

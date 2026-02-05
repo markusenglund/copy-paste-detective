@@ -26,6 +26,10 @@ export const humanReviews = pgTable(
     verdict: verdictEnum("verdict").notNull(),
     impactScore: integer("impact_score").notNull(),
     notes: text("notes"),
+    prosecutionStatusId: text("prosecution_status_id")
+      .notNull()
+      .references(() => prosecutionStatuses.id)
+      .default("not_started"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -33,3 +37,8 @@ export const humanReviews = pgTable(
     index("idx_human_reviews_dryad_dataset_id").on(table.dryadDatasetId),
   ],
 );
+
+export const prosecutionStatuses = pgTable("prosecution_statuses", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+});
