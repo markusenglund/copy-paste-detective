@@ -202,12 +202,17 @@ export async function datasetDetailsRoutes(
 
         const { extId } = result[0];
 
+        // Convert .xls to .xlsx — highlighted files are always .xlsx
+        const highlightedFilename = filename.endsWith(".xls")
+          ? filename.replace(".xls", ".xlsx")
+          : filename;
+
         // Construct file path for highlighted file
         const filePath = join(
           process.cwd(),
           "highlighted-output",
           extId.toString(),
-          filename,
+          highlightedFilename,
         );
 
         // Check if file exists on disk
@@ -216,7 +221,7 @@ export async function datasetDetailsRoutes(
         }
 
         // Determine MIME type based on file extension
-        const extension = filename.toLowerCase().split(".").pop();
+        const extension = highlightedFilename.toLowerCase().split(".").pop();
         const mimeType =
           extension === "xlsx"
             ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

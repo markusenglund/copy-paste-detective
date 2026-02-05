@@ -153,11 +153,14 @@ export async function getDatasetDetails(
   // Check which files have highlighted versions
   const highlightedFileIds = new Set<number>();
   for (const file of excelFiles) {
+    const highlightedFilename = file.fileName.endsWith(".xls")
+      ? file.fileName.replace(".xls", ".xlsx")
+      : file.fileName;
     const highlightedPath = join(
       process.cwd(),
       "highlighted-output",
       info.extId.toString(),
-      file.fileName,
+      highlightedFilename,
     );
     if (existsSync(highlightedPath)) {
       highlightedFileIds.add(file.id);
