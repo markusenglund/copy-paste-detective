@@ -131,7 +131,7 @@ export function ArticlesTable({
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               style={{ width: "120px" }}
             >
-              PDF URL
+              Links
             </th>
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -234,19 +234,57 @@ export function ArticlesTable({
                 )}
               </td>
               <td className="px-4 py-3 text-sm">
-                {article.fullPdfUrl ? (
-                  <a
-                    href={article.fullPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 hover:underline truncate block"
-                    title="Open PDF"
-                  >
-                    Open PDF
-                  </a>
-                ) : (
-                  <span className="text-gray-400 truncate block">No URL</span>
-                )}
+                <div className="flex flex-col gap-1">
+                  {article.doi && (
+                    <a
+                      href={`https://doi.org/${article.doi}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      Article
+                      <svg
+                        className="w-3.5 h-3.5 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </a>
+                  )}
+                  {article.fullPdfUrl && (
+                    <a
+                      href={article.fullPdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      PDF
+                      <svg
+                        className="w-3.5 h-3.5 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </a>
+                  )}
+                  {!article.doi && !article.fullPdfUrl && (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3 text-sm">
                 {article.journalTitle ? (
