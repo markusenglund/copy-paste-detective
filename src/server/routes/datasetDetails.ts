@@ -290,11 +290,9 @@ export async function datasetDetailsRoutes(
     const id = toSnakeCase(name.trim());
 
     if (id === "") {
-      return reply
-        .status(400)
-        .send({
-          error: "Name must contain at least one alphanumeric character",
-        });
+      return reply.status(400).send({
+        error: "Name must contain at least one alphanumeric character",
+      });
     }
 
     try {

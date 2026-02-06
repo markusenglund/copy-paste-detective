@@ -7,6 +7,7 @@ import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema
 import { authors } from "../../repositories/authors/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
+import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import {
   humanReviews,
   prosecutionStatuses,
@@ -104,10 +105,13 @@ export async function getDatasetDetails(
       publicationDate: articles.publicationDate,
       journalName: journals.title,
       journalSjrScore: journals.sjrScore,
+      pdfFilename: pdfFiles.filename,
+      pdfFileSize: pdfFiles.size,
     })
     .from(dryadDatasets)
     .leftJoin(articles, eq(dryadDatasets.id, articles.dryadDatasetId))
     .leftJoin(journals, eq(articles.journalId, journals.id))
+    .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
     .where(eq(dryadDatasets.id, datasetId))
     .limit(1);
 
@@ -230,6 +234,8 @@ export async function getDatasetDetails(
         : null,
       journalName: info.journalName,
       journalSjrScore: info.journalSjrScore,
+      pdfFilename: info.pdfFilename,
+      pdfFileSize: info.pdfFileSize,
       authors: authorsList.map((a) => ({
         name: a.name,
         position: a.position === "first" ? 1 : a.position === "last" ? 999 : 2,

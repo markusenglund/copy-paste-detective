@@ -39,6 +39,8 @@ export interface ArticleInfo {
   publicationDate: Date | null;
   journalName: string | null;
   journalSjrScore: number | null;
+  pdfFilename: string | null;
+  pdfFileSize: number | null;
   authors: Array<{
     name: string;
     position: number;
