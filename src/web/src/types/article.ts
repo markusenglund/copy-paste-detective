@@ -16,6 +16,7 @@ export interface ArticleForUpload {
   pdfFilename: string | null;
   pdfFileSize: number | null;
   dryadDatasetId: number | null;
+  dryadExtId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
   caseName: string | null;

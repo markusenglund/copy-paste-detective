@@ -228,6 +228,7 @@ export interface DashboardArticle {
   pdfFilename: string | null;
   pdfFileSize: number | null;
   dryadDatasetId: number | null;
+  dryadExtId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
   caseName: string | null;
@@ -344,6 +345,7 @@ export async function getDashboardArticles(
       pdfFilename: pdfFiles.filename,
       pdfFileSize: pdfFiles.size,
       dryadDatasetId: articles.dryadDatasetId,
+      dryadExtId: dryadDatasets.extId,
       humanReviewVerdict: humanReviews.verdict,
       humanReviewImpactScore: humanReviews.impactScore,
       caseName: prosecutionStatuses.name,
@@ -359,6 +361,7 @@ export async function getDashboardArticles(
     )
     .leftJoin(institutions, eq(articleAuthors.institutionId, institutions.id))
     .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
+    .leftJoin(dryadDatasets, eq(articles.dryadDatasetId, dryadDatasets.id))
     .leftJoin(
       humanReviews,
       eq(humanReviews.dryadDatasetId, articles.dryadDatasetId),
