@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   FilterParams,
   FILTER_KEYS,
   PdfAvailabilityOption,
 } from "../../../shared/filterTypes";
+import { fetchAvailableFields } from "../api/client";
 
 interface FilterPanelProps {
   filterParams: FilterParams;
@@ -14,6 +15,14 @@ export function FilterPanel({
   filterParams,
   onFilterChange,
 }: FilterPanelProps): React.ReactElement {
+  const [availableFields, setAvailableFields] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchAvailableFields()
+      .then(setAvailableFields)
+      .catch((err) => console.error("Failed to fetch available fields:", err));
+  }, []);
+
   const highProbabilityFilter = filterParams.filters.find(
     (f) => f.key === FILTER_KEYS.HIGH_PROBABILITY,
   );
@@ -26,14 +35,20 @@ export function FilterPanel({
     (f) => f.key === FILTER_KEYS.MIN_IMPACT_SCORE,
   );
 
+  const fieldFilter = filterParams.filters.find(
+    (f) => f.key === FILTER_KEYS.FIELD,
+  );
+
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
   const pdfAvailabilityOption = pdfAvailabilityFilter?.option ?? "all";
   const minImpactScore = minImpactScoreFilter?.minScore ?? null;
+  const selectedField = fieldFilter?.selectedField ?? null;
 
   const activeFilterCount =
     (isHighProbabilityEnabled ? 1 : 0) +
     (pdfAvailabilityOption !== "all" ? 1 : 0) +
-    (minImpactScore !== null ? 1 : 0);
+    (minImpactScore !== null ? 1 : 0) +
+    (selectedField !== null ? 1 : 0);
 
   const handleHighProbabilityChange = (enabled: boolean): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
@@ -59,6 +74,16 @@ export function FilterPanel({
     const updatedFilters = filterParams.filters.map((filter) =>
       filter.key === FILTER_KEYS.MIN_IMPACT_SCORE
         ? { ...filter, minScore: value }
+        : filter,
+    );
+
+    onFilterChange({ filters: updatedFilters });
+  };
+
+  const handleFieldChange = (value: string | null): void => {
+    const updatedFilters = filterParams.filters.map((filter) =>
+      filter.key === FILTER_KEYS.FIELD
+        ? { ...filter, selectedField: value }
         : filter,
     );
 
@@ -141,6 +166,23 @@ export function FilterPanel({
               <option value={3}>Medium (3)</option>
               <option value={4}>High (4)</option>
               <option value={5}>Severe (5)</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 font-medium">Field:</span>
+            <select
+              value={selectedField ?? ""}
+              onChange={(e) =>
+                handleFieldChange(e.target.value === "" ? null : e.target.value)
+              }
+              className="text-sm text-gray-700 border border-gray-300 rounded bg-white px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All</option>
+              {availableFields.map((field) => (
+                <option key={field} value={field}>
+                  {field}
+                </option>
+              ))}
             </select>
           </div>
         </div>

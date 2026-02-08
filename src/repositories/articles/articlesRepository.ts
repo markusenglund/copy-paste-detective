@@ -315,6 +315,10 @@ export async function getDashboardArticles(
           gte(maxScoresSubquery.maxImpactScore, filter.minScore),
         );
       }
+    } else if (filter.key === FILTER_KEYS.FIELD) {
+      if (filter.selectedField !== null) {
+        filterConditions.push(eq(articles.field, filter.selectedField));
+      }
     }
   }
 
@@ -375,4 +379,14 @@ export async function getDashboardArticles(
   const result = await query.orderBy(orderByClause);
 
   return result;
+}
+
+export async function getAvailableFields(): Promise<string[]> {
+  const result = await db
+    .selectDistinct({ field: articles.field })
+    .from(articles)
+    .where(isNotNull(articles.field))
+    .orderBy(asc(articles.field));
+
+  return result.map((row) => row.field as string);
 }

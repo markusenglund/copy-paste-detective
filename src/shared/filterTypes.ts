@@ -2,6 +2,7 @@ export const FILTER_KEYS = {
   HIGH_PROBABILITY: "highProbability",
   PDF_AVAILABILITY: "pdfAvailability",
   MIN_IMPACT_SCORE: "minImpactScore",
+  FIELD: "field",
 } as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS];
@@ -24,10 +25,16 @@ export interface MinImpactScoreFilter {
   minScore: number | null;
 }
 
+export interface FieldFilter {
+  key: typeof FILTER_KEYS.FIELD;
+  selectedField: string | null;
+}
+
 export type FilterConfig =
   | HighProbabilityFilter
   | PdfAvailabilityFilter
-  | MinImpactScoreFilter;
+  | MinImpactScoreFilter
+  | FieldFilter;
 
 export interface FilterParams {
   filters: FilterConfig[];
@@ -47,6 +54,10 @@ export const DEFAULT_FILTERS: FilterParams = {
     {
       key: FILTER_KEYS.MIN_IMPACT_SCORE,
       minScore: null,
+    },
+    {
+      key: FILTER_KEYS.FIELD,
+      selectedField: null,
     },
   ],
 };
@@ -68,6 +79,10 @@ export function serializeFilters(
     } else if (filter.key === FILTER_KEYS.MIN_IMPACT_SCORE) {
       if (filter.minScore !== null) {
         params[`filter_${filter.key}`] = filter.minScore.toString();
+      }
+    } else if (filter.key === FILTER_KEYS.FIELD) {
+      if (filter.selectedField !== null) {
+        params[`filter_${filter.key}`] = filter.selectedField;
       }
     }
   }
@@ -130,6 +145,12 @@ export function deserializeFilters(
       parsedMinImpactScore <= 5
         ? parsedMinImpactScore
         : null,
+  });
+
+  const fieldParam = searchParams.get(`filter_${FILTER_KEYS.FIELD}`);
+  filters.push({
+    key: FILTER_KEYS.FIELD,
+    selectedField: fieldParam !== null && fieldParam !== "" ? fieldParam : null,
   });
 
   return { filters };

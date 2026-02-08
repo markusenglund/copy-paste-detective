@@ -93,6 +93,15 @@ export async function fetchStatistics(): Promise<StatisticsResponse> {
   return response.json();
 }
 
+export async function fetchAvailableFields(): Promise<string[]> {
+  const response = await fetch(`${BASE_URL}/articles/fields`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch available fields");
+  }
+  const data = await response.json();
+  return data.fields;
+}
+
 export async function fetchPubPeerData(
   doi: string,
 ): Promise<PubPeerResult | null> {

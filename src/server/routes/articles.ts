@@ -1,5 +1,8 @@
 import { FastifyInstance } from "fastify";
-import { getDashboardArticles } from "../../repositories/articles/articlesRepository";
+import {
+  getDashboardArticles,
+  getAvailableFields,
+} from "../../repositories/articles/articlesRepository";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import {
@@ -15,6 +18,7 @@ import {
   PdfAvailabilityFilter,
   PdfAvailabilityOption,
   MinImpactScoreFilter,
+  FieldFilter,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -82,6 +86,15 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
       filters.push(minImpactScoreFilter);
     }
 
+    const fieldParam = queryParams[`filter_${FILTER_KEYS.FIELD}`];
+    if (fieldParam !== undefined) {
+      const fieldFilter: FieldFilter = {
+        key: FILTER_KEYS.FIELD,
+        selectedField: fieldParam !== "" ? fieldParam : null,
+      };
+      filters.push(fieldFilter);
+    }
+
     const filterParams: FilterParams = { filters };
 
     const articles = await getDashboardArticles(sortParams, filterParams);
@@ -104,5 +117,10 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
     // Stream the file
     const stream = createReadStream(pdfPath);
     return reply.type("application/pdf").send(stream);
+  });
+
+  fastify.get("/articles/fields", async (request, reply) => {
+    const fields = await getAvailableFields();
+    return reply.send({ fields });
   });
 }
