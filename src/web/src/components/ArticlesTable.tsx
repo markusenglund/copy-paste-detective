@@ -299,6 +299,8 @@ export function ArticlesTable({
                     title={article.journalTitle}
                   >
                     {article.journalTitle}
+                    {article.journalSjrScore !== null &&
+                      ` (${article.journalSjrScore.toFixed(1)})`}
                   </span>
                 ) : (
                   <span className="text-gray-400">-</span>
@@ -359,7 +361,7 @@ export function ArticlesTable({
               </td>
               <td className="px-4 py-3 text-sm">
                 {article.caseName ? (
-                  <span className="truncate block">{article.caseName}</span>
+                  <span className="break-words block">{article.caseName}</span>
                 ) : (
                   <span className="text-gray-400">-</span>
                 )}

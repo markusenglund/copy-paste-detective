@@ -219,6 +219,7 @@ export interface DashboardArticle {
   numCitations: number;
   pdfDownloadStatus: string | null;
   journalTitle: string | null;
+  journalSjrScore: number | null;
   truePositiveProbability: number | null;
   impactScore: number | null;
   citationScore: number;
@@ -330,6 +331,7 @@ export async function getDashboardArticles(
       numCitations: articles.numCitations,
       pdfDownloadStatus: articles.pdfDownloadStatus,
       journalTitle: journals.title,
+      journalSjrScore: journals.sjrScore,
       truePositiveProbability: maxScoresSubquery.maxTruePositiveProbability,
       impactScore: maxScoresSubquery.maxImpactScore,
       citationScore: citationScoreExpr,

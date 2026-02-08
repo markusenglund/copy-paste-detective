@@ -7,6 +7,7 @@ export interface ArticleForUpload {
   numCitations: number;
   pdfDownloadStatus: string | null;
   journalTitle: string | null;
+  journalSjrScore: number | null;
   truePositiveProbability: number | null;
   impactScore: number | null;
   citationScore: number;
