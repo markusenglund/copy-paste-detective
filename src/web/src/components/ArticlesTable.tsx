@@ -123,6 +123,12 @@ export function ArticlesTable({
           <tr>
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "60px" }}
+            >
+              ID
+            </th>
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               style={{ width: "320px" }}
             >
               Title
@@ -214,6 +220,9 @@ export function ArticlesTable({
         <tbody className="bg-white divide-y divide-gray-200">
           {articles.map((article) => (
             <tr key={article.id} className="hover:bg-gray-50">
+              <td className="px-4 py-3 text-sm text-gray-600">
+                {article.dryadDatasetId ?? "-"}
+              </td>
               <td className="px-4 py-3 text-sm">
                 {article.dryadDatasetId ? (
                   <Link
