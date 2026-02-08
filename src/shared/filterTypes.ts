@@ -3,11 +3,20 @@ export const FILTER_KEYS = {
   PDF_AVAILABILITY: "pdfAvailability",
   MIN_IMPACT_SCORE: "minImpactScore",
   FIELD: "field",
+  REVIEW_STATUS: "reviewStatus",
 } as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS];
 
 export type PdfAvailabilityOption = "all" | "available" | "not-available";
+
+export type ReviewStatusOption =
+  | "all"
+  | "has_review"
+  | "no_review"
+  | "true_positive"
+  | "false_positive"
+  | "ambiguous";
 
 export interface HighProbabilityFilter {
   key: typeof FILTER_KEYS.HIGH_PROBABILITY;
@@ -30,11 +39,17 @@ export interface FieldFilter {
   selectedField: string | null;
 }
 
+export interface ReviewStatusFilter {
+  key: typeof FILTER_KEYS.REVIEW_STATUS;
+  option: ReviewStatusOption;
+}
+
 export type FilterConfig =
   | HighProbabilityFilter
   | PdfAvailabilityFilter
   | MinImpactScoreFilter
-  | FieldFilter;
+  | FieldFilter
+  | ReviewStatusFilter;
 
 export interface FilterParams {
   filters: FilterConfig[];
@@ -58,6 +73,10 @@ export const DEFAULT_FILTERS: FilterParams = {
     {
       key: FILTER_KEYS.FIELD,
       selectedField: null,
+    },
+    {
+      key: FILTER_KEYS.REVIEW_STATUS,
+      option: "all",
     },
   ],
 };
@@ -84,6 +103,8 @@ export function serializeFilters(
       if (filter.selectedField !== null) {
         params[`filter_${filter.key}`] = filter.selectedField;
       }
+    } else if (filter.key === FILTER_KEYS.REVIEW_STATUS) {
+      params[`filter_${filter.key}`] = filter.option;
     }
   }
 
@@ -152,6 +173,32 @@ export function deserializeFilters(
     key: FILTER_KEYS.FIELD,
     selectedField: fieldParam !== null && fieldParam !== "" ? fieldParam : null,
   });
+
+  const reviewStatusParam = searchParams.get(
+    `filter_${FILTER_KEYS.REVIEW_STATUS}`,
+  );
+  const validReviewStatusOptions: ReviewStatusOption[] = [
+    "all",
+    "has_review",
+    "no_review",
+    "true_positive",
+    "false_positive",
+    "ambiguous",
+  ];
+  if (
+    reviewStatusParam !== null &&
+    validReviewStatusOptions.includes(reviewStatusParam as ReviewStatusOption)
+  ) {
+    filters.push({
+      key: FILTER_KEYS.REVIEW_STATUS,
+      option: reviewStatusParam as ReviewStatusOption,
+    });
+  } else {
+    filters.push({
+      key: FILTER_KEYS.REVIEW_STATUS,
+      option: "all",
+    });
+  }
 
   return { filters };
 }

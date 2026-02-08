@@ -19,6 +19,8 @@ import {
   PdfAvailabilityOption,
   MinImpactScoreFilter,
   FieldFilter,
+  ReviewStatusFilter,
+  ReviewStatusOption,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -93,6 +95,28 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
         selectedField: fieldParam !== "" ? fieldParam : null,
       };
       filters.push(fieldFilter);
+    }
+
+    const reviewStatusParam =
+      queryParams[`filter_${FILTER_KEYS.REVIEW_STATUS}`];
+    if (reviewStatusParam !== undefined) {
+      const validOptions: ReviewStatusOption[] = [
+        "all",
+        "has_review",
+        "no_review",
+        "true_positive",
+        "false_positive",
+        "ambiguous",
+      ];
+      const isValid =
+        typeof reviewStatusParam === "string" &&
+        validOptions.includes(reviewStatusParam as ReviewStatusOption);
+
+      const reviewStatusFilter: ReviewStatusFilter = {
+        key: FILTER_KEYS.REVIEW_STATUS,
+        option: isValid ? (reviewStatusParam as ReviewStatusOption) : "all",
+      };
+      filters.push(reviewStatusFilter);
     }
 
     const filterParams: FilterParams = { filters };

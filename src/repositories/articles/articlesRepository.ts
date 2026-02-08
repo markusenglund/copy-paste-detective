@@ -320,6 +320,19 @@ export async function getDashboardArticles(
       if (filter.selectedField !== null) {
         filterConditions.push(eq(articles.field, filter.selectedField));
       }
+    } else if (filter.key === FILTER_KEYS.REVIEW_STATUS) {
+      if (filter.option === "has_review") {
+        filterConditions.push(isNotNull(humanReviews.verdict));
+      } else if (filter.option === "no_review") {
+        filterConditions.push(isNull(humanReviews.verdict));
+      } else if (filter.option === "true_positive") {
+        filterConditions.push(eq(humanReviews.verdict, "true_positive"));
+      } else if (filter.option === "false_positive") {
+        filterConditions.push(eq(humanReviews.verdict, "false_positive"));
+      } else if (filter.option === "ambiguous") {
+        filterConditions.push(eq(humanReviews.verdict, "ambiguous"));
+      }
+      // "all" option adds no condition
     }
   }
 
