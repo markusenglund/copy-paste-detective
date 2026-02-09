@@ -61,7 +61,7 @@ program
 
       // Filter to only suspicious reviews (>50% probability)
       const suspiciousReviews = details.sheetReviews.filter(
-        (r) => r.aiReview.truePositiveProbability > 50,
+        (r) => r.aiReview.truePositiveProbability > 0.5,
       );
 
       if (suspiciousReviews.length === 0) {
