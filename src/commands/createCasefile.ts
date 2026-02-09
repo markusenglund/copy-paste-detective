@@ -4,7 +4,7 @@ import { getDatasetDetails } from "../server/services/datasetDetailsService";
 import { parseIntArgument } from "../utils/command";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
-import { mkdir, copyFile, readdir } from "node:fs/promises";
+import { mkdir, copyFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { writeFile } from "node:fs/promises";
@@ -59,7 +59,21 @@ program
         logger.warn("No PDF filename available for this dataset");
       }
 
-      // B. Copy original Excel files
+      // Filter to only suspicious reviews (>50% probability)
+      const suspiciousReviews = details.sheetReviews.filter(
+        (r) => r.aiReview.truePositiveProbability > 50,
+      );
+
+      if (suspiciousReviews.length === 0) {
+        logger.warn("No reviews with >50% suspicion probability found");
+      }
+
+      // Collect unique Excel filenames from suspicious reviews
+      const suspiciousExcelFiles = new Set(
+        suspiciousReviews.map((r) => r.excelFileName),
+      );
+
+      // B. Copy original Excel files (only for suspicious sheets)
       const originalDir = join(
         process.cwd(),
         "data",
@@ -68,35 +82,43 @@ program
         extId.toString(),
       );
       if (existsSync(originalDir)) {
-        const files = await readdir(originalDir);
-        for (const file of files) {
-          await copyFile(join(originalDir, file), join(outputDir, file));
-          logger.info(`Copied original Excel: ${file}`);
+        for (const file of suspiciousExcelFiles) {
+          const sourcePath = join(originalDir, file);
+          if (existsSync(sourcePath)) {
+            await copyFile(sourcePath, join(outputDir, file));
+            logger.info(`Copied original Excel: ${file}`);
+          } else {
+            logger.warn(`Original Excel file not found: ${file}`);
+          }
         }
       } else {
         logger.warn(`No original files folder found for extId ${extId}`);
       }
 
-      // C. Copy highlighted Excel files (prefixed to avoid collisions with originals)
+      // C. Copy highlighted Excel files (only for suspicious sheets)
       const highlightedDir = join(
         process.cwd(),
         "highlighted-output",
         extId.toString(),
       );
       if (existsSync(highlightedDir)) {
-        const files = await readdir(highlightedDir);
-        const xlsxFiles = files.filter((f) => f.endsWith(".xlsx"));
-        for (const file of xlsxFiles) {
-          const destName = `highlighted-${file}`;
-          await copyFile(join(highlightedDir, file), join(outputDir, destName));
-          logger.info(`Copied highlighted Excel: ${destName}`);
+        for (const originalName of suspiciousExcelFiles) {
+          const highlightedName = originalName.endsWith(".xls")
+            ? originalName.replace(".xls", ".xlsx")
+            : originalName;
+          const sourcePath = join(highlightedDir, highlightedName);
+          if (existsSync(sourcePath)) {
+            const destName = `highlighted-${highlightedName}`;
+            await copyFile(sourcePath, join(outputDir, destName));
+            logger.info(`Copied highlighted Excel: ${destName}`);
+          }
         }
       } else {
         logger.warn(`No highlighted output folder found for extId ${extId}`);
       }
 
-      // C. Generate review .md files
-      for (const review of details.sheetReviews) {
+      // D. Generate review and prompt .md files (only for suspicious sheets)
+      for (const review of suspiciousReviews) {
         const sanitizedFileName = review.excelFileName.replace(
           /[^a-zA-Z0-9._-]/g,
           "_",
@@ -105,11 +127,13 @@ program
           /[^a-zA-Z0-9._-]/g,
           "_",
         );
-        const mdFilename = `review-${sanitizedFileName}-${sanitizedSheetName}.md`;
+        const baseName = `${sanitizedFileName}-${sanitizedSheetName}`;
+
+        // Review file
+        const mdFilename = `review-${baseName}.md`;
         const mdPath = join(outputDir, mdFilename);
 
         let content = `# AI Review: ${review.excelFileName} - ${review.sheetName}\n\n`;
-
         content += `- **Model:** ${review.aiReview.model}\n`;
         content += `- **Suspicion probability:** ${review.aiReview.truePositiveProbability}\n`;
         content += `- **Date:** ${formatDate(review.aiReview.createdAt)}\n\n`;
@@ -125,9 +149,15 @@ program
 
         await writeFile(mdPath, content);
         logger.info(`Generated review: ${mdFilename}`);
+
+        // Prompt file
+        const promptFilename = `prompt-${baseName}.md`;
+        const promptPath = join(outputDir, promptFilename);
+        await writeFile(promptPath, review.aiReview.prompt);
+        logger.info(`Generated prompt: ${promptFilename}`);
       }
 
-      // D. Generate info.md
+      // E. Generate info.md
       const infoPath = join(outputDir, "info.md");
       let info = `- **Title:** ${details.article.title}\n\n`;
       info += `- **Journal:** ${details.article.journalName ?? "Unknown"}\n`;
