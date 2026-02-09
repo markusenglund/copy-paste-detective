@@ -21,6 +21,7 @@ const colorClasses: Record<string, string> = {
 
 const barColorClasses: Record<string, string> = {
   blue: "#3b82f6",
+  "light-blue": "#93c5fd",
   green: "#10b981",
   "muted-green": "#7da87a",
   yellow: "#f59e0b",

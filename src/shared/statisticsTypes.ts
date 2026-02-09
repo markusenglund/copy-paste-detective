@@ -44,11 +44,21 @@ export interface StatisticsResponse {
     pdfReviewedLowImpact: number; // impactScore <= 2
   };
 
+  // Step 5: Human Review Status (for high-impact PDF-reviewed datasets)
+  humanReviewStatus: {
+    truePositiveHighImpact: number; // human impactScore >= 3
+    truePositiveLowImpact: number; // human impactScore <= 2
+    ambiguous: number;
+    falsePositive: number;
+    notReviewed: number;
+  };
+
   // Percentages for funnel visualization
   percentages: {
     downloadedOfIndexed: number;
     analyzedOfDownloaded: number;
     aiReviewedOfAnalyzed: number; // Step 3: suspicious / flagged
     pdfReviewedOfSuspicious: number; // Step 4: highImpact / suspicious
+    humanConfirmedOfHighImpact: number; // Step 5: truePositive / pdfReviewedHighImpact
   };
 }

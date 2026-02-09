@@ -97,7 +97,7 @@ const OpenAccessSchema = z.object({
   is_oa: z.boolean(),
   oa_status: z.string(),
   oa_url: z.string().nullable(),
-  any_repository_has_fulltext: z.boolean(),
+  any_repository_has_fulltext: z.boolean().nullable(),
 });
 
 const TopicSchema = z.object({

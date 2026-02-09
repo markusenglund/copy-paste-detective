@@ -5,6 +5,7 @@ import { articles } from "../../repositories/articles/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema";
+import { humanReviews } from "../../repositories/humanReview/schema";
 import { sql, eq, and, gt, inArray } from "drizzle-orm";
 import {
   AI_REVIEW_MIN_DATE,
@@ -130,6 +131,11 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   let pdfDownloadedNotReviewed = 0;
   let pdfReviewedHighImpact = 0;
   let pdfReviewedLowImpact = 0;
+  let humanReviewTruePositiveHighImpact = 0;
+  let humanReviewTruePositiveLowImpact = 0;
+  let humanReviewAmbiguous = 0;
+  let humanReviewFalsePositive = 0;
+  let humanReviewNotReviewed = 0;
 
   if (totalSuspicious > 0) {
     // Count suspicious datasets with NO article at all
@@ -234,12 +240,47 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       .groupBy(dryadDatasets.id);
 
     // Split by impact score
-    pdfReviewedHighImpact = impactBreakdownResult.filter(
+    const highImpactDatasets = impactBreakdownResult.filter(
       (r) => r.maxImpact >= 3,
-    ).length;
+    );
+    pdfReviewedHighImpact = highImpactDatasets.length;
     pdfReviewedLowImpact = impactBreakdownResult.filter(
       (r) => r.maxImpact <= 2,
     ).length;
+
+    // 6. Step 5: Human Review Status (for high-impact datasets)
+    if (highImpactDatasets.length > 0) {
+      const highImpactDatasetIds = highImpactDatasets.map((r) => r.datasetId);
+
+      const humanReviewResults = await db
+        .select({
+          verdict: humanReviews.verdict,
+          impactScore: humanReviews.impactScore,
+        })
+        .from(humanReviews)
+        .where(inArray(humanReviews.dryadDatasetId, highImpactDatasetIds));
+
+      for (const row of humanReviewResults) {
+        if (row.verdict === "true_positive") {
+          if (row.impactScore >= 3) {
+            humanReviewTruePositiveHighImpact++;
+          } else {
+            humanReviewTruePositiveLowImpact++;
+          }
+        } else if (row.verdict === "ambiguous") {
+          humanReviewAmbiguous++;
+        } else if (row.verdict === "false_positive") {
+          humanReviewFalsePositive++;
+        }
+      }
+
+      humanReviewNotReviewed =
+        pdfReviewedHighImpact -
+        (humanReviewTruePositiveHighImpact +
+          humanReviewTruePositiveLowImpact +
+          humanReviewAmbiguous +
+          humanReviewFalsePositive);
+    }
   }
 
   const pdfPipeline = {
@@ -250,7 +291,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     pdfReviewedLowImpact,
   };
 
-  // 6. Calculate percentages for funnel visualization
+  // 7. Calculate percentages for funnel visualization
   const totalFlagged = flagged + reviewedByAi + pdfReviewedByAi;
   const percentages = {
     downloadedOfIndexed:
@@ -267,6 +308,20 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       totalSuspicious > 0
         ? Math.round((pdfReviewedHighImpact / totalSuspicious) * 100)
         : 0,
+    humanConfirmedOfHighImpact:
+      pdfReviewedHighImpact > 0
+        ? Math.round(
+            (humanReviewTruePositiveHighImpact / pdfReviewedHighImpact) * 100,
+          )
+        : 0,
+  };
+
+  const humanReviewStatus = {
+    truePositiveHighImpact: humanReviewTruePositiveHighImpact,
+    truePositiveLowImpact: humanReviewTruePositiveLowImpact,
+    ambiguous: humanReviewAmbiguous,
+    falsePositive: humanReviewFalsePositive,
+    notReviewed: humanReviewNotReviewed,
   };
 
   return {
@@ -277,6 +332,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     analysisStatus,
     aiReviewStatus,
     pdfPipeline,
+    humanReviewStatus,
     percentages,
   };
 }

@@ -192,6 +192,46 @@ export function Statistics(): React.ReactElement {
                       },
                     ]}
                   />
+
+                  {/* Step 5: Confirmed by a human */}
+                  <FunnelStep
+                    title="Step 5: Confirmed by a human"
+                    count={statistics.humanReviewStatus.truePositiveHighImpact}
+                    total={statistics.pdfPipeline.pdfReviewedHighImpact}
+                    percentage={
+                      statistics.percentages.humanConfirmedOfHighImpact
+                    }
+                    color="blue"
+                    breakdown={[
+                      {
+                        label: "True positive - high impact",
+                        count:
+                          statistics.humanReviewStatus.truePositiveHighImpact,
+                        color: "blue",
+                      },
+                      {
+                        label: "True positive - low impact",
+                        count:
+                          statistics.humanReviewStatus.truePositiveLowImpact,
+                        color: "light-blue",
+                      },
+                      {
+                        label: "Ambiguous",
+                        count: statistics.humanReviewStatus.ambiguous,
+                        color: "gray",
+                      },
+                      {
+                        label: "False positive",
+                        count: statistics.humanReviewStatus.falsePositive,
+                        color: "muted-green",
+                      },
+                      {
+                        label: "Not yet reviewed",
+                        count: statistics.humanReviewStatus.notReviewed,
+                        color: "light-gray",
+                      },
+                    ]}
+                  />
                 </div>
               </section>
 
