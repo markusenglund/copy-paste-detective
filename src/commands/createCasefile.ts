@@ -59,7 +59,25 @@ program
         logger.warn("No PDF filename available for this dataset");
       }
 
-      // B. Copy highlighted Excel files
+      // B. Copy original Excel files
+      const originalDir = join(
+        process.cwd(),
+        "data",
+        "dryad",
+        "files",
+        extId.toString(),
+      );
+      if (existsSync(originalDir)) {
+        const files = await readdir(originalDir);
+        for (const file of files) {
+          await copyFile(join(originalDir, file), join(outputDir, file));
+          logger.info(`Copied original Excel: ${file}`);
+        }
+      } else {
+        logger.warn(`No original files folder found for extId ${extId}`);
+      }
+
+      // C. Copy highlighted Excel files (prefixed to avoid collisions with originals)
       const highlightedDir = join(
         process.cwd(),
         "highlighted-output",
@@ -69,8 +87,9 @@ program
         const files = await readdir(highlightedDir);
         const xlsxFiles = files.filter((f) => f.endsWith(".xlsx"));
         for (const file of xlsxFiles) {
-          await copyFile(join(highlightedDir, file), join(outputDir, file));
-          logger.info(`Copied highlighted Excel: ${file}`);
+          const destName = `highlighted-${file}`;
+          await copyFile(join(highlightedDir, file), join(outputDir, destName));
+          logger.info(`Copied highlighted Excel: ${destName}`);
         }
       } else {
         logger.warn(`No highlighted output folder found for extId ${extId}`);
