@@ -40,7 +40,7 @@ export function SheetReviewCard({
   pdfReview,
 }: SheetReviewCardProps): React.ReactElement {
   const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleString();
+    return new Date(date).toISOString().split("T")[0];
   };
 
   return (

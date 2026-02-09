@@ -164,7 +164,7 @@ export function HumanReviewSection({
           <div className="md:col-span-2">
             <span className="font-semibold">Last updated:</span>{" "}
             <span className="text-gray-600">
-              {new Date(currentReview.updatedAt).toLocaleDateString()}
+              {new Date(currentReview.updatedAt).toISOString().split("T")[0]}
             </span>
           </div>
         </div>

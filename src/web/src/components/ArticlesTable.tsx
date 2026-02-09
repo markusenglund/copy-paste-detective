@@ -62,7 +62,7 @@ function getVerdictEmoji(verdict: string): string {
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString();
+  return new Date(dateStr).toISOString().split("T")[0];
 }
 
 function getCountryFlag(countryCode: string): string {

@@ -91,7 +91,7 @@ export function DatasetDetails(): React.ReactElement {
 
   const formatDate = (date: Date | null): string => {
     if (!date) return "N/A";
-    return new Date(date).toLocaleDateString();
+    return new Date(date).toISOString().split("T")[0];
   };
 
   return (
