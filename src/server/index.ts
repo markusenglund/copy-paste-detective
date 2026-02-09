@@ -10,6 +10,7 @@ import { statisticsRoutes } from "./routes/statistics";
 
 const fastify = Fastify({
   logger: true,
+  maxParamLength: 500,
 });
 
 async function start(): Promise<void> {
