@@ -62,6 +62,7 @@ function deduplicateSortedSequences(
   for (const repeatedSequence of repeatedSequences) {
     if (previousSequence) {
       const isSameSequence =
+        previousSequence.sheetName === repeatedSequence.sheetName &&
         previousSequence.adjustedSequenceEntropyScore ===
           repeatedSequence.adjustedSequenceEntropyScore &&
         previousSequence.values.every((value, index) => {
