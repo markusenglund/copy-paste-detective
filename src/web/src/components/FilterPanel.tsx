@@ -5,7 +5,11 @@ import {
   PdfAvailabilityOption,
   ReviewStatusOption,
 } from "../../../shared/filterTypes";
-import { fetchAvailableFields } from "../api/client";
+import {
+  fetchAvailableFields,
+  fetchProsecutionStatuses,
+  ProsecutionStatus,
+} from "../api/client";
 
 interface FilterPanelProps {
   filterParams: FilterParams;
@@ -17,11 +21,19 @@ export function FilterPanel({
   onFilterChange,
 }: FilterPanelProps): React.ReactElement {
   const [availableFields, setAvailableFields] = useState<string[]>([]);
+  const [prosecutionStatuses, setProsecutionStatuses] = useState<
+    ProsecutionStatus[]
+  >([]);
 
   useEffect(() => {
     fetchAvailableFields()
       .then(setAvailableFields)
       .catch((err) => console.error("Failed to fetch available fields:", err));
+    fetchProsecutionStatuses()
+      .then(setProsecutionStatuses)
+      .catch((err) =>
+        console.error("Failed to fetch prosecution statuses:", err),
+      );
   }, []);
 
   const highProbabilityFilter = filterParams.filters.find(
@@ -36,6 +48,10 @@ export function FilterPanel({
     (f) => f.key === FILTER_KEYS.MIN_IMPACT_SCORE,
   );
 
+  const minHumanReviewImpactScoreFilter = filterParams.filters.find(
+    (f) => f.key === FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE,
+  );
+
   const fieldFilter = filterParams.filters.find(
     (f) => f.key === FILTER_KEYS.FIELD,
   );
@@ -44,18 +60,27 @@ export function FilterPanel({
     (f) => f.key === FILTER_KEYS.REVIEW_STATUS,
   );
 
+  const caseStatusFilter = filterParams.filters.find(
+    (f) => f.key === FILTER_KEYS.CASE_STATUS,
+  );
+
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
   const pdfAvailabilityOption = pdfAvailabilityFilter?.option ?? "all";
   const minImpactScore = minImpactScoreFilter?.minScore ?? null;
+  const minHumanReviewImpactScore =
+    minHumanReviewImpactScoreFilter?.minScore ?? null;
   const selectedField = fieldFilter?.selectedField ?? null;
   const reviewStatusOption = reviewStatusFilter?.option ?? "all";
+  const selectedCaseStatusId = caseStatusFilter?.selectedStatusId ?? null;
 
   const activeFilterCount =
     (isHighProbabilityEnabled ? 1 : 0) +
     (pdfAvailabilityOption !== "all" ? 1 : 0) +
     (minImpactScore !== null ? 1 : 0) +
+    (minHumanReviewImpactScore !== null ? 1 : 0) +
     (selectedField !== null ? 1 : 0) +
-    (reviewStatusOption !== "all" ? 1 : 0);
+    (reviewStatusOption !== "all" ? 1 : 0) +
+    (selectedCaseStatusId !== null ? 1 : 0);
 
   const handleHighProbabilityChange = (enabled: boolean): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
@@ -87,6 +112,18 @@ export function FilterPanel({
     onFilterChange({ filters: updatedFilters });
   };
 
+  const handleMinHumanReviewImpactScoreChange = (
+    value: number | null,
+  ): void => {
+    const updatedFilters = filterParams.filters.map((filter) =>
+      filter.key === FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE
+        ? { ...filter, minScore: value }
+        : filter,
+    );
+
+    onFilterChange({ filters: updatedFilters });
+  };
+
   const handleFieldChange = (value: string | null): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
       filter.key === FILTER_KEYS.FIELD
@@ -101,6 +138,16 @@ export function FilterPanel({
     const updatedFilters = filterParams.filters.map((filter) =>
       filter.key === FILTER_KEYS.REVIEW_STATUS
         ? { ...filter, option: value }
+        : filter,
+    );
+
+    onFilterChange({ filters: updatedFilters });
+  };
+
+  const handleCaseStatusChange = (value: string | null): void => {
+    const updatedFilters = filterParams.filters.map((filter) =>
+      filter.key === FILTER_KEYS.CASE_STATUS
+        ? { ...filter, selectedStatusId: value }
         : filter,
     );
 
@@ -186,6 +233,27 @@ export function FilterPanel({
             </select>
           </div>
           <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 font-medium">
+              Min HR Impact:
+            </span>
+            <select
+              value={minHumanReviewImpactScore ?? ""}
+              onChange={(e) =>
+                handleMinHumanReviewImpactScoreChange(
+                  e.target.value === "" ? null : parseInt(e.target.value, 10),
+                )
+              }
+              className="text-sm text-gray-700 border border-gray-300 rounded bg-white px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All</option>
+              <option value={1}>None (1)</option>
+              <option value={2}>Low (2)</option>
+              <option value={3}>Medium (3)</option>
+              <option value={4}>High (4)</option>
+              <option value={5}>Severe (5)</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
             <span className="text-sm text-gray-700 font-medium">Field:</span>
             <select
               value={selectedField ?? ""}
@@ -219,6 +287,27 @@ export function FilterPanel({
               <option value="true_positive">True Positive</option>
               <option value="false_positive">False Positive</option>
               <option value="ambiguous">Ambiguous</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 font-medium">
+              Case Status:
+            </span>
+            <select
+              value={selectedCaseStatusId ?? ""}
+              onChange={(e) =>
+                handleCaseStatusChange(
+                  e.target.value === "" ? null : e.target.value,
+                )
+              }
+              className="text-sm text-gray-700 border border-gray-300 rounded bg-white px-2 py-1 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All</option>
+              {prosecutionStatuses.map((status) => (
+                <option key={status.id} value={status.id}>
+                  {status.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>

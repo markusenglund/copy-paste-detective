@@ -270,7 +270,7 @@ export function DatasetDetails(): React.ReactElement {
         initialReview={data.humanReview}
       />
 
-      <h2 className="text-2xl font-bold mb-4">Sheet Reviews</h2>
+      <h2 className="text-2xl font-bold mb-4">AI Reviews</h2>
       {data.sheetReviews.map((review, idx) => (
         <SheetReviewCard
           key={idx}

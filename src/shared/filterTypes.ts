@@ -2,8 +2,10 @@ export const FILTER_KEYS = {
   HIGH_PROBABILITY: "highProbability",
   PDF_AVAILABILITY: "pdfAvailability",
   MIN_IMPACT_SCORE: "minImpactScore",
+  MIN_HUMAN_REVIEW_IMPACT_SCORE: "minHumanReviewImpactScore",
   FIELD: "field",
   REVIEW_STATUS: "reviewStatus",
+  CASE_STATUS: "caseStatus",
 } as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS];
@@ -34,6 +36,11 @@ export interface MinImpactScoreFilter {
   minScore: number | null;
 }
 
+export interface MinHumanReviewImpactScoreFilter {
+  key: typeof FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE;
+  minScore: number | null;
+}
+
 export interface FieldFilter {
   key: typeof FILTER_KEYS.FIELD;
   selectedField: string | null;
@@ -44,12 +51,19 @@ export interface ReviewStatusFilter {
   option: ReviewStatusOption;
 }
 
+export interface CaseStatusFilter {
+  key: typeof FILTER_KEYS.CASE_STATUS;
+  selectedStatusId: string | null;
+}
+
 export type FilterConfig =
   | HighProbabilityFilter
   | PdfAvailabilityFilter
   | MinImpactScoreFilter
+  | MinHumanReviewImpactScoreFilter
   | FieldFilter
-  | ReviewStatusFilter;
+  | ReviewStatusFilter
+  | CaseStatusFilter;
 
 export interface FilterParams {
   filters: FilterConfig[];
@@ -71,12 +85,20 @@ export const DEFAULT_FILTERS: FilterParams = {
       minScore: null,
     },
     {
+      key: FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE,
+      minScore: null,
+    },
+    {
       key: FILTER_KEYS.FIELD,
       selectedField: null,
     },
     {
       key: FILTER_KEYS.REVIEW_STATUS,
       option: "all",
+    },
+    {
+      key: FILTER_KEYS.CASE_STATUS,
+      selectedStatusId: null,
     },
   ],
 };
@@ -99,12 +121,20 @@ export function serializeFilters(
       if (filter.minScore !== null) {
         params[`filter_${filter.key}`] = filter.minScore.toString();
       }
+    } else if (filter.key === FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE) {
+      if (filter.minScore !== null) {
+        params[`filter_${filter.key}`] = filter.minScore.toString();
+      }
     } else if (filter.key === FILTER_KEYS.FIELD) {
       if (filter.selectedField !== null) {
         params[`filter_${filter.key}`] = filter.selectedField;
       }
     } else if (filter.key === FILTER_KEYS.REVIEW_STATUS) {
       params[`filter_${filter.key}`] = filter.option;
+    } else if (filter.key === FILTER_KEYS.CASE_STATUS) {
+      if (filter.selectedStatusId !== null) {
+        params[`filter_${filter.key}`] = filter.selectedStatusId;
+      }
     }
   }
 
@@ -168,6 +198,23 @@ export function deserializeFilters(
         : null,
   });
 
+  const minHumanReviewImpactScoreParam = searchParams.get(
+    `filter_${FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE}`,
+  );
+  const parsedMinHumanReviewImpactScore =
+    minHumanReviewImpactScoreParam !== null
+      ? parseInt(minHumanReviewImpactScoreParam, 10)
+      : NaN;
+  filters.push({
+    key: FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE,
+    minScore:
+      !isNaN(parsedMinHumanReviewImpactScore) &&
+      parsedMinHumanReviewImpactScore >= 1 &&
+      parsedMinHumanReviewImpactScore <= 5
+        ? parsedMinHumanReviewImpactScore
+        : null,
+  });
+
   const fieldParam = searchParams.get(`filter_${FILTER_KEYS.FIELD}`);
   filters.push({
     key: FILTER_KEYS.FIELD,
@@ -199,6 +246,15 @@ export function deserializeFilters(
       option: "all",
     });
   }
+
+  const caseStatusParam = searchParams.get(`filter_${FILTER_KEYS.CASE_STATUS}`);
+  filters.push({
+    key: FILTER_KEYS.CASE_STATUS,
+    selectedStatusId:
+      caseStatusParam !== null && caseStatusParam !== ""
+        ? caseStatusParam
+        : null,
+  });
 
   return { filters };
 }

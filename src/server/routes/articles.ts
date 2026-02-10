@@ -18,9 +18,11 @@ import {
   PdfAvailabilityFilter,
   PdfAvailabilityOption,
   MinImpactScoreFilter,
+  MinHumanReviewImpactScoreFilter,
   FieldFilter,
   ReviewStatusFilter,
   ReviewStatusOption,
+  CaseStatusFilter,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -88,6 +90,17 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
       filters.push(minImpactScoreFilter);
     }
 
+    const minHumanReviewImpactScoreParam =
+      queryParams[`filter_${FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE}`];
+    if (minHumanReviewImpactScoreParam !== undefined) {
+      const parsed = parseInt(minHumanReviewImpactScoreParam, 10);
+      const minHumanReviewImpactScoreFilter: MinHumanReviewImpactScoreFilter = {
+        key: FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE,
+        minScore: !isNaN(parsed) && parsed >= 1 && parsed <= 5 ? parsed : null,
+      };
+      filters.push(minHumanReviewImpactScoreFilter);
+    }
+
     const fieldParam = queryParams[`filter_${FILTER_KEYS.FIELD}`];
     if (fieldParam !== undefined) {
       const fieldFilter: FieldFilter = {
@@ -117,6 +130,15 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
         option: isValid ? (reviewStatusParam as ReviewStatusOption) : "all",
       };
       filters.push(reviewStatusFilter);
+    }
+
+    const caseStatusParam = queryParams[`filter_${FILTER_KEYS.CASE_STATUS}`];
+    if (caseStatusParam !== undefined) {
+      const caseStatusFilter: CaseStatusFilter = {
+        key: FILTER_KEYS.CASE_STATUS,
+        selectedStatusId: caseStatusParam !== "" ? caseStatusParam : null,
+      };
+      filters.push(caseStatusFilter);
     }
 
     const filterParams: FilterParams = { filters };

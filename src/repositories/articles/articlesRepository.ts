@@ -316,6 +316,10 @@ export async function getDashboardArticles(
           gte(maxScoresSubquery.maxImpactScore, filter.minScore),
         );
       }
+    } else if (filter.key === FILTER_KEYS.MIN_HUMAN_REVIEW_IMPACT_SCORE) {
+      if (filter.minScore !== null) {
+        filterConditions.push(gte(humanReviews.impactScore, filter.minScore));
+      }
     } else if (filter.key === FILTER_KEYS.FIELD) {
       if (filter.selectedField !== null) {
         filterConditions.push(eq(articles.field, filter.selectedField));
@@ -333,6 +337,12 @@ export async function getDashboardArticles(
         filterConditions.push(eq(humanReviews.verdict, "ambiguous"));
       }
       // "all" option adds no condition
+    } else if (filter.key === FILTER_KEYS.CASE_STATUS) {
+      if (filter.selectedStatusId !== null) {
+        filterConditions.push(
+          eq(prosecutionStatuses.id, filter.selectedStatusId),
+        );
+      }
     }
   }
 
