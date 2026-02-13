@@ -235,22 +235,46 @@ export function DatasetDetails(): React.ReactElement {
           </div>
         </div>
 
-        {data.article.authors.length > 0 && (
-          <div className="mt-4">
-            <span className="font-semibold">Authors:</span>
-            <ul className="ml-4 mt-2">
-              {data.article.authors.map((author, idx) => (
-                <li key={idx} className="text-sm">
-                  {author.name}
-                  {author.institution && (
-                    <span className="text-gray-600">
-                      {" "}
-                      ({author.institution})
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
+        {(data.article.authors.length > 0 ||
+          data.article.funders.length > 0) && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.article.authors.length > 0 && (
+              <div>
+                <span className="font-semibold">Authors:</span>
+                <ul className="ml-4 mt-2">
+                  {data.article.authors.map((author, idx) => (
+                    <li key={idx} className="text-sm">
+                      {author.name}
+                      {author.institution && (
+                        <span className="text-gray-600">
+                          {" "}
+                          ({author.institution})
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {data.article.funders.length > 0 && (
+              <div>
+                <span className="font-semibold">Funders:</span>
+                <ul className="ml-4 mt-2">
+                  {data.article.funders.map((funder, idx) => (
+                    <li key={idx} className="text-sm">
+                      <a
+                        href={funder.rorId}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {funder.displayName}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

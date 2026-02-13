@@ -1,6 +1,11 @@
 import { db } from "../../db";
 import { dryadDatasets } from "../../repositories/datasets/schema";
-import { articles, articleAuthors } from "../../repositories/articles/schema";
+import {
+  articles,
+  articleAuthors,
+  articleFunders,
+} from "../../repositories/articles/schema";
+import { funders } from "../../repositories/funders/schema";
 import { journals } from "../../repositories/journals/schema";
 import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema";
@@ -157,6 +162,18 @@ export async function getDatasetDetails(
         .orderBy(articleAuthors.authorPosition)
     : [];
 
+  // Get funders for the article
+  const fundersList = info.articleId
+    ? await db
+        .select({
+          displayName: funders.displayName,
+          rorId: funders.rorId,
+        })
+        .from(articleFunders)
+        .innerJoin(funders, eq(articleFunders.funderId, funders.id))
+        .where(eq(articleFunders.articleId, info.articleId))
+    : [];
+
   // Get Excel file names
   const excelFiles = await db
     .select({
@@ -241,6 +258,7 @@ export async function getDatasetDetails(
         position: a.position === "first" ? 1 : a.position === "last" ? 999 : 2,
         institution: a.institutionName,
       })),
+      funders: fundersList,
     },
     humanReview: humanReview[0]
       ? {

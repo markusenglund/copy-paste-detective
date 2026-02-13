@@ -46,6 +46,10 @@ export interface ArticleInfo {
     position: number;
     institution: string | null;
   }>;
+  funders: Array<{
+    displayName: string;
+    rorId: string;
+  }>;
 }
 
 export interface HumanReview {
