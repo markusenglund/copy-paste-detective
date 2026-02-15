@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
@@ -30,6 +30,15 @@ export async function getDatasetsByDownloadStatus(
     .select()
     .from(dryadDatasets)
     .where(eq(dryadDatasets.downloadStatus, status));
+}
+
+export async function getDatasetsNotUpdatedSince(
+  date: Date,
+): Promise<DryadDataset[]> {
+  return db
+    .select()
+    .from(dryadDatasets)
+    .where(lt(dryadDatasets.updatedTimestamp, date));
 }
 
 export async function getDatasetsWithoutArticles(): Promise<DryadDataset[]> {

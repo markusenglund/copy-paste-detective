@@ -3,7 +3,7 @@ import {
   getDatasetByExtId,
   upsertDataset,
   updateDatasetDownloadStatus,
-  getDatasetsByDownloadStatus,
+  getDatasetsNotUpdatedSince,
 } from "../repositories/datasets/datasetsRepository";
 import { upsertExcelFile } from "../repositories/excelFiles/excelFilesRepository";
 import { upsertReadmeFile } from "../repositories/readmeFiles/readmeFilesRepository";
@@ -21,7 +21,7 @@ function isForbiddenDataset(
   return (
     "message" in dataset &&
     dataset.message ===
-      "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
+    "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
   );
 }
 
@@ -48,7 +48,7 @@ program
         }
         datasets = [dataset];
       } else {
-        datasets = await getDatasetsByDownloadStatus("completed");
+        datasets = await getDatasetsNotUpdatedSince(new Date("2026-01-01"));
       }
 
       const datasetsToProcess = options.limit
@@ -59,6 +59,7 @@ program
 
       let updatedDryadModificationDate = 0;
       let unchangedDryadModificationDate = 0;
+      let newPrimaryArticleUrl = 0;
       let forbidden = 0;
       let errors = 0;
 
@@ -170,6 +171,13 @@ program
               }
             }
 
+            if (
+              !existingDataset.primaryArticleUrl &&
+              dataset.primaryArticleUrl
+            ) {
+              newPrimaryArticleUrl++;
+            }
+
             if (isNew) {
               logger.error(
                 `Dataset was unexpectedly inserted instead of updated:${dataset.extId}: ${dataset.title}`,
@@ -194,11 +202,11 @@ program
             errors++;
           }
         },
-        { concurrency: 1 },
+        { concurrency: 2 },
       );
 
       logger.info(
-        `Finished updating datasets. Updated lastModifiedDate: ${updatedDryadModificationDate}, Unchanged lastModifiedDate: ${unchangedDryadModificationDate}, Forbidden: ${forbidden}, Errors: ${errors}`,
+        `Finished updating datasets. Updated lastModifiedDate: ${updatedDryadModificationDate}, Unchanged lastModifiedDate: ${unchangedDryadModificationDate}, New primaryArticleUrl: ${newPrimaryArticleUrl}, Forbidden: ${forbidden}, Errors: ${errors}`,
       );
     } finally {
       await closeDb();
