@@ -21,7 +21,7 @@ function isForbiddenDataset(
   return (
     "message" in dataset &&
     dataset.message ===
-    "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
+      "Identifier cannot be viewed. Either you lack permission to view it, or it is missing required elements."
   );
 }
 

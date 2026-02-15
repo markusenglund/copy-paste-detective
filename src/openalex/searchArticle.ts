@@ -30,8 +30,14 @@ export async function getArticleByTitle(
   const response = await fetch(url);
   if (!response.ok) {
     const responseText = await response.text();
+    if (response.status === 500) {
+      logger.error(
+        `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
+      );
+      return undefined;
+    }
     throw new Error(
-      `Failed to search article at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
+      `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
     );
   }
   const data = await response.json();
@@ -62,8 +68,14 @@ export async function getArticleByAbstract(
   const response = await fetch(url);
   if (!response.ok) {
     const responseText = await response.text();
+    if (response.status === 500) {
+      logger.error(
+        `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
+      );
+      return undefined;
+    }
     throw new Error(
-      `Failed to search article at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
+      `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
     );
   }
   const data = await response.json();
@@ -84,11 +96,19 @@ export async function getArticleByDoi(doi: string): Promise<Work | undefined> {
   logger.debug(`Request to '${url}'`);
   const response = await fetch(url);
   if (!response.ok) {
+    if (response.status === 404) {
+      return undefined;
+    }
     const responseText = await response.text();
-    logger.warn(
+    if (response.status === 500) {
+      logger.error(
+        `Failed to get article by DOI '${doi}' at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
+      );
+      return undefined;
+    }
+    throw new Error(
       `Failed to get article by DOI '${doi}' at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
     );
-    return undefined;
   }
   const data = await response.json();
   const zodResult = WorkSchema.safeParse(data);

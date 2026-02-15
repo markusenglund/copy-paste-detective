@@ -222,10 +222,19 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
     }
   }
 
-  const uniqueArticleAuthors = uniqBy(articleAuthors, (articleAuthor) => `${articleAuthor.articleId}-${articleAuthor.authorId}`);
-  const uniqueArticleFunders = uniqBy(articleFunders, (articleFunder) => `${articleFunder.articleId}-${articleFunder.funderId}`);
+  const uniqueArticleAuthors = uniqBy(
+    articleAuthors,
+    (articleAuthor) => `${articleAuthor.articleId}-${articleAuthor.authorId}`,
+  );
+  const uniqueArticleFunders = uniqBy(
+    articleFunders,
+    (articleFunder) => `${articleFunder.articleId}-${articleFunder.funderId}`,
+  );
 
-  return { articleAuthors: uniqueArticleAuthors, articleFunders: uniqueArticleFunders };
+  return {
+    articleAuthors: uniqueArticleAuthors,
+    articleFunders: uniqueArticleFunders,
+  };
 }
 
 async function extractArticlesFromOpenAlexArticles(
