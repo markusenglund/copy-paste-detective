@@ -22,7 +22,7 @@ export async function getArticleByTitle(
   const searchQueryParams = new URLSearchParams({
     filter: `title.search:${strippedTitle},type:article`,
     per_page: "1",
-    mailto: config.openAlexEmailAddress,
+    api_key: config.openAlexApiKey,
   });
 
   const url = `${apiUrlBase}/works?${searchQueryParams.toString()}`;
@@ -55,7 +55,7 @@ export async function getArticleByAbstract(
   const searchQueryParams = new URLSearchParams({
     filter: `abstract.search:"${abstractSearchString}",type:article`,
     per_page: "1",
-    mailto: config.openAlexEmailAddress,
+    api_key: config.openAlexApiKey,
   });
   const url = `${apiUrlBase}/works?${searchQueryParams.toString()}`;
   logger.debug(`Request to '${url}'`);
@@ -78,7 +78,7 @@ export async function getArticleByAbstract(
 export async function getArticleByDoi(doi: string): Promise<Work | undefined> {
   const apiUrlBase = "https://api.openalex.org";
   const searchQueryParams = new URLSearchParams({
-    mailto: config.openAlexEmailAddress,
+    api_key: config.openAlexApiKey,
   });
   const url = `${apiUrlBase}/works/${doi}?${searchQueryParams.toString()}`;
   logger.debug(`Request to '${url}'`);

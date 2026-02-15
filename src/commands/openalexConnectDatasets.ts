@@ -317,7 +317,7 @@ async function getArticlesFromDryadDatasets(
       }
       return undefined;
     },
-    { concurrency: 2 },
+    { concurrency: 1 },
   );
   return results.filter(
     (r): r is OpenAlexArticleWithDataset => r !== undefined,
