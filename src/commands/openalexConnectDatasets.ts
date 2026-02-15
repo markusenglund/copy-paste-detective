@@ -1,7 +1,8 @@
 import { Command } from "@commander-js/extra-typings";
+import pMap from "p-map";
 import {
   DryadDataset,
-  getCompletedDatasetsWithoutArticles,
+  getDatasetsWithoutArticles,
   getDatasetByExtId,
 } from "../repositories/datasets/datasetsRepository";
 import { getArticleFromDryadDataset } from "../openalex/getArticleFromDryadDataset";
@@ -45,6 +46,11 @@ program
     "Connect downloaded datasets to an article from the OpenAlex API",
   )
   .option("--extId <number>", "Connect a specific dataset by extId", parseInt)
+  .option(
+    "--limit <number>",
+    "Limit the number of datasets to process",
+    parseInt,
+  )
   .action(async (options) => {
     try {
       let datasets: DryadDataset[];
@@ -64,55 +70,83 @@ program
         datasets = [dataset];
         logger.info(`Processing dataset with extId ${options.extId}...`);
       } else {
-        datasets = await getCompletedDatasetsWithoutArticles();
+        datasets = await getDatasetsWithoutArticles();
+        if (options.limit) {
+          datasets = datasets.slice(0, options.limit);
+        }
         logger.info(
           `Found ${datasets.length} datasets to search OpenAlex for...`,
         );
       }
 
-      const articlesWithDatasets = await getArticlesFromDryadDatasets(datasets);
-      logger.info(
-        `Found ${articlesWithDatasets.length} OpenAlex articles from ${datasets.length} datasets`,
-      );
-      const articles =
-        await extractArticlesFromOpenAlexArticles(articlesWithDatasets);
-      const { authors, institutions, funders } =
-        extractArticleMetadataFromOpenAlexArticles(articlesWithDatasets);
+      const CHUNK_SIZE = 100;
+      let totalArticlesFound = 0;
 
-      logger.info(
-        `Extracted: ${articles.length} articles, ${authors.length} authors, ${institutions.length} institutions, ${funders.length} funders`,
-      );
+      for (let i = 0; i < datasets.length; i += CHUNK_SIZE) {
+        const chunk = datasets.slice(i, i + CHUNK_SIZE);
+        const chunkNumber = Math.floor(i / CHUNK_SIZE) + 1;
+        const totalChunks = Math.ceil(datasets.length / CHUNK_SIZE);
+        logger.info(
+          `Processing chunk ${chunkNumber}/${totalChunks} (datasets ${i + 1}-${i + chunk.length} of ${datasets.length})`,
+        );
 
-      const insertedAuthors = await bulkUpsertAuthors(authors);
-      logger.info(`Upserted ${insertedAuthors.length} authors`);
+        const articlesWithDatasets = await getArticlesFromDryadDatasets(chunk);
+        totalArticlesFound += articlesWithDatasets.length;
+        logger.info(
+          `Found ${articlesWithDatasets.length} OpenAlex articles from ${chunk.length} datasets in this chunk`,
+        );
 
-      const insertedInstitutions = await bulkUpsertInstitutions(institutions);
-      logger.info(`Upserted ${insertedInstitutions.length} institutions`);
+        if (articlesWithDatasets.length === 0) {
+          logger.info(`No articles found in this chunk, skipping DB upserts`);
+          continue;
+        }
 
-      const insertedFunders = await bulkUpsertFunders(funders);
-      logger.info(`Upserted ${insertedFunders.length} funders`);
+        const articles =
+          await extractArticlesFromOpenAlexArticles(articlesWithDatasets);
+        const { authors, institutions, funders } =
+          extractArticleMetadataFromOpenAlexArticles(articlesWithDatasets);
 
-      const insertedArticles = await bulkUpsertArticles(articles);
-      logger.info(`Upserted ${insertedArticles.length} articles`);
+        logger.info(
+          `Extracted: ${articles.length} articles, ${authors.length} authors, ${institutions.length} institutions, ${funders.length} funders`,
+        );
 
-      const { articleAuthors, articleFunders } =
-        extractJunctionTablesDataFromOpenalexArticles({
-          articlesWithDatasets,
-          insertedAuthors,
-          insertedInstitutions,
-          insertedFunders,
-          insertedArticles,
-        });
+        const insertedAuthors = await bulkUpsertAuthors(authors);
+        logger.info(`Upserted ${insertedAuthors.length} authors`);
 
-      const insertedArticleAuthors =
-        await bulkUpsertArticleAuthors(articleAuthors);
-      logger.info(`Upserted ${insertedArticleAuthors.length} article-authors`);
+        const insertedInstitutions = await bulkUpsertInstitutions(institutions);
+        logger.info(`Upserted ${insertedInstitutions.length} institutions`);
 
-      const insertedArticleFunders =
-        await bulkInsertArticleFunders(articleFunders);
-      logger.info(
-        `Inserted ${insertedArticleFunders.length} (out of ${articleFunders.length} found) article-funders`,
-      );
+        const insertedFunders = await bulkUpsertFunders(funders);
+        logger.info(`Upserted ${insertedFunders.length} funders`);
+
+        const insertedArticles = await bulkUpsertArticles(articles);
+        logger.info(`Upserted ${insertedArticles.length} articles`);
+
+        const { articleAuthors, articleFunders } =
+          extractJunctionTablesDataFromOpenalexArticles({
+            articlesWithDatasets,
+            insertedAuthors,
+            insertedInstitutions,
+            insertedFunders,
+            insertedArticles,
+          });
+
+        const insertedArticleAuthors =
+          await bulkUpsertArticleAuthors(articleAuthors);
+        logger.info(
+          `Upserted ${insertedArticleAuthors.length} article-authors`,
+        );
+
+        const insertedArticleFunders =
+          await bulkInsertArticleFunders(articleFunders);
+        logger.info(
+          `Inserted ${insertedArticleFunders.length} (out of ${articleFunders.length} found) article-funders`,
+        );
+
+        logger.info(
+          `Chunk ${chunkNumber}/${totalChunks} complete. Running total: ${totalArticlesFound} articles found from ${i + chunk.length} datasets`,
+        );
+      }
     } finally {
       await closeDb();
     }
@@ -274,14 +308,20 @@ function extractArticleMetadataFromOpenAlexArticles(
 async function getArticlesFromDryadDatasets(
   datasets: DryadDataset[],
 ): Promise<OpenAlexArticleWithDataset[]> {
-  const results: OpenAlexArticleWithDataset[] = [];
-  for (const dataset of datasets) {
-    const openalexArticle = await getArticleFromDryadDataset(dataset);
-    if (openalexArticle) {
-      results.push({ dataset, openalexArticle });
-    }
-  }
-  return results;
+  const results = await pMap(
+    datasets,
+    async (dataset) => {
+      const openalexArticle = await getArticleFromDryadDataset(dataset);
+      if (openalexArticle) {
+        return { dataset, openalexArticle };
+      }
+      return undefined;
+    },
+    { concurrency: 5 },
+  );
+  return results.filter(
+    (r): r is OpenAlexArticleWithDataset => r !== undefined,
+  );
 }
 
 program.parse();

@@ -9,8 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Review PDFs for suspicious datasets**: `npm run pdf-review [--limit <number>] [--ext-id <number>]`
   - Example: `npm run pdf-review --limit 5` (reviews up to 5 PDFs)
   - Example: `npm run pdf-review --ext-id 158552` (reviews only dataset with extId 158552)
-- **Connect datasets to OpenAlex articles**: `npm run openalex-connect-datasets [--extId <number>]`
+- **Connect datasets to OpenAlex articles**: `npm run openalex-connect-datasets [--limit <number>] [--extId <number>]`
   - Example: `npm run openalex-connect-datasets` (processes all completed datasets without articles)
+  - Example: `npm run openalex-connect-datasets --limit 200` (processes up to 200 datasets)
   - Example: `npm run openalex-connect-datasets --extId 158552` (connects only dataset with extId 158552)
 - **Download PDFs for articles**: `npm run pdf-download [--limit <number>] [--extId <number>]`
   - Example: `npm run pdf-download --limit 5` (downloads up to 5 PDFs for articles with suspicious datasets)
