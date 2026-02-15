@@ -37,7 +37,7 @@ export async function getArticleByTitle(
   const data = await response.json();
   const zodResult = WorkSearchResultsSchema.safeParse(data);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+    throw new Error(`Zod validation failed for ${url} - ${zodResult.error}`);
   }
   const validated = zodResult.data;
   return validated.results[0];
@@ -69,7 +69,7 @@ export async function getArticleByAbstract(
   const data = await response.json();
   const zodResult = WorkSearchResultsSchema.safeParse(data);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+    throw new Error(`Zod validation failed for ${url} - ${zodResult.error}`);
   }
   const validated = zodResult.data;
   return validated.results[0];
@@ -93,7 +93,7 @@ export async function getArticleByDoi(doi: string): Promise<Work | undefined> {
   const data = await response.json();
   const zodResult = WorkSchema.safeParse(data);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+    throw new Error(`Zod validation failed for ${url} - ${zodResult.error}`);
   }
   const validated = zodResult.data;
   return validated;

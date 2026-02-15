@@ -32,6 +32,7 @@ import {
 import { bulkUpsertAuthors } from "../repositories/authors/authorsRepository";
 import { bulkUpsertInstitutions } from "../repositories/institutions/institutionsRepository";
 import { bulkUpsertFunders } from "../repositories/funders/fundersRepository";
+import { uniqBy } from "lodash-es";
 
 type OpenAlexArticleWithDataset = {
   dataset: DryadDataset;
@@ -221,7 +222,10 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
     }
   }
 
-  return { articleAuthors, articleFunders };
+  const uniqueArticleAuthors = uniqBy(articleAuthors, (articleAuthor) => `${articleAuthor.articleId}-${articleAuthor.authorId}`);
+  const uniqueArticleFunders = uniqBy(articleFunders, (articleFunder) => `${articleFunder.articleId}-${articleFunder.funderId}`);
+
+  return { articleAuthors: uniqueArticleAuthors, articleFunders: uniqueArticleFunders };
 }
 
 async function extractArticlesFromOpenAlexArticles(
@@ -253,7 +257,8 @@ async function extractArticlesFromOpenAlexArticles(
     const { article } = convertOpenalexArticle(openalexArticle, journal?.id);
     return { ...article, dryadDatasetId: dataset.id };
   });
-  return articles;
+  const uniqueArticles = uniqBy(articles, "doi");
+  return uniqueArticles;
 }
 
 function extractArticleMetadataFromOpenAlexArticles(
@@ -317,7 +322,7 @@ async function getArticlesFromDryadDatasets(
       }
       return undefined;
     },
-    { concurrency: 1 },
+    { concurrency: 2 },
   );
   return results.filter(
     (r): r is OpenAlexArticleWithDataset => r !== undefined,

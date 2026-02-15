@@ -189,7 +189,7 @@ export const WorkSchema = z.object({
   related_works: z.array(z.string()),
   abstract_inverted_index: z.record(z.string(), z.array(z.number())).nullable(),
   counts_by_year: z.array(CountsByYearSchema),
-  updated_date: z.string(),
+  updated_date: z.string().nullable(),
   created_date: z.string(),
 });
 
