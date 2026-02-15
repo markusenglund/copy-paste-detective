@@ -47,8 +47,8 @@ program
         logger.info(`Fetched ${datasets.length} candidate datasets`);
 
         // Separate datasets by whether they have downloadable files
-        const downloadable: DryadDatasetWithFiles[] = [];
-        const skipped: DryadDatasetWithFiles[] = [];
+        const downloadable: (DryadDatasetWithFiles & { citationScore: number })[] = [];
+        const skipped: (DryadDatasetWithFiles & { citationScore: number })[] = [];
 
         for (const dataset of datasets) {
           const hasDownloadableFile = dataset.excelFiles.some(
@@ -75,7 +75,7 @@ program
 
         for (const dataset of downloadable) {
           logger.info(
-            `[${dataset.extId}] "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+            `[${dataset.extId}] ${dataset.citationScore.toFixed(2)} - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
           );
         }
 

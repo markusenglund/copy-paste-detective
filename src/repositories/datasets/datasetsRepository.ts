@@ -4,6 +4,8 @@ import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
 import { dryadReadmeFiles } from "../readmeFiles/schema";
+import { articles } from "../articles/schema";
+import { journals } from "../journals/schema";
 import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
 import type { DryadReadmeFileRow } from "../readmeFiles/readmeFilesRepository";
 import { logger } from "../../utils/logger";
@@ -161,26 +163,33 @@ export async function getDatasetsByDownloadStatusWithFiles(
  * - downloadStatus = 'not_started'
  * - has usageNotes OR has a readme file
  * - has <= 3 excel files
- * - ordered by publication date (newest first)
+ * - ordered by citationScore (highest first)
  */
 export async function getDatasetsForDownload(
   limit: number,
-): Promise<DryadDatasetWithFiles[]> {
+): Promise<(DryadDatasetWithFiles & { citationScore: number })[]> {
   // Subquery: check if readme file exists
   const hasReadmeFile = sql<boolean>`EXISTS (
-    SELECT 1 FROM dryad_readme_files 
+    SELECT 1 FROM dryad_readme_files
     WHERE dryad_readme_files.dryad_dataset_id = dryad_datasets.id
   )`;
 
   // Subquery: count excel files <= 3
   const excelFileCount = sql<number>`(
-    SELECT COUNT(*) FROM dryad_excel_files 
+    SELECT COUNT(*) FROM dryad_excel_files
     WHERE dryad_excel_files.dryad_dataset_id = dryad_datasets.id
   )`;
-  logger.info("Before query");
+
+  const citationScoreExpr =
+    sql<number>`COALESCE((COALESCE(${journals.sjrScore}, 0.0) + ${articles.numCitations}) * LOG(10.0 + COALESCE(${journals.sjrScore}, 0.0)) / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0)), 0)`.as(
+      "citationScore",
+    );
+
   const datasets = await db
-    .select()
+    .select({ dataset: dryadDatasets, citationScore: citationScoreExpr })
     .from(dryadDatasets)
+    .leftJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
+    .leftJoin(journals, eq(articles.journalId, journals.id))
     .where(
       and(
         eq(dryadDatasets.downloadStatus, "not_started"),
@@ -188,13 +197,13 @@ export async function getDatasetsForDownload(
         sql`${excelFileCount} <= 3`,
       ),
     )
-    .orderBy(desc(dryadDatasets.dryadPublicationDate))
+    .orderBy(desc(citationScoreExpr))
     .limit(limit);
 
   logger.info(`Datasets: ${datasets.length}`);
   if (datasets.length === 0) return [];
 
-  const datasetIds = datasets.map((d) => d.id);
+  const datasetIds = datasets.map((d) => d.dataset.id);
 
   // Batch fetch excel files
   const allExcelFiles = await db
@@ -218,10 +227,11 @@ export async function getDatasetsForDownload(
     (f) => f.dryadDatasetId,
   );
 
-  return datasets.map((dataset) => ({
+  return datasets.map(({ dataset, citationScore }) => ({
     ...dataset,
     excelFiles: excelFilesByDatasetId.get(dataset.id) ?? [],
     readmeFile: readmeFilesByDatasetId.get(dataset.id)?.[0] ?? null,
+    citationScore,
   }));
 }
 
