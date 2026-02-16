@@ -49,10 +49,18 @@ export function loadExcelFileFromDryadIndex(
   let dataDescription: string | undefined;
   if (dataset.readmeFile) {
     const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
-    dataDescription = readTextFile(readmePath);
-  } else if (dataset.usageNotes) {
+    try {
+      dataDescription = readTextFile(readmePath);
+    } catch (err) {
+      logger.error(
+        `Failed to read README file for dataset ${dataset.extId}: ${err.message}`,
+      );
+    }
+  }
+  if (!dataDescription && dataset.usageNotes) {
     dataDescription = dataset.usageNotes;
-  } else {
+  }
+  if (!dataDescription) {
     throw new Error(
       `Dataset ${dataset.extId} has no README or usage notes available. Bailing out...`,
     );
