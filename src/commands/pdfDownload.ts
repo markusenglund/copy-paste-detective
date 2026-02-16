@@ -4,7 +4,7 @@ import {
   updateArticlePdfDownloadStatus,
 } from "../repositories/articles/articlesRepository";
 import { upsertPdfFile } from "../repositories/pdfFiles/pdfFilesRepository";
-import { downloadPdf } from "../utils/downloadPdf";
+import { buildOpenalexContentUrl, downloadPdf } from "../utils/downloadPdf";
 import { parseIntArgument } from "../utils/command";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
@@ -54,7 +54,7 @@ program
 
           const { filePath, filename, size } = await downloadPdf({
             articleId: article.id,
-            pdfUrl: article.fullPdfUrl!,
+            openalexId: article.extOpenalexId,
           });
 
           await updateArticlePdfDownloadStatus(article.id, "completed");
@@ -63,7 +63,7 @@ program
             articleId: article.id,
             filename,
             size,
-            url: article.fullPdfUrl ?? null,
+            url: buildOpenalexContentUrl(article.extOpenalexId),
           });
 
           logger.info(`Successfully downloaded PDF to ${filePath}`);

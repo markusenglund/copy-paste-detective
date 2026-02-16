@@ -156,7 +156,6 @@ export async function getArticlesForPdfDownload(
       .innerJoin(dryadDatasets, eq(articles.dryadDatasetId, dryadDatasets.id))
       .where(
         and(
-          isNotNull(articles.fullPdfUrl),
           isNotNull(articles.dryadDatasetId),
           eq(dryadDatasets.extId, extId),
           hasSuspiciousReview,
@@ -188,7 +187,6 @@ export async function getArticlesForPdfDownload(
     .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
     .where(
       and(
-        isNotNull(articles.fullPdfUrl),
         isNull(pdfFiles.id),
         isNotNull(articles.dryadDatasetId),
         hasSuspiciousReview,

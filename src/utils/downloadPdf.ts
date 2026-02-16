@@ -1,11 +1,12 @@
 import { createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { config } from "../config/env";
 import { logger } from "./logger";
 
 type Params = {
   articleId: number;
-  pdfUrl: string;
+  openalexId: string;
 };
 
 export function validatePdfMagicBytes(chunk: Uint8Array): boolean {
@@ -60,15 +61,22 @@ function extractFilenameFromResponse(
   return `article_${articleId}.pdf`;
 }
 
+export function buildOpenalexContentUrl(openalexId: string): string {
+  const workId = openalexId.replace("https://openalex.org/", "");
+  return `https://content.openalex.org/works/${workId}.pdf?api_key=${config.openAlexApiKey}`;
+}
+
 export async function downloadPdf({
   articleId,
-  pdfUrl,
+  openalexId,
 }: Params): Promise<{ filePath: string; filename: string; size: number }> {
   const downloadDir = join(process.cwd(), `data/pdfs/${articleId}`);
 
   await mkdir(downloadDir, { recursive: true });
 
-  logger.info(`Downloading PDF for article ${articleId} from ${pdfUrl}`);
+  const pdfUrl = buildOpenalexContentUrl(openalexId);
+
+  logger.info(`Downloading PDF for article ${articleId} from OpenAlex`);
 
   const response = await fetch(pdfUrl, { redirect: "follow" });
 
@@ -87,10 +95,11 @@ export async function downloadPdf({
   if (
     contentType &&
     !contentType.includes("application/pdf") &&
-    !contentType.includes("application/octet-stream")
+    !contentType.includes("application/octet-stream") &&
+    !contentType.includes("binary/octet-stream")
   ) {
     throw new Error(
-      `Invalid Content-Type for article ${articleId} PDF: expected "application/pdf", got "${contentType}"`,
+      `Invalid Content-Type for article ${articleId} PDF '${pdfUrl}' - expected "application/pdf", got "${contentType}"`,
     );
   }
 
