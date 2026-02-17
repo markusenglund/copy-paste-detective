@@ -104,7 +104,7 @@ export async function getDatasetDetails(
       articleDoi: articles.doi,
       citations: articles.numCitations,
       citationScore:
-        sql<number>`(COALESCE(${journals.sjrScore}, 0.0) + ${articles.numCitations}) / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0))`.as(
+        sql<number>`(COALESCE(${journals.sjrScore}, 0.0) + ${articles.numCitations}) * LOG(10.0 + COALESCE(${journals.sjrScore}, 0.0)) / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0))`.as(
           "citationScore",
         ),
       publicationDate: articles.publicationDate,
