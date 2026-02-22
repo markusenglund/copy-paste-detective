@@ -26,7 +26,7 @@
     "test-review-prompt": "tsx -r dotenv/config src/commands/testReviewPrompt",
     "backfill-pdf-metadata": "tsx -r dotenv/config src/scripts/backfillPdfMetadata.ts",
     "inspect-column-mapping": "tsx src/scripts/inspectColumnMapping.ts",
-    "server": "tsx -r dotenv/config src/server/index.ts",
+    "server": "NODE_ENV=production tsx -r dotenv/config src/server/index.ts",
     "server:dev": "nodemon --watch src --ext ts --exec 'tsx -r dotenv/config src/server/index.ts'",
     "web:dev": "vite --config src/web/vite.config.ts",
     "web:build": "vite build --config src/web/vite.config.ts",
