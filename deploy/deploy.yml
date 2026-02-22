@@ -1,0 +1,48 @@
+---
+- name: Deploy application
+  hosts: server
+  become: true
+  vars:
+    app_dir: /opt/copy-paste-detective
+
+  tasks:
+    - name: Sync project files to server
+      synchronize:
+        src: "{{ playbook_dir }}/../"
+        dest: "{{ app_dir }}"
+        delete: true
+        rsync_opts:
+          - "--exclude=node_modules"
+          - "--exclude=.env"
+          - "--exclude=.env.*"
+          - "--exclude=storage"
+          - "--exclude=.git"
+          - "--exclude=benchmark-files"
+          - "--exclude=tmp"
+          - "--exclude=casefiles"
+          - "--exclude=dist"
+
+    - name: Copy production env file
+      copy:
+        src: "{{ playbook_dir }}/../.env.production"
+        dest: "{{ app_dir }}/.env"
+        mode: "0600"
+
+    - name: Build and start containers
+      shell: docker compose up -d --build
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Wait for database to be ready
+      shell: docker compose exec -T db pg_isready -U postgres
+      args:
+        chdir: "{{ app_dir }}"
+      retries: 10
+      delay: 3
+      register: db_ready
+      until: db_ready.rc == 0
+
+    - name: Run database migrations
+      shell: docker compose exec -T app npx drizzle-kit push
+      args:
+        chdir: "{{ app_dir }}"

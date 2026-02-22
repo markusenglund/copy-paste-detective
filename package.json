@@ -34,7 +34,9 @@
     "test": "node --experimental-vm-modules ./node_modules/.bin/jest",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"**/*.{ts,tsx}\""
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "deploy:setup": "ansible-playbook deploy/setup.yml -i deploy/inventory.yml",
+    "deploy": "ansible-playbook deploy/deploy.yml -i deploy/inventory.yml"
   },
   "author": "Markus Englund",
   "license": "UNLICENSED",

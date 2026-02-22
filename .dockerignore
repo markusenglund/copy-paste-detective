@@ -1,0 +1,11 @@
+node_modules
+.env
+.env.*
+storage
+benchmark-files
+tmp
+.cache
+.git
+dist
+casefiles
+drizzle/meta
