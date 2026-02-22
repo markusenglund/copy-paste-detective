@@ -68,9 +68,8 @@ async function start(): Promise<void> {
     });
   }
 
-  const port = parseInt(process.env.PORT || "3000", 10);
-  await fastify.listen({ port, host: "0.0.0.0" });
-  console.log(`Server running on http://localhost:${port}`);
+  await fastify.listen({ port: config.port, host: "0.0.0.0" });
+  console.log(`Server running on http://localhost:${config.port}`);
 }
 
 start().catch((err) => {

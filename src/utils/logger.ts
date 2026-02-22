@@ -1,10 +1,10 @@
 import pino from "pino";
 import pinoPretty from "pino-pretty";
+import { config } from "../config/env";
 
-const logLevel = process.env.LOG_LEVEL || "info";
 export const logger = pino(
   {
-    level: logLevel,
+    level: config.logLevel,
   },
   pinoPretty({
     colorize: true,

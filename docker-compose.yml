@@ -18,6 +18,8 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    environment:
+      POSTGRES_HOST: db
     volumes:
       - /mnt/storage:/app/storage
     depends_on:

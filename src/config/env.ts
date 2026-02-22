@@ -1,8 +1,6 @@
 import dotenv from "dotenv";
 import { z } from "zod";
-import { logger } from "../utils/logger";
 
-// Load environment variables from .env file
 dotenv.config();
 
 const envSchema = z.object({
@@ -19,6 +17,13 @@ const envSchema = z.object({
     .min(1, "OPENALEX_API_KEY must be a non-empty string"),
   JWT_SECRET: z.string().min(1, "JWT_SECRET must be a non-empty string"),
   CLIENT_ORIGIN: z.string().default("http://localhost:5173"),
+  POSTGRES_USER: z.string().default("postgres"),
+  POSTGRES_PASSWORD: z.string().default("postgres"),
+  POSTGRES_DB: z.string().default("science_detective"),
+  POSTGRES_HOST: z.string().default("localhost"),
+  POSTGRES_PORT: z.string().default("5432"),
+  PORT: z.string().default("3000"),
+  LOG_LEVEL: z.string().default("info"),
 });
 
 type EnvSchema = z.infer<typeof envSchema>;
@@ -27,13 +32,13 @@ function validateEnv(): EnvSchema {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
-    logger.error("Environment validation failed:");
+    console.error("Environment validation failed:");
     if (error instanceof z.ZodError) {
       error.errors.forEach((err) => {
-        logger.error(`- ${err.path.join(".")}: ${err.message}`);
+        console.error(`- ${err.path.join(".")}: ${err.message}`);
       });
     }
-    logger.error(
+    console.error(
       "Please create a .env file based on .env.dist and set the required variables.",
     );
     process.exit(1);
@@ -50,4 +55,7 @@ export const config = {
   openAlexApiKey: env.OPENALEX_API_KEY,
   jwtSecret: env.JWT_SECRET,
   clientOrigin: env.CLIENT_ORIGIN,
+  databaseUrl: `postgresql://${env.POSTGRES_USER}:${encodeURIComponent(env.POSTGRES_PASSWORD)}@${env.POSTGRES_HOST}:${env.POSTGRES_PORT}/${env.POSTGRES_DB}`,
+  port: parseInt(env.PORT, 10),
+  logLevel: env.LOG_LEVEL,
 } as const;

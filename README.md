@@ -47,11 +47,7 @@ docker run -d \
   postgres:16
 ```
 
-Add the database URL to your `.env` file:
-
-```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/science_detective
-```
+The app constructs the database connection URL from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, and `POSTGRES_PORT` (all have sensible defaults matching the Docker command above, so no extra `.env` entries are needed for local dev).
 
 Generate and run database migrations:
 
