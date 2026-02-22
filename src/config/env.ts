@@ -6,6 +6,7 @@ import { logger } from "../utils/logger";
 dotenv.config();
 
 const envSchema = z.object({
+  NODE_ENV: z.string().default("development"),
   GEMINI_API_KEY: z
     .string()
     .min(1, "GEMINI_API_KEY must be a non-empty string"),
@@ -16,6 +17,8 @@ const envSchema = z.object({
   OPENALEX_API_KEY: z
     .string()
     .min(1, "OPENALEX_API_KEY must be a non-empty string"),
+  JWT_SECRET: z.string().min(1, "JWT_SECRET must be a non-empty string"),
+  CLIENT_ORIGIN: z.string().default("http://localhost:5173"),
 });
 
 type EnvSchema = z.infer<typeof envSchema>;
@@ -40,8 +43,11 @@ function validateEnv(): EnvSchema {
 const env = validateEnv();
 
 export const config = {
+  isProduction: env.NODE_ENV === "production",
   geminiApiKey: env.GEMINI_API_KEY,
   dryadAccountId: env.DRYAD_ACCOUNT_ID,
   dryadSecret: env.DRYAD_SECRET,
   openAlexApiKey: env.OPENALEX_API_KEY,
+  jwtSecret: env.JWT_SECRET,
+  clientOrigin: env.CLIENT_ORIGIN,
 } as const;

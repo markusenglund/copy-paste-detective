@@ -9,6 +9,31 @@ export type PubPeerResult = { url: string; totalComments: number };
 
 const BASE_URL = "/api";
 
+async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
+  const response = await fetch(url, {
+    ...options,
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+
+  if (response.status === 403) {
+    const body = await response
+      .clone()
+      .json()
+      .catch(() => ({}));
+    if (body.error === "PASSWORD_CHANGE_REQUIRED") {
+      window.location.href = "/reset-password";
+      throw new Error("Password change required");
+    }
+  }
+
+  return response;
+}
+
 export async function fetchArticles(
   sortParams?: SortParams,
   filterParams?: FilterParams,
@@ -33,7 +58,7 @@ export async function fetchArticles(
     url += `?${params.toString()}`;
   }
 
-  const response = await fetch(url);
+  const response = await apiFetch(url);
   if (!response.ok) {
     throw new Error("Failed to fetch articles");
   }
@@ -48,7 +73,7 @@ export async function uploadPdf(
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${BASE_URL}/articles/${articleId}/pdf`, {
+  const response = await apiFetch(`${BASE_URL}/articles/${articleId}/pdf`, {
     method: "POST",
     body: formData,
   });
@@ -64,7 +89,7 @@ export async function uploadPdf(
 export async function fetchDatasetDetails(
   datasetId: number,
 ): Promise<DatasetDetails> {
-  const response = await fetch(`${BASE_URL}/datasets/${datasetId}`);
+  const response = await apiFetch(`${BASE_URL}/datasets/${datasetId}`);
   if (!response.ok) {
     throw new Error("Failed to fetch dataset details");
   }
@@ -86,7 +111,7 @@ export function getHighlightedExcelDownloadUrl(
 }
 
 export async function fetchStatistics(): Promise<StatisticsResponse> {
-  const response = await fetch(`${BASE_URL}/statistics`);
+  const response = await apiFetch(`${BASE_URL}/statistics`);
   if (!response.ok) {
     throw new Error("Failed to fetch statistics");
   }
@@ -94,7 +119,7 @@ export async function fetchStatistics(): Promise<StatisticsResponse> {
 }
 
 export async function fetchAvailableFields(): Promise<string[]> {
-  const response = await fetch(`${BASE_URL}/articles/fields`);
+  const response = await apiFetch(`${BASE_URL}/articles/fields`);
   if (!response.ok) {
     throw new Error("Failed to fetch available fields");
   }
@@ -142,7 +167,7 @@ export async function saveHumanReview(
     prosecutionStatusId: string;
   },
 ): Promise<HumanReview> {
-  const response = await fetch(
+  const response = await apiFetch(
     `${BASE_URL}/datasets/${datasetId}/human-review`,
     {
       method: "PUT",
@@ -165,7 +190,7 @@ export interface ProsecutionStatus {
 }
 
 export async function fetchProsecutionStatuses(): Promise<ProsecutionStatus[]> {
-  const response = await fetch(`${BASE_URL}/prosecution-statuses`);
+  const response = await apiFetch(`${BASE_URL}/prosecution-statuses`);
   if (!response.ok) {
     throw new Error("Failed to fetch prosecution statuses");
   }
@@ -176,7 +201,7 @@ export async function fetchProsecutionStatuses(): Promise<ProsecutionStatus[]> {
 export async function createProsecutionStatus(
   name: string,
 ): Promise<ProsecutionStatus> {
-  const response = await fetch(`${BASE_URL}/prosecution-statuses`, {
+  const response = await apiFetch(`${BASE_URL}/prosecution-statuses`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),

@@ -36,3 +36,4 @@ export {
   humanReviews,
   prosecutionStatuses,
 } from "./humanReview/schema";
+export { users } from "./users/schema";

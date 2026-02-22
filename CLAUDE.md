@@ -16,6 +16,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Download PDFs for articles**: `npm run pdf-download [--limit <number>] [--extId <number>]`
   - Example: `npm run pdf-download --limit 5` (downloads up to 5 PDFs for articles with suspicious datasets)
   - Example: `npm run pdf-download --extId 158552` (downloads PDF only for dataset with extId 158552, ignores download status)
+- **Seed admin user**: `npm run seed-admin -- --username <username>`
+  - Example: `npm run seed-admin -- --username admin` (creates admin user with a temporary password)
 - **Run tests**: `npm test`
 - **Run specific test**: `npm test -- --testPathPattern=<pattern>`
 - **Lint code**: `npm run lint`
@@ -47,6 +49,16 @@ This is a TypeScript copy-paste detection tool that analyzes Excel files for pot
 3. `runStrategies()` executes selected detection strategies in order
 4. Each strategy analyzes the data and prints results
 5. Some strategies depend on results from previous strategies (e.g., `individualNumbers` uses `duplicateRows` results)
+
+### Authentication & Authorization
+
+JWT-based auth using `@fastify/jwt` and `@fastify/cookie`. Stateless -- the JWT is stored in an HttpOnly cookie and verified on each request without a database lookup.
+
+- **Roles**: `admin` > `editor` > `viewer`. Every route declares its minimum role via `config: { requiredRole: "viewer" | "editor" | "admin" | "public" }`. TypeScript enforces this is never omitted.
+- **Auth hook** (`src/server/hooks/authHook.ts`): Global `onRequest` hook that verifies the JWT, checks `requiresPasswordChange`, and enforces the route's `requiredRole`.
+- **Password hashing** (`src/auth/password.ts`): Uses Node.js built-in scrypt.
+- **Forced password reset**: Admin creates users with temp passwords (`requiresPasswordChange: true`). User must reset before accessing the app. Admin can also reset existing users via `POST /api/admin/users/:id/reset-password`.
+- **Frontend**: `AuthProvider` context in `src/web/src/lib/useAuth.tsx`. Route guards `RequireAuth` and `RequirePasswordChanged` protect all app routes.
 
 ### AI Integration
 
