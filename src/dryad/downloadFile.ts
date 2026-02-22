@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fetchToken } from "./fetchToken";
 import { logger } from "../utils/logger";
 import { dryadFetch } from "./dryadFetch";
+import { storagePaths } from "../utils/paths/storagePaths";
 
 const DRYAD_BASE_API_URL = "https://datadryad.org/api/v2";
 
@@ -21,7 +22,7 @@ export async function downloadFile({
   const url = `${DRYAD_BASE_API_URL}/files/${fileId}/download`;
   const accessToken = await fetchToken();
 
-  const downloadDir = join(process.cwd(), `data/dryad/files/${datasetId}`);
+  const downloadDir = storagePaths.dryadDataset(datasetId);
   const filePath = join(downloadDir, filename);
 
   // Ensure the directory exists

@@ -6,6 +6,7 @@ import { Sheet } from "../entities/Sheet";
 import { logger } from "../utils/logger";
 import { parseIntArgument } from "../utils/command";
 import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
+import { storagePaths } from "../utils/paths/storagePaths";
 
 const program = new Command();
 
@@ -22,9 +23,9 @@ program
     100,
   )
   .action(async (limit) => {
-    const dryadFilesPath = path.join(process.cwd(), "data", "dryad", "files");
+    const dryadFilesPath = storagePaths.dryad;
 
-    // Get all folders in data/dryad/files/
+    // Get all folders in storage/dryad/
     const allFolders = await readdir(dryadFilesPath);
     const foldersToProcess = allFolders.slice(0, limit);
 

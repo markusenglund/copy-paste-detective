@@ -22,6 +22,7 @@ import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewR
 import { DatasetDetails } from "../../shared/datasetTypes";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { storagePaths } from "../../utils/paths/storagePaths";
 
 export async function getDatasetDetails(
   datasetId: number,
@@ -192,9 +193,7 @@ export async function getDatasetDetails(
       ? file.fileName.replace(".xls", ".xlsx")
       : file.fileName;
     const highlightedPath = join(
-      process.cwd(),
-      "highlighted-output",
-      info.extId.toString(),
+      storagePaths.highlightedDataset(info.extId),
       highlightedFilename,
     );
     if (existsSync(highlightedPath)) {

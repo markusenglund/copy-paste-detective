@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { storagePaths } from "./paths/storagePaths";
 
 export async function loadPdfFile(options: {
   articleId: number;
@@ -10,8 +11,8 @@ export async function loadPdfFile(options: {
   mimeType: string;
 }> {
   const filePath = join(
-    process.cwd(),
-    `data/pdfs/${options.articleId}/${options.filename}`,
+    storagePaths.pdfArticle(options.articleId),
+    options.filename,
   );
 
   const fileBuffer = await readFile(filePath);

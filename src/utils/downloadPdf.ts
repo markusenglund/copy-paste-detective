@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { config } from "../config/env";
 import { logger } from "./logger";
+import { storagePaths } from "./paths/storagePaths";
 
 type Params = {
   articleId: number;
@@ -70,7 +71,7 @@ export async function downloadPdf({
   articleId,
   openalexId,
 }: Params): Promise<{ filePath: string; filename: string; size: number }> {
-  const downloadDir = join(process.cwd(), `data/pdfs/${articleId}`);
+  const downloadDir = storagePaths.pdfArticle(articleId);
 
   await mkdir(downloadDir, { recursive: true });
 

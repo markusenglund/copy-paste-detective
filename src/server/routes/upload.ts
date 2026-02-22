@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { updateArticlePdfDownloadStatus } from "../../repositories/articles/articlesRepository";
 import { upsertPdfFile } from "../../repositories/pdfFiles/pdfFilesRepository";
+import { storagePaths } from "../../utils/paths/storagePaths";
 
 export async function uploadRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{
@@ -25,7 +26,7 @@ export async function uploadRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.status(400).send({ error: "Only PDF files are allowed" });
     }
 
-    const downloadDir = join(process.cwd(), `data/pdfs/${articleId}`);
+    const downloadDir = storagePaths.pdfArticle(articleId);
     await mkdir(downloadDir, { recursive: true });
 
     const filePath = join(downloadDir, filename);

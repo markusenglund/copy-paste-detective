@@ -11,6 +11,7 @@ import {
 } from "../config/config";
 import { logger } from "./logger";
 import { readTextFile } from "./readTextFile";
+import { storagePaths } from "./paths/storagePaths";
 
 export function loadExcelFileFromDryadIndex(
   dataset: DryadDatasetWithFiles,
@@ -22,7 +23,7 @@ export function loadExcelFileFromDryadIndex(
       `Invalid file index: ${fileIndex}. Available files: 0-${dataset.excelFiles.length - 1}`,
     );
   }
-  const datasetFolder = `data/dryad/files/${dataset.extId}`;
+  const datasetFolder = storagePaths.dryadDataset(dataset.extId);
   const selectedFile = dataset.excelFiles[fileIndex];
   const excelPath = path.join(datasetFolder, selectedFile.filename);
   const workbook = xlsx.readFile(excelPath, {

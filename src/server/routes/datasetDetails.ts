@@ -13,6 +13,7 @@ import { existsSync, createReadStream } from "node:fs";
 import { db } from "../../db";
 import { dryadDatasets, dryadExcelFiles } from "../../repositories";
 import { eq, and } from "drizzle-orm";
+import { storagePaths } from "../../utils/paths/storagePaths";
 
 export async function datasetDetailsRoutes(
   fastify: FastifyInstance,
@@ -151,15 +152,7 @@ export async function datasetDetailsRoutes(
 
       const { extId } = result[0];
 
-      // Construct file path
-      const filePath = join(
-        process.cwd(),
-        "data",
-        "dryad",
-        "files",
-        extId.toString(),
-        filename,
-      );
+      const filePath = join(storagePaths.dryadDataset(extId), filename);
 
       // Check if file exists on disk
       if (!existsSync(filePath)) {
@@ -234,11 +227,8 @@ export async function datasetDetailsRoutes(
           ? filename.replace(".xls", ".xlsx")
           : filename;
 
-        // Construct file path for highlighted file
         const filePath = join(
-          process.cwd(),
-          "highlighted-output",
-          extId.toString(),
+          storagePaths.highlightedDataset(extId),
           highlightedFilename,
         );
 

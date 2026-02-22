@@ -1,4 +1,6 @@
+import { join } from "node:path";
 import { JSONFilePreset } from "lowdb/node";
+import { storagePaths } from "../utils/paths/storagePaths";
 
 export type AnalysisResults = {
   filename: string;
@@ -19,6 +21,6 @@ const defaultData: AnalysisResultsData = {
 };
 
 export const db = await JSONFilePreset(
-  "data/dryad/analysis-results.json",
+  join(storagePaths.jsonStore, "analysis-results.json"),
   defaultData,
 );

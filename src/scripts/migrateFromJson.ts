@@ -8,6 +8,7 @@ import {
   dryadIndexingState,
 } from "../repositories";
 import { logger } from "../utils/logger";
+import { storagePaths } from "../utils/paths/storagePaths";
 
 type LegacyDryadFile = {
   filename: string;
@@ -70,7 +71,7 @@ function mapFileStatus(
 }
 
 async function migrateFromJson(): Promise<void> {
-  const jsonPath = path.join(process.cwd(), "data", "dryad", "datasets.json");
+  const jsonPath = path.join(storagePaths.jsonStore, "datasets.json");
 
   logger.info(`Reading JSON data from ${jsonPath}...`);
   const jsonContent = fs.readFileSync(jsonPath, "utf-8");

@@ -5,6 +5,7 @@ import { articles } from "../repositories/articles/schema";
 import { upsertPdfFile } from "../repositories/pdfFiles/pdfFilesRepository";
 import { logger } from "../utils/logger";
 import { inArray } from "drizzle-orm";
+import { storagePaths } from "../utils/paths/storagePaths";
 
 async function backfillPdfMetadata(): Promise<void> {
   logger.info("Starting PDF metadata backfill...");
@@ -26,7 +27,7 @@ async function backfillPdfMetadata(): Promise<void> {
 
   for (let i = 0; i < articlesWithPdfs.length; i++) {
     const article = articlesWithPdfs[i];
-    const pdfDir = join(process.cwd(), `data/pdfs/${article.id}`);
+    const pdfDir = storagePaths.pdfArticle(article.id);
 
     try {
       const files = await readdir(pdfDir);

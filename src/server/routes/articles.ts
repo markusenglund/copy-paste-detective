@@ -5,6 +5,7 @@ import {
 } from "../../repositories/articles/articlesRepository";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
+import { storagePaths } from "../../utils/paths/storagePaths";
 import {
   isValidSortField,
   isValidSortOrder,
@@ -152,8 +153,7 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
   }>("/articles/:articleId/pdf/:filename", async (request, reply) => {
     const { articleId, filename } = request.params;
 
-    // Construct the path to the PDF file
-    const pdfPath = join(process.cwd(), "data", "pdfs", articleId, filename);
+    const pdfPath = join(storagePaths.pdfArticle(articleId), filename);
 
     // Check if file exists
     if (!existsSync(pdfPath)) {

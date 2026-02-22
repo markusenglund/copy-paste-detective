@@ -8,6 +8,7 @@ import { mkdir, copyFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { writeFile } from "node:fs/promises";
+import { storagePaths } from "../utils/paths/storagePaths";
 
 const program = new Command();
 
@@ -42,10 +43,7 @@ program
       // A. Copy PDF file
       if (details.article.id && details.article.pdfFilename) {
         const pdfSource = join(
-          process.cwd(),
-          "data",
-          "pdfs",
-          details.article.id.toString(),
+          storagePaths.pdfArticle(details.article.id),
           details.article.pdfFilename,
         );
         if (existsSync(pdfSource)) {
@@ -74,13 +72,7 @@ program
       );
 
       // B. Copy original Excel files (only for suspicious sheets)
-      const originalDir = join(
-        process.cwd(),
-        "data",
-        "dryad",
-        "files",
-        extId.toString(),
-      );
+      const originalDir = storagePaths.dryadDataset(extId);
       if (existsSync(originalDir)) {
         for (const file of suspiciousExcelFiles) {
           const sourcePath = join(originalDir, file);
@@ -96,11 +88,7 @@ program
       }
 
       // C. Copy highlighted Excel files (only for suspicious sheets)
-      const highlightedDir = join(
-        process.cwd(),
-        "highlighted-output",
-        extId.toString(),
-      );
+      const highlightedDir = storagePaths.highlightedDataset(extId);
       if (existsSync(highlightedDir)) {
         for (const originalName of suspiciousExcelFiles) {
           const highlightedName = originalName.endsWith(".xls")

@@ -62,7 +62,7 @@ npx drizzle-kit migrate
 
 ### Migrating existing JSON data
 
-If you have existing data in `data/dryad/datasets.json`, run the migration script:
+If you have existing data in `storage/json-store/datasets.json`, run the migration script:
 
 ```bash
 npx tsx -r dotenv/config src/scripts/migrateFromJson.ts

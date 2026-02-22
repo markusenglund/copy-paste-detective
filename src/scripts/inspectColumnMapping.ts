@@ -1,6 +1,7 @@
 import path from "path";
 import xlsx from "xlsx";
 import { loadExcelFileWithoutMetadata } from "../utils/loadExcelFileWithoutMetadata";
+import { storagePaths } from "../utils/paths/storagePaths";
 
 const args = process.argv.slice(2);
 
@@ -14,7 +15,7 @@ if (args.length < 2) {
 const colAIndex = xlsx.utils.decode_col(args[0]);
 const colBIndex = xlsx.utils.decode_col(args[1]);
 
-const filePath = path.resolve("data/dryad/files/162720/NP_Data.xlsx");
+const filePath = path.join(storagePaths.dryadDataset(162720), "NP_Data.xlsx");
 const excelFile = loadExcelFileWithoutMetadata(filePath);
 const sheet = excelFile.sheets[0];
 

@@ -1,9 +1,10 @@
 import path from "path";
 import fs from "fs";
+import { storagePaths } from "./storagePaths";
 
 /**
  * Generate output path for highlighted Excel files.
- * Structure: highlighted-output/{extId}/{original-filename}.xlsx
+ * Structure: storage/highlighted-files/{extId}/{original-filename}.xlsx
  *
  * @param originalFilePath - Full path to the original Excel file
  * @param extId - Dataset external ID (e.g., "158552")
@@ -18,11 +19,7 @@ export function getHighlightedOutputPath(
     filename = filename.replace(".xls", ".xlsx");
   }
   const datasetFolder = extId || "unknown";
-  const outputDir = path.join(
-    process.cwd(),
-    "highlighted-output",
-    datasetFolder,
-  );
+  const outputDir = path.join(storagePaths.highlightedFiles, datasetFolder);
 
   // Ensure output directory exists
   fs.mkdirSync(outputDir, { recursive: true });
