@@ -91,9 +91,12 @@ export async function datasetDetailsRoutes(
         });
       }
 
+      const userId = parseInt(request.user.sub, 10);
+
       try {
         const review = await upsertHumanReview({
           dryadDatasetId: datasetId,
+          userId,
           verdict: verdict as "true_positive" | "false_positive" | "ambiguous",
           impactScore,
           notes: notes ?? null,
@@ -113,6 +116,8 @@ export async function datasetDetailsRoutes(
           updatedAt: review.updatedAt,
           prosecutionStatusId: review.prosecutionStatusId,
           caseName: prosecutionStatus[0]?.name ?? null,
+          reviewerUsername: request.user.username,
+          isLatestReview: review.isLatestReview,
         });
       } catch (error) {
         console.error("Error saving human review:", error);

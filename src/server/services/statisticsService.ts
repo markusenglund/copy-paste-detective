@@ -258,7 +258,12 @@ export async function getStatistics(): Promise<StatisticsResponse> {
           impactScore: humanReviews.impactScore,
         })
         .from(humanReviews)
-        .where(inArray(humanReviews.dryadDatasetId, highImpactDatasetIds));
+        .where(
+          and(
+            inArray(humanReviews.dryadDatasetId, highImpactDatasetIds),
+            eq(humanReviews.isLatestReview, true),
+          ),
+        );
 
       for (const row of humanReviewResults) {
         if (row.verdict === "true_positive") {

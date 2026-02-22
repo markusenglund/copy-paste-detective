@@ -59,11 +59,13 @@ export interface HumanReview {
   updatedAt: Date;
   prosecutionStatusId: string;
   caseName: string | null;
+  reviewerUsername: string;
+  isLatestReview: boolean;
 }
 
 export interface DatasetDetails {
   dataset: DatasetInfo;
   article: ArticleInfo;
-  humanReview: HumanReview | null;
+  humanReviews: HumanReview[];
   sheetReviews: SheetReview[];
 }

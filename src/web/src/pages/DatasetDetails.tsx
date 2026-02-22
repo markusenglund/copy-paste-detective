@@ -291,7 +291,7 @@ export function DatasetDetails(): React.ReactElement {
 
       <HumanReviewSection
         datasetId={data.dataset.id}
-        initialReview={data.humanReview}
+        initialReviews={data.humanReviews}
       />
 
       <h2 className="text-2xl font-bold mb-4">AI Reviews</h2>

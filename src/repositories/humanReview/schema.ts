@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   pgEnum,
@@ -6,8 +7,10 @@ import {
   serial,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 import { dryadDatasets } from "../datasets/schema";
+import { users } from "../users/schema";
 
 export const verdictEnum = pgEnum("verdict", [
   "true_positive",
@@ -21,8 +24,11 @@ export const humanReviews = pgTable(
     id: serial("id").primaryKey(),
     dryadDatasetId: integer("dryad_dataset_id")
       .notNull()
-      .references(() => dryadDatasets.id)
-      .unique(),
+      .references(() => dryadDatasets.id),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    isLatestReview: boolean("is_latest_review").notNull().default(true),
     verdict: verdictEnum("verdict").notNull(),
     impactScore: integer("impact_score").notNull(),
     notes: text("notes"),
@@ -35,6 +41,10 @@ export const humanReviews = pgTable(
   },
   (table) => [
     index("idx_human_reviews_dryad_dataset_id").on(table.dryadDatasetId),
+    unique("uq_human_reviews_dataset_user").on(
+      table.dryadDatasetId,
+      table.userId,
+    ),
   ],
 );
 

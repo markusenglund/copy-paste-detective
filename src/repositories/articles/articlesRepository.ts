@@ -385,7 +385,10 @@ export async function getDashboardArticles(
     .leftJoin(dryadDatasets, eq(articles.dryadDatasetId, dryadDatasets.id))
     .leftJoin(
       humanReviews,
-      eq(humanReviews.dryadDatasetId, articles.dryadDatasetId),
+      and(
+        eq(humanReviews.dryadDatasetId, articles.dryadDatasetId),
+        eq(humanReviews.isLatestReview, true),
+      ),
     )
     .leftJoin(
       prosecutionStatuses,

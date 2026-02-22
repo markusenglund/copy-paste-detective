@@ -13,11 +13,8 @@ import { authors } from "../../repositories/authors/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
-import {
-  humanReviews,
-  prosecutionStatuses,
-} from "../../repositories/humanReview/schema";
 import { eq, sql, and, gt } from "drizzle-orm";
+import { getReviewsForDataset } from "../../repositories/humanReview/humanReviewRepository";
 import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
 import { DatasetDetails } from "../../shared/datasetTypes";
 import { existsSync } from "node:fs";
@@ -127,23 +124,7 @@ export async function getDatasetDetails(
 
   const info = datasetInfo[0];
 
-  // Get human review if it exists
-  const humanReview = await db
-    .select({
-      verdict: humanReviews.verdict,
-      impactScore: humanReviews.impactScore,
-      notes: humanReviews.notes,
-      updatedAt: humanReviews.updatedAt,
-      prosecutionStatusId: humanReviews.prosecutionStatusId,
-      caseName: prosecutionStatuses.name,
-    })
-    .from(humanReviews)
-    .leftJoin(
-      prosecutionStatuses,
-      eq(prosecutionStatuses.id, humanReviews.prosecutionStatusId),
-    )
-    .where(eq(humanReviews.dryadDatasetId, datasetId))
-    .limit(1);
+  const humanReviewRows = await getReviewsForDataset(datasetId);
 
   // Get authors for the article
   const authorsList = info.articleId
@@ -259,16 +240,16 @@ export async function getDatasetDetails(
       })),
       funders: fundersList,
     },
-    humanReview: humanReview[0]
-      ? {
-          verdict: humanReview[0].verdict,
-          impactScore: humanReview[0].impactScore,
-          notes: humanReview[0].notes,
-          updatedAt: humanReview[0].updatedAt,
-          prosecutionStatusId: humanReview[0].prosecutionStatusId,
-          caseName: humanReview[0].caseName,
-        }
-      : null,
+    humanReviews: humanReviewRows.map((r) => ({
+      verdict: r.verdict,
+      impactScore: r.impactScore,
+      notes: r.notes,
+      updatedAt: r.updatedAt,
+      prosecutionStatusId: r.prosecutionStatusId,
+      caseName: r.caseName,
+      reviewerUsername: r.reviewerUsername,
+      isLatestReview: r.isLatestReview,
+    })),
     sheetReviews,
   };
 }
