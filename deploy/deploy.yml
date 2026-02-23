@@ -43,6 +43,6 @@
       until: db_ready.rc == 0
 
     - name: Run database migrations
-      shell: docker compose exec -T app npx drizzle-kit push
+      shell: docker compose exec -T app npx drizzle-kit migrate
       args:
         chdir: "{{ app_dir }}"
