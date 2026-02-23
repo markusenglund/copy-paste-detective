@@ -16,7 +16,8 @@ async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
   });
 
   if (response.status === 401) {
-    window.location.href = "/login";
+    const redirectTarget = window.location.pathname + window.location.search;
+    window.location.href = `/login?redirect=${encodeURIComponent(redirectTarget)}`;
     throw new Error("Unauthorized");
   }
 

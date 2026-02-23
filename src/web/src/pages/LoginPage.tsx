@@ -1,10 +1,24 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
+
+function getRedirectTarget(location: ReturnType<typeof useLocation>): string {
+  const state = location.state as {
+    from?: { pathname: string; search?: string };
+  } | null;
+  if (state?.from) {
+    return state.from.pathname + (state.from.search || "");
+  }
+
+  const params = new URLSearchParams(location.search);
+  return params.get("redirect") || "/";
+}
 
 export function LoginPage(): React.ReactElement {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTarget = getRedirectTarget(location);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,9 +32,12 @@ export function LoginPage(): React.ReactElement {
     try {
       const user = await login(username, password);
       if (user.requiresPasswordChange) {
-        navigate("/reset-password", { replace: true });
+        navigate("/reset-password", {
+          replace: true,
+          state: { from: redirectTarget },
+        });
       } else {
-        navigate("/", { replace: true });
+        navigate(redirectTarget, { replace: true });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

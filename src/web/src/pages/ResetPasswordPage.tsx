@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
 
 export function ResetPasswordPage(): React.ReactElement {
   const { refreshUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTarget =
+    (location.state as { from?: string } | null)?.from || "/";
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +43,7 @@ export function ResetPasswordPage(): React.ReactElement {
       }
 
       await refreshUser();
-      navigate("/", { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reset password");
     } finally {
