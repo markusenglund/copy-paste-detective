@@ -158,20 +158,20 @@ export function ArticlesTable({
               Country
             </th>
             <SortableColumnHeader
-              label="Probability"
+              label="Prob (AI)"
               field={SORT_FIELDS.PROBABILITY}
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
-              width="130px"
+              width="110px"
             />
             <SortableColumnHeader
-              label="Impact"
+              label="Impact (AI)"
               field={SORT_FIELDS.IMPACT}
               currentSortBy={currentSortBy}
               currentSortOrder={currentSortOrder}
               onSort={onSort}
-              width="110px"
+              width="120px"
             />
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -181,7 +181,7 @@ export function ArticlesTable({
             </th>
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              style={{ width: "120px" }}
+              style={{ width: "130px" }}
             >
               Case
             </th>
@@ -211,7 +211,7 @@ export function ArticlesTable({
             />
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              style={{ width: "200px" }}
+              style={{ width: "170px" }}
             >
               PDF File
             </th>
