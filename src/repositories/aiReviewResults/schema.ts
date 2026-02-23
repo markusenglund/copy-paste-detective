@@ -45,5 +45,9 @@ export const aiReviewResults = pgTable(
     isLatestIdx: index("ai_review_results_is_latest_idx")
       .on(table.isLatestReview)
       .where(sql`${table.isLatestReview} = true`),
+
+    latestByDatasetIdx: index("idx_ai_review_results_latest_dataset")
+      .on(table.dryadDatasetId)
+      .where(sql`${table.isLatestReview} = true`),
   }),
 );

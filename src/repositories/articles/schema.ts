@@ -50,6 +50,9 @@ export const articles = pgTable(
     index("idx_articles_citation_percentile").on(
       table.citationNormalizedPercentile,
     ),
+    index("idx_articles_dryad_dataset_id").on(table.dryadDatasetId),
+    index("idx_articles_journal_id").on(table.journalId),
+    index("idx_articles_field").on(table.field),
   ],
 );
 
@@ -74,7 +77,13 @@ export const articleAuthors = pgTable(
     createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
     updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
   },
-  (table) => [unique().on(table.articleId, table.authorId)],
+  (table) => [
+    unique().on(table.articleId, table.authorId),
+    index("idx_article_authors_article_position").on(
+      table.articleId,
+      table.authorPosition,
+    ),
+  ],
 );
 
 export const articleFunders = pgTable(
