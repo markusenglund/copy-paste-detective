@@ -1,0 +1,1441 @@
+{
+  "id": "1e4eff65-a909-4b38-a58f-798f23ec788e",
+  "prevId": "37008136-8a2d-45be-8da9-a6ce53813ecd",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.ai_column_categorization_results": {
+      "name": "ai_column_categorization_results",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dryad_dataset_id": {
+          "name": "dryad_dataset_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dryad_excel_file_id": {
+          "name": "dryad_excel_file_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sheet_name": {
+          "name": "sheet_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt": {
+          "name": "prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "motivation": {
+          "name": "motivation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "included_column_names": {
+          "name": "included_column_names",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "excluded_column_names": {
+          "name": "excluded_column_names",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ai_column_categorization_results_dryad_dataset_id_dryad_datasets_id_fk": {
+          "name": "ai_column_categorization_results_dryad_dataset_id_dryad_datasets_id_fk",
+          "tableFrom": "ai_column_categorization_results",
+          "tableTo": "dryad_datasets",
+          "columnsFrom": [
+            "dryad_dataset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ai_column_categorization_results_dryad_excel_file_id_dryad_excel_files_id_fk": {
+          "name": "ai_column_categorization_results_dryad_excel_file_id_dryad_excel_files_id_fk",
+          "tableFrom": "ai_column_categorization_results",
+          "tableTo": "dryad_excel_files",
+          "columnsFrom": [
+            "dryad_excel_file_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ai_pdf_review_results": {
+      "name": "ai_pdf_review_results",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ai_review_result_id": {
+          "name": "ai_review_result_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "article_id": {
+          "name": "article_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt": {
+          "name": "prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "impact_score": {
+          "name": "impact_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "response": {
+          "name": "response",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_ai_pdf_review_results_ai_review": {
+          "name": "idx_ai_pdf_review_results_ai_review",
+          "columns": [
+            {
+              "expression": "ai_review_result_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_ai_pdf_review_results_article": {
+          "name": "idx_ai_pdf_review_results_article",
+          "columns": [
+            {
+              "expression": "article_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_ai_pdf_review_results_hash": {
+          "name": "idx_ai_pdf_review_results_hash",
+          "columns": [
+            {
+              "expression": "hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ai_pdf_review_results_ai_review_result_id_ai_review_results_id_fk": {
+          "name": "ai_pdf_review_results_ai_review_result_id_ai_review_results_id_fk",
+          "tableFrom": "ai_pdf_review_results",
+          "tableTo": "ai_review_results",
+          "columnsFrom": [
+            "ai_review_result_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ai_pdf_review_results_article_id_articles_id_fk": {
+          "name": "ai_pdf_review_results_article_id_articles_id_fk",
+          "tableFrom": "ai_pdf_review_results",
+          "tableTo": "articles",
+          "columnsFrom": [
+            "article_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ai_pdf_review_results_hash_unique": {
+          "name": "ai_pdf_review_results_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ai_review_results": {
+      "name": "ai_review_results",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dryad_dataset_id": {
+          "name": "dryad_dataset_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dryad_excel_file_id": {
+          "name": "dryad_excel_file_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sheet_name": {
+          "name": "sheet_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt": {
+          "name": "prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "explanation": {
+          "name": "explanation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "false_positive_theory": {
+          "name": "false_positive_theory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "suspicion_score": {
+          "name": "suspicion_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "impact_score": {
+          "name": "impact_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ai_review_results_dryad_dataset_id_dryad_datasets_id_fk": {
+          "name": "ai_review_results_dryad_dataset_id_dryad_datasets_id_fk",
+          "tableFrom": "ai_review_results",
+          "tableTo": "dryad_datasets",
+          "columnsFrom": [
+            "dryad_dataset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ai_review_results_dryad_excel_file_id_dryad_excel_files_id_fk": {
+          "name": "ai_review_results_dryad_excel_file_id_dryad_excel_files_id_fk",
+          "tableFrom": "ai_review_results",
+          "tableTo": "dryad_excel_files",
+          "columnsFrom": [
+            "dryad_excel_file_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.article_authors": {
+      "name": "article_authors",
+      "schema": "",
+      "columns": {
+        "article_id": {
+          "name": "article_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_position": {
+          "name": "author_position",
+          "type": "author_position",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "institution_id": {
+          "name": "institution_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_timestamp": {
+          "name": "created_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_timestamp": {
+          "name": "updated_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "article_authors_article_id_articles_id_fk": {
+          "name": "article_authors_article_id_articles_id_fk",
+          "tableFrom": "article_authors",
+          "tableTo": "articles",
+          "columnsFrom": [
+            "article_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "article_authors_author_id_authors_id_fk": {
+          "name": "article_authors_author_id_authors_id_fk",
+          "tableFrom": "article_authors",
+          "tableTo": "authors",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "article_authors_institution_id_institutions_id_fk": {
+          "name": "article_authors_institution_id_institutions_id_fk",
+          "tableFrom": "article_authors",
+          "tableTo": "institutions",
+          "columnsFrom": [
+            "institution_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "article_authors_article_id_author_id_unique": {
+          "name": "article_authors_article_id_author_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "article_id",
+            "author_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.article_funders": {
+      "name": "article_funders",
+      "schema": "",
+      "columns": {
+        "article_id": {
+          "name": "article_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "funder_id": {
+          "name": "funder_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "article_funders_article_id_articles_id_fk": {
+          "name": "article_funders_article_id_articles_id_fk",
+          "tableFrom": "article_funders",
+          "tableTo": "articles",
+          "columnsFrom": [
+            "article_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "article_funders_funder_id_funders_id_fk": {
+          "name": "article_funders_funder_id_funders_id_fk",
+          "tableFrom": "article_funders",
+          "tableTo": "funders",
+          "columnsFrom": [
+            "funder_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "article_funders_article_id_funder_id_unique": {
+          "name": "article_funders_article_id_funder_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "article_id",
+            "funder_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.articles": {
+      "name": "articles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "doi": {
+          "name": "doi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ext_openalex_id": {
+          "name": "ext_openalex_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "publication_date": {
+          "name": "publication_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "num_citations": {
+          "name": "num_citations",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "citation_normalized_percentile": {
+          "name": "citation_normalized_percentile",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cited_by_percentile_year_min": {
+          "name": "cited_by_percentile_year_min",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "full_pdf_url": {
+          "name": "full_pdf_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pdf_download_status": {
+          "name": "pdf_download_status",
+          "type": "download_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "field": {
+          "name": "field",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subfield": {
+          "name": "subfield",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "topic": {
+          "name": "topic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dryad_dataset_id": {
+          "name": "dryad_dataset_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "journal_id": {
+          "name": "journal_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_timestamp": {
+          "name": "created_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_timestamp": {
+          "name": "updated_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "articles_dryad_dataset_id_dryad_datasets_id_fk": {
+          "name": "articles_dryad_dataset_id_dryad_datasets_id_fk",
+          "tableFrom": "articles",
+          "tableTo": "dryad_datasets",
+          "columnsFrom": [
+            "dryad_dataset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "articles_journal_id_journals_id_fk": {
+          "name": "articles_journal_id_journals_id_fk",
+          "tableFrom": "articles",
+          "tableTo": "journals",
+          "columnsFrom": [
+            "journal_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "articles_doi_unique": {
+          "name": "articles_doi_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "doi"
+          ]
+        },
+        "articles_ext_openalex_id_unique": {
+          "name": "articles_ext_openalex_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ext_openalex_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.authors": {
+      "name": "authors",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "orcid": {
+          "name": "orcid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ext_openalex_id": {
+          "name": "ext_openalex_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_timestamp": {
+          "name": "created_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_timestamp": {
+          "name": "updated_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "authors_orcid_unique": {
+          "name": "authors_orcid_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "orcid"
+          ]
+        },
+        "authors_ext_openalex_id_unique": {
+          "name": "authors_ext_openalex_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ext_openalex_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dryad_datasets": {
+      "name": "dryad_datasets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ext_id": {
+          "name": "ext_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dataset_doi": {
+          "name": "dataset_doi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original_file_size": {
+          "name": "original_file_size",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "abstract": {
+          "name": "abstract",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "usage_notes": {
+          "name": "usage_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_article_url": {
+          "name": "primary_article_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "journal_issn": {
+          "name": "journal_issn",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dryad_publication_date": {
+          "name": "dryad_publication_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dryad_last_modified_date": {
+          "name": "dryad_last_modified_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "latest_version_id": {
+          "name": "latest_version_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "download_status": {
+          "name": "download_status",
+          "type": "download_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_started'"
+        },
+        "analysis_status": {
+          "name": "analysis_status",
+          "type": "analysis_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_analyzed'"
+        },
+        "indexed_timestamp": {
+          "name": "indexed_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_timestamp": {
+          "name": "updated_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "dryad_datasets_ext_id_unique": {
+          "name": "dryad_datasets_ext_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ext_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dryad_excel_files": {
+      "name": "dryad_excel_files",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dryad_dataset_id": {
+          "name": "dryad_dataset_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ext_file_id": {
+          "name": "ext_file_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "download_status": {
+          "name": "download_status",
+          "type": "download_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_started'"
+        }
+      },
+      "indexes": {
+        "excel_files_dataset_id_idx": {
+          "name": "excel_files_dataset_id_idx",
+          "columns": [
+            {
+              "expression": "dryad_dataset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "dryad_excel_files_dryad_dataset_id_dryad_datasets_id_fk": {
+          "name": "dryad_excel_files_dryad_dataset_id_dryad_datasets_id_fk",
+          "tableFrom": "dryad_excel_files",
+          "tableTo": "dryad_datasets",
+          "columnsFrom": [
+            "dryad_dataset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "dryad_excel_files_ext_file_id_unique": {
+          "name": "dryad_excel_files_ext_file_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ext_file_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dryad_indexing_state": {
+      "name": "dryad_indexing_state",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "last_page_indexed": {
+          "name": "last_page_indexed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.dryad_readme_files": {
+      "name": "dryad_readme_files",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dryad_dataset_id": {
+          "name": "dryad_dataset_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ext_file_id": {
+          "name": "ext_file_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "download_status": {
+          "name": "download_status",
+          "type": "download_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_started'"
+        }
+      },
+      "indexes": {
+        "readme_files_dataset_id_idx": {
+          "name": "readme_files_dataset_id_idx",
+          "columns": [
+            {
+              "expression": "dryad_dataset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "dryad_readme_files_dryad_dataset_id_dryad_datasets_id_fk": {
+          "name": "dryad_readme_files_dryad_dataset_id_dryad_datasets_id_fk",
+          "tableFrom": "dryad_readme_files",
+          "tableTo": "dryad_datasets",
+          "columnsFrom": [
+            "dryad_dataset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "dryad_readme_files_ext_file_id_unique": {
+          "name": "dryad_readme_files_ext_file_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ext_file_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.funders": {
+      "name": "funders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "openalex_ext_id": {
+          "name": "openalex_ext_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ror_id": {
+          "name": "ror_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "funders_openalex_ext_id_unique": {
+          "name": "funders_openalex_ext_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "openalex_ext_id"
+          ]
+        },
+        "funders_ror_id_unique": {
+          "name": "funders_ror_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ror_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.institutions": {
+      "name": "institutions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "openalex_ext_id": {
+          "name": "openalex_ext_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ror_id": {
+          "name": "ror_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country_code": {
+          "name": "country_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_timestamp": {
+          "name": "created_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_timestamp": {
+          "name": "updated_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "institutions_openalex_ext_id_unique": {
+          "name": "institutions_openalex_ext_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "openalex_ext_id"
+          ]
+        },
+        "institutions_ror_id_unique": {
+          "name": "institutions_ror_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "ror_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.journals": {
+      "name": "journals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scimago_journal_rank": {
+          "name": "scimago_journal_rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issns": {
+          "name": "issns",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sjr_score": {
+          "name": "sjr_score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avg_citations": {
+          "name": "avg_citations",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fields": {
+          "name": "fields",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "publisher": {
+          "name": "publisher",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_timestamp": {
+          "name": "created_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_timestamp": {
+          "name": "updated_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "journals_issns_idx": {
+          "name": "journals_issns_idx",
+          "columns": [
+            {
+              "expression": "issns",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pdf_files": {
+      "name": "pdf_files",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "article_id": {
+          "name": "article_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "size": {
+          "name": "size",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_timestamp": {
+          "name": "created_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_timestamp": {
+          "name": "updated_timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pdf_files_article_id_articles_id_fk": {
+          "name": "pdf_files_article_id_articles_id_fk",
+          "tableFrom": "pdf_files",
+          "tableTo": "articles",
+          "columnsFrom": [
+            "article_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pdf_files_article_id_unique": {
+          "name": "pdf_files_article_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "article_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.author_position": {
+      "name": "author_position",
+      "schema": "public",
+      "values": [
+        "first",
+        "middle",
+        "last"
+      ]
+    },
+    "public.download_status": {
+      "name": "download_status",
+      "schema": "public",
+      "values": [
+        "not_started",
+        "in_progress",
+        "failed",
+        "completed",
+        "skipped",
+        "api_forbidden",
+        "api_not_found",
+        "manually_added"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

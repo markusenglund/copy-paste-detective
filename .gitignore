@@ -7,6 +7,5 @@ storage
 .~lock.*#
 tmp
 .cache
-drizzle/meta
 casefiles
 .env.production
