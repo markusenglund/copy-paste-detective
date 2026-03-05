@@ -1,5 +1,9 @@
 `copy-paste-detective` detects duplicated data within Excel spreadsheets.
 
+This repository is source-available, not open-source. The code is
+public so that funders, collaborators, and the research integrity
+community can follow development and learn from the approach.
+
 # Commands
 
 - `npm run detect excel <folder> [fileIndex]` - Detect anomalous data from Excel sheet stored on the file-system.
