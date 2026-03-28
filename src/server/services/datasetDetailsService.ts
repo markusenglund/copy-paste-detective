@@ -15,6 +15,7 @@ import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import { eq, sql, and, gt } from "drizzle-orm";
 import { getReviewsForDataset } from "../../repositories/humanReview/humanReviewRepository";
+import { getTagsForDataset } from "../../repositories/datasets/tagsRepository";
 import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
 import { DatasetDetails } from "../../shared/datasetTypes";
 import { existsSync } from "node:fs";
@@ -125,6 +126,7 @@ export async function getDatasetDetails(
   const info = datasetInfo[0];
 
   const humanReviewRows = await getReviewsForDataset(datasetId);
+  const datasetTagRows = await getTagsForDataset(datasetId);
 
   // Get authors for the article
   const authorsList = info.articleId
@@ -251,5 +253,6 @@ export async function getDatasetDetails(
       isLatestReview: r.isLatestReview,
     })),
     sheetReviews,
+    tags: datasetTagRows,
   };
 }

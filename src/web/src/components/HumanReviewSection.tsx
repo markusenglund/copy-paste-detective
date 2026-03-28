@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { HumanReview } from "../types/dataset";
 import {
   saveHumanReview,
   fetchProsecutionStatuses,
   createProsecutionStatus,
+  fetchTags,
+  addTagToDataset,
+  removeTagFromDataset,
   ProsecutionStatus,
+  TagInfo,
 } from "../api/client";
 import { useAuth } from "../lib/useAuth";
 
@@ -50,6 +54,7 @@ function getImpactScoreColor(score: number | null): string {
 interface HumanReviewSectionProps {
   datasetId: number;
   initialReviews: HumanReview[];
+  initialTagIds: Set<string>;
 }
 
 function ReviewCard({ review }: { review: HumanReview }): React.ReactElement {
@@ -97,8 +102,10 @@ function ReviewCard({ review }: { review: HumanReview }): React.ReactElement {
 export function HumanReviewSection({
   datasetId,
   initialReviews,
+  initialTagIds,
 }: HumanReviewSectionProps): React.ReactElement {
   const { user } = useAuth();
+  const canEdit = user?.role === "editor" || user?.role === "admin";
   const [reviews, setReviews] = useState<HumanReview[]>(initialReviews);
   const [isEditing, setIsEditing] = useState(false);
   const [formVerdict, setFormVerdict] = useState("");
@@ -114,6 +121,43 @@ export function HumanReviewSection({
   const [isCreatingStatus, setIsCreatingStatus] = useState(false);
   const [newStatusName, setNewStatusName] = useState("");
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [allTags, setAllTags] = useState<TagInfo[]>([]);
+  const [datasetTagIds, setDatasetTagIds] =
+    useState<Set<string>>(initialTagIds);
+  const [isTagMenuOpen, setIsTagMenuOpen] = useState(false);
+  const tagMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchTags().then(setAllTags);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent): void {
+      if (
+        tagMenuRef.current &&
+        !tagMenuRef.current.contains(e.target as Node)
+      ) {
+        setIsTagMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return (): void =>
+      document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleToggleTag = async (tagId: string): Promise<void> => {
+    try {
+      const isActive = datasetTagIds.has(tagId);
+      const updatedTags = isActive
+        ? await removeTagFromDataset(datasetId, tagId)
+        : await addTagToDataset(datasetId, tagId);
+      setDatasetTagIds(new Set(updatedTags.map((t) => t.id)));
+    } catch {
+      // silently ignore
+    }
+  };
+
+  const activeTags = allTags.filter((t) => datasetTagIds.has(t.id));
 
   const myReview = reviews.find((r) => r.reviewerUsername === user?.username);
 
@@ -329,6 +373,77 @@ export function HumanReviewSection({
         >
           {myReview ? "Edit My Review" : "Add Review"}
         </button>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap mb-4">
+        {activeTags.map((tag) => (
+          <span
+            key={tag.id}
+            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+            style={{
+              backgroundColor: tag.color + "20",
+              color: tag.color,
+              border: `1px solid ${tag.color}40`,
+            }}
+          >
+            {tag.name}
+            {canEdit && (
+              <button
+                onClick={() => void handleToggleTag(tag.id)}
+                className="ml-1.5 hover:opacity-70"
+                style={{ color: tag.color }}
+              >
+                x
+              </button>
+            )}
+          </span>
+        ))}
+        {canEdit && (
+          <div ref={tagMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsTagMenuOpen((prev) => !prev)}
+              className="inline-flex items-center gap-1 px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-full bg-white hover:bg-gray-50 cursor-pointer"
+            >
+              + Add tag
+            </button>
+            {isTagMenuOpen && (
+              <div className="absolute z-20 mt-1 min-w-[180px] bg-white border border-gray-300 rounded shadow-lg">
+                {allTags.map((tag) => {
+                  const isActive = datasetTagIds.has(tag.id);
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => void handleToggleTag(tag.id)}
+                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      <span className="flex-1">{tag.name}</span>
+                      {isActive && (
+                        <svg
+                          className="w-4 h-4 text-gray-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {reviews.length === 0 ? (
         <p className="text-gray-500">No reviews yet.</p>

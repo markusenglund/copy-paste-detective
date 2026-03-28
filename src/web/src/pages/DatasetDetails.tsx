@@ -292,6 +292,7 @@ export function DatasetDetails(): React.ReactElement {
       <HumanReviewSection
         datasetId={data.dataset.id}
         initialReviews={data.humanReviews}
+        initialTagIds={new Set(data.tags.map((t) => t.id))}
       />
 
       <h2 className="text-2xl font-bold mb-4">AI Reviews</h2>

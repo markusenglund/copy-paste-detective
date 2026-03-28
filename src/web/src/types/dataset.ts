@@ -6,4 +6,5 @@ export type {
   ArticleInfo,
   HumanReview,
   DatasetDetails,
+  Tag,
 } from "../../../shared/datasetTypes";

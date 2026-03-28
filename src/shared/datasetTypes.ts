@@ -63,9 +63,16 @@ export interface HumanReview {
   isLatestReview: boolean;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface DatasetDetails {
   dataset: DatasetInfo;
   article: ArticleInfo;
   humanReviews: HumanReview[];
   sheetReviews: SheetReview[];
+  tags: Tag[];
 }

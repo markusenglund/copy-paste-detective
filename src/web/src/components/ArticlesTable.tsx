@@ -185,6 +185,12 @@ export function ArticlesTable({
             >
               Case
             </th>
+            <th
+              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              style={{ width: "180px" }}
+            >
+              Tags
+            </th>
             <SortableColumnHeader
               label="Published"
               field={SORT_FIELDS.PUBLISHED}
@@ -374,6 +380,23 @@ export function ArticlesTable({
                 ) : (
                   <span className="text-gray-400">-</span>
                 )}
+              </td>
+              <td className="px-4 py-3 text-sm">
+                <div className="flex flex-wrap gap-1">
+                  {article.tags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: tag.color + "20",
+                        color: tag.color,
+                        border: `1px solid ${tag.color}40`,
+                      }}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
               </td>
               <td className="px-4 py-3 text-sm text-gray-600">
                 <span className="truncate block">

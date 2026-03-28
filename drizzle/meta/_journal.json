@@ -176,6 +176,13 @@
       "when": 1771839625174,
       "tag": "0025_worried_hedge_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1774690484025,
+      "tag": "0026_curious_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

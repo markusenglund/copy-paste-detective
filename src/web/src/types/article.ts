@@ -20,4 +20,5 @@ export interface ArticleForUpload {
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
   caseName: string | null;
+  tags: Array<{ id: string; name: string; color: string }>;
 }

@@ -19,6 +19,7 @@ import {
   asc,
   gt,
   gte,
+  inArray,
   SQL,
 } from "drizzle-orm";
 import { DownloadStatus } from "../../db/shared/enums";
@@ -26,7 +27,7 @@ import {
   AI_REVIEW_MIN_DATE,
   PDF_REVIEW_MIN_DATE,
 } from "../aiReviewResults/aiReviewResultsRepository";
-import { dryadDatasets } from "../datasets/schema";
+import { dryadDatasets, datasetTags, tags } from "../datasets/schema";
 import { pdfFiles } from "../pdfFiles/schema";
 import { humanReviews, prosecutionStatuses } from "../humanReview/schema";
 import { journals } from "../journals/schema";
@@ -230,6 +231,7 @@ export interface DashboardArticle {
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
   caseName: string | null;
+  tags: Array<{ id: string; name: string; color: string }>;
 }
 
 export async function getDashboardArticles(
@@ -341,6 +343,12 @@ export async function getDashboardArticles(
           eq(prosecutionStatuses.id, filter.selectedStatusId),
         );
       }
+    } else if (filter.key === FILTER_KEYS.TAG) {
+      if (filter.selectedTagIds.length > 0) {
+        filterConditions.push(
+          sql`${articles.dryadDatasetId} IN (SELECT ${datasetTags.datasetId} FROM ${datasetTags} WHERE ${inArray(datasetTags.tagId, filter.selectedTagIds)})`,
+        );
+      }
     }
   }
 
@@ -370,6 +378,11 @@ export async function getDashboardArticles(
       humanReviewVerdict: humanReviews.verdict,
       humanReviewImpactScore: humanReviews.impactScore,
       caseName: prosecutionStatuses.name,
+      tags: sql<
+        Array<{ id: string; name: string; color: string }>
+      >`(SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name, 'color', t.color)), '[]'::json) FROM ${datasetTags} dt JOIN ${tags} t ON t.id = dt.tag_id WHERE dt.dataset_id = ${dryadDatasets.id})`.as(
+        "tags",
+      ),
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))

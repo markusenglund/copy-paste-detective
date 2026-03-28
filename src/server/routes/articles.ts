@@ -24,6 +24,7 @@ import {
   ReviewStatusFilter,
   ReviewStatusOption,
   CaseStatusFilter,
+  TagFilter,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -147,6 +148,18 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
           selectedStatusId: caseStatusParam !== "" ? caseStatusParam : null,
         };
         filters.push(caseStatusFilter);
+      }
+
+      const tagParam = queryParams[`filter_${FILTER_KEYS.TAG}`];
+      if (tagParam !== undefined) {
+        const tagFilter: TagFilter = {
+          key: FILTER_KEYS.TAG,
+          selectedTagIds:
+            tagParam !== ""
+              ? tagParam.split(",").filter((id) => id !== "")
+              : [],
+        };
+        filters.push(tagFilter);
       }
 
       const filterParams: FilterParams = { filters };

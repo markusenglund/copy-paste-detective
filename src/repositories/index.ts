@@ -16,7 +16,7 @@ export type { DownloadStatus } from "../db/shared/enums";
 export { aiColumnCategorizationResults } from "./aiColumnCategorizationResults/schema";
 export { aiReviewResults } from "./aiReviewResults/schema";
 export { aiPdfReviewResults } from "./aiPdfReviewResults/schema";
-export { dryadDatasets } from "./datasets/schema";
+export { dryadDatasets, tags, datasetTags } from "./datasets/schema";
 export { dryadExcelFiles } from "./excelFiles/schema";
 export { dryadReadmeFiles } from "./readmeFiles/schema";
 export { dryadIndexingState } from "./indexingState/schema";

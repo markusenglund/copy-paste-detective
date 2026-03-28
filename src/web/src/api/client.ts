@@ -216,3 +216,55 @@ export async function createProsecutionStatus(
   const data = await response.json();
   return data.status;
 }
+
+export interface TagInfo {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export async function fetchTags(): Promise<TagInfo[]> {
+  const response = await apiFetch(`${BASE_URL}/tags`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch tags");
+  }
+  const data = await response.json();
+  return data.tags;
+}
+
+export async function addTagToDataset(
+  datasetId: number,
+  tagId: string,
+): Promise<TagInfo[]> {
+  const response = await apiFetch(`${BASE_URL}/datasets/${datasetId}/tags`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tagId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to add tag");
+  }
+
+  const data = await response.json();
+  return data.tags;
+}
+
+export async function removeTagFromDataset(
+  datasetId: number,
+  tagId: string,
+): Promise<TagInfo[]> {
+  const response = await apiFetch(
+    `${BASE_URL}/datasets/${datasetId}/tags/${encodeURIComponent(tagId)}`,
+    { method: "DELETE" },
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to remove tag");
+  }
+
+  const data = await response.json();
+  return data.tags;
+}

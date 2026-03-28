@@ -8,7 +8,9 @@ import {
 import {
   fetchAvailableFields,
   fetchProsecutionStatuses,
+  fetchTags,
   ProsecutionStatus,
+  TagInfo,
 } from "../api/client";
 
 interface CompactSelectOption {
@@ -126,6 +128,7 @@ export function FilterPanel({
   const [prosecutionStatuses, setProsecutionStatuses] = useState<
     ProsecutionStatus[]
   >([]);
+  const [availableTags, setAvailableTags] = useState<TagInfo[]>([]);
 
   useEffect(() => {
     fetchAvailableFields()
@@ -136,6 +139,9 @@ export function FilterPanel({
       .catch((err) =>
         console.error("Failed to fetch prosecution statuses:", err),
       );
+    fetchTags()
+      .then(setAvailableTags)
+      .catch((err) => console.error("Failed to fetch tags:", err));
   }, []);
 
   const highProbabilityFilter = filterParams.filters.find(
@@ -166,6 +172,8 @@ export function FilterPanel({
     (f) => f.key === FILTER_KEYS.CASE_STATUS,
   );
 
+  const tagFilter = filterParams.filters.find((f) => f.key === FILTER_KEYS.TAG);
+
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
   const pdfAvailabilityOption = pdfAvailabilityFilter?.option ?? "all";
   const minImpactScore = minImpactScoreFilter?.minScore ?? null;
@@ -174,6 +182,8 @@ export function FilterPanel({
   const selectedField = fieldFilter?.selectedField ?? null;
   const reviewStatusOption = reviewStatusFilter?.option ?? "all";
   const selectedCaseStatusId = caseStatusFilter?.selectedStatusId ?? null;
+  const selectedTagIds =
+    tagFilter && "selectedTagIds" in tagFilter ? tagFilter.selectedTagIds : [];
 
   const activeFilterCount =
     (isHighProbabilityEnabled ? 1 : 0) +
@@ -182,7 +192,8 @@ export function FilterPanel({
     (minHumanReviewImpactScore !== null ? 1 : 0) +
     (selectedField !== null ? 1 : 0) +
     (reviewStatusOption !== "all" ? 1 : 0) +
-    (selectedCaseStatusId !== null ? 1 : 0);
+    (selectedCaseStatusId !== null ? 1 : 0) +
+    (selectedTagIds.length > 0 ? 1 : 0);
 
   const handleHighProbabilityChange = (enabled: boolean): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
@@ -250,6 +261,20 @@ export function FilterPanel({
     const updatedFilters = filterParams.filters.map((filter) =>
       filter.key === FILTER_KEYS.CASE_STATUS
         ? { ...filter, selectedStatusId: value }
+        : filter,
+    );
+
+    onFilterChange({ filters: updatedFilters });
+  };
+
+  const handleTagToggle = (tagId: string): void => {
+    const newSelectedTagIds = selectedTagIds.includes(tagId)
+      ? selectedTagIds.filter((id) => id !== tagId)
+      : [...selectedTagIds, tagId];
+
+    const updatedFilters = filterParams.filters.map((filter) =>
+      filter.key === FILTER_KEYS.TAG
+        ? { ...filter, selectedTagIds: newSelectedTagIds }
         : filter,
     );
 
@@ -350,6 +375,44 @@ export function FilterPanel({
             onChange={handleCaseStatusChange}
             allLabel="All statuses"
           />
+
+          {availableTags.length > 0 && (
+            <>
+              <div className="w-px self-stretch bg-gray-200" />
+
+              {/* Tags - toggle buttons */}
+              <div className="flex flex-col gap-1">
+                <span className="text-sm text-gray-700 font-medium">Tags</span>
+                <div className="flex flex-wrap gap-1">
+                  {availableTags.map((tag) => {
+                    const isSelected = selectedTagIds.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => handleTagToggle(tag.id)}
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium transition-colors"
+                        style={
+                          isSelected
+                            ? {
+                                backgroundColor: tag.color + "20",
+                                color: tag.color,
+                                border: `1px solid ${tag.color}`,
+                              }
+                            : {
+                                backgroundColor: "#f9fafb",
+                                color: "#6b7280",
+                                border: "1px solid #d1d5db",
+                              }
+                        }
+                      >
+                        {tag.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex-1" />

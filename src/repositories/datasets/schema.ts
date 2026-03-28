@@ -5,6 +5,8 @@ import {
   integer,
   bigint,
   timestamp,
+  unique,
+  index,
 } from "drizzle-orm/pg-core";
 import { analysisStatusEnum, downloadStatusEnum } from "../../db/shared/enums";
 
@@ -30,3 +32,27 @@ export const dryadDatasets = pgTable("dryad_datasets", {
   indexedTimestamp: timestamp("indexed_timestamp").notNull().defaultNow(),
   updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });
+
+export const tags = pgTable("tags", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  color: text("color").notNull(),
+});
+
+export const datasetTags = pgTable(
+  "dataset_tags",
+  {
+    id: serial("id").primaryKey(),
+    datasetId: integer("dataset_id")
+      .notNull()
+      .references(() => dryadDatasets.id),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tags.id),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    unique("uq_dataset_tag").on(table.datasetId, table.tagId),
+    index("idx_dataset_tags_dataset_id").on(table.datasetId),
+  ],
+);

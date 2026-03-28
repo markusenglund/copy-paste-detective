@@ -6,6 +6,12 @@ import {
   insertProsecutionStatus,
   getProsecutionStatusById,
 } from "../../repositories/humanReview/humanReviewRepository";
+import {
+  getAllTags,
+  addTagToDataset,
+  removeTagFromDataset,
+  getTagsForDataset,
+} from "../../repositories/datasets/tagsRepository";
 import { prosecutionStatuses } from "../../repositories/humanReview/schema";
 import { toSnakeCase } from "../../utils/slugify";
 import { join } from "node:path";
@@ -326,6 +332,74 @@ export async function datasetDetailsRoutes(
         return reply.send({ status: { id: status.id, name: status.name } });
       } catch (error) {
         console.error("Error creating prosecution status:", error);
+        return reply.status(500).send({ error: "Internal server error" });
+      }
+    },
+  );
+
+  fastify.get(
+    "/tags",
+    { config: { requiredRole: "viewer" } },
+    async (_request, reply) => {
+      try {
+        const tagList = await getAllTags();
+        return reply.send({ tags: tagList });
+      } catch (error) {
+        console.error("Error fetching tags:", error);
+        return reply.status(500).send({ error: "Internal server error" });
+      }
+    },
+  );
+
+  fastify.post<{
+    Params: { datasetId: string };
+    Body: { tagId: string };
+  }>(
+    "/datasets/:datasetId/tags",
+    { config: { requiredRole: "editor" } },
+    async (request, reply) => {
+      const datasetId = parseInt(request.params.datasetId, 10);
+      if (isNaN(datasetId)) {
+        return reply.status(400).send({ error: "Invalid dataset ID" });
+      }
+
+      const { tagId } = request.body;
+      if (!tagId || typeof tagId !== "string") {
+        return reply
+          .status(400)
+          .send({ error: "tagId must be a non-empty string" });
+      }
+
+      try {
+        await addTagToDataset(datasetId, tagId);
+        const updatedTags = await getTagsForDataset(datasetId);
+        return reply.send({ tags: updatedTags });
+      } catch (error) {
+        console.error("Error adding tag to dataset:", error);
+        return reply.status(500).send({ error: "Internal server error" });
+      }
+    },
+  );
+
+  fastify.delete<{
+    Params: { datasetId: string; tagId: string };
+  }>(
+    "/datasets/:datasetId/tags/:tagId",
+    { config: { requiredRole: "editor" } },
+    async (request, reply) => {
+      const datasetId = parseInt(request.params.datasetId, 10);
+      if (isNaN(datasetId)) {
+        return reply.status(400).send({ error: "Invalid dataset ID" });
+      }
+
+      const { tagId } = request.params;
+
+      try {
+        await removeTagFromDataset(datasetId, tagId);
+        const updatedTags = await getTagsForDataset(datasetId);
+        return reply.send({ tags: updatedTags });
+      } catch (error) {
+        console.error("Error removing tag from dataset:", error);
         return reply.status(500).send({ error: "Internal server error" });
       }
     },
