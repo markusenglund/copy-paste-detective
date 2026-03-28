@@ -1,4 +1,5 @@
 import {
+  boolean,
   pgTable,
   serial,
   text,
@@ -29,6 +30,7 @@ export const dryadDatasets = pgTable("dryad_datasets", {
   analysisStatus: analysisStatusEnum("analysis_status")
     .notNull()
     .default("not_analyzed"),
+  isMetaAnalysis: boolean("is_meta_analysis"),
   indexedTimestamp: timestamp("indexed_timestamp").notNull().defaultNow(),
   updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
 });

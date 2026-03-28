@@ -554,3 +554,150 @@ export async function reviewPdfWithCache(
 
   return result;
 }
+
+// ============ Meta-Analysis Classification ============
+
+import {
+  findByHash as findMetaAnalysisByHash,
+  insertResult as insertMetaAnalysisResult,
+} from "../repositories/aiMetaAnalysisResults/aiMetaAnalysisResultsRepository";
+
+const metaAnalysisResponseSchema = z.object({
+  reasoning: z.string(),
+  isMetaAnalysis: z.boolean(),
+});
+
+export type MetaAnalysisResponse = z.infer<typeof metaAnalysisResponseSchema>;
+
+const metaAnalysisModel = "gemini-2.5-flash-lite";
+
+const metaAnalysisGeminiSchema = {
+  type: Type.OBJECT,
+  properties: {
+    reasoning: {
+      type: Type.STRING,
+      description: "Brief reasoning for the classification",
+    },
+    isMetaAnalysis: {
+      type: Type.BOOLEAN,
+      description:
+        "Whether the dataset is from a meta-analysis or systematic review",
+    },
+  },
+  propertyOrdering: ["reasoning", "isMetaAnalysis"],
+  required: ["reasoning", "isMetaAnalysis"],
+} as const;
+
+type MetaAnalysisParams = {
+  model: string;
+  contents: string;
+  config: {
+    temperature: number;
+    responseMimeType: "application/json";
+    responseSchema: typeof metaAnalysisGeminiSchema;
+  };
+};
+
+function buildMetaAnalysisPrompt({
+  title,
+  abstract,
+  dataDescription,
+}: {
+  title: string;
+  abstract?: string;
+  dataDescription?: string;
+}): string {
+  const sections = [
+    `Classify whether this scientific dataset is from a meta-analysis/systematic review (compiles data from multiple published studies) vs an original empirical study.`,
+    `Title: ${title}`,
+  ];
+  if (abstract) {
+    sections.push(`Abstract: ${abstract}`);
+  }
+  if (dataDescription) {
+    sections.push(`Data description: ${dataDescription}`);
+  }
+  return sections.join("\n\n");
+}
+
+function buildMetaAnalysisParams(prompt: string): MetaAnalysisParams {
+  return {
+    model: metaAnalysisModel,
+    contents: prompt,
+    config: {
+      temperature: 0,
+      responseMimeType: "application/json",
+      responseSchema: metaAnalysisGeminiSchema,
+    },
+  };
+}
+
+async function classifyMetaAnalysisGemini(
+  params: MetaAnalysisParams,
+): Promise<MetaAnalysisResponse> {
+  try {
+    const response = await geminiClient.models.generateContent(params);
+
+    if (!response.text) {
+      throw new Error("No text received from Gemini API");
+    }
+
+    const parsed = JSON.parse(response.text);
+    return metaAnalysisResponseSchema.parse(parsed);
+  } catch (error) {
+    logger.error(
+      `Error calling Gemini API for meta-analysis classification: ${error}`,
+    );
+    throw new Error(
+      `Failed to classify meta-analysis: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
+  }
+}
+
+export type ClassifyMetaAnalysisWithCacheParams = {
+  title: string;
+  abstract?: string;
+  dataDescription?: string;
+  dryadDatasetId?: number;
+};
+
+export async function classifyMetaAnalysisWithCache(
+  params: ClassifyMetaAnalysisWithCacheParams,
+): Promise<MetaAnalysisResponse> {
+  const { title, abstract, dataDescription } = params;
+  const prompt = buildMetaAnalysisPrompt({ title, abstract, dataDescription });
+  const geminiParams = buildMetaAnalysisParams(prompt);
+  const hash = createHash("md5")
+    .update(JSON.stringify(geminiParams))
+    .digest("hex");
+
+  const canCache = params.dryadDatasetId !== undefined;
+
+  if (canCache) {
+    const cached = await findMetaAnalysisByHash(hash);
+    if (cached) {
+      logger.info(
+        `Found cached meta-analysis result for dataset ${params.dryadDatasetId}`,
+      );
+      return {
+        reasoning: cached.reasoning,
+        isMetaAnalysis: cached.isMetaAnalysis,
+      };
+    }
+  }
+
+  const result = await classifyMetaAnalysisGemini(geminiParams);
+
+  if (canCache) {
+    await insertMetaAnalysisResult({
+      dryadDatasetId: params.dryadDatasetId!,
+      prompt,
+      model: metaAnalysisModel,
+      reasoning: result.reasoning,
+      isMetaAnalysis: result.isMetaAnalysis,
+      hash,
+    });
+  }
+
+  return result;
+}
