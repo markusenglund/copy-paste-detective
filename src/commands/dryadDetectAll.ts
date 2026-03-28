@@ -60,7 +60,7 @@ async function checkIsMetaAnalysis(
   const dataDescription = getDataDescription(dataset);
   const result = await classifyMetaAnalysisWithCache({
     title: dataset.title,
-    abstract: dataset.abstract,
+    abstract: dataset.abstract!,
     dataDescription,
     dryadDatasetId: dataset.id,
   });
@@ -140,7 +140,6 @@ program
           const isMetaAnalysis = await checkIsMetaAnalysis(dataset);
           if (isMetaAnalysis) {
             await updateDatasetIsMetaAnalysis(dataset.extId, true);
-            await updateDatasetAnalysisStatus(dataset.extId, "not_analyzed");
             logger.info(
               `[${i}] Dataset ${dataset.extId} classified as meta-analysis - skipping.`,
             );

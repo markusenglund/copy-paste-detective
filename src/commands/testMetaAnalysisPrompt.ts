@@ -157,22 +157,11 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
       };
     }
 
-    // No abstract means we can't classify - default to not a meta-analysis
-    if (!dataset.abstract) {
-      const aiResult = false;
-      return {
-        testCase,
-        aiResult,
-        passed: aiResult === testCase.isMetaAnalysis,
-        reasoning: "No abstract available - defaulting to not a meta-analysis",
-      };
-    }
-
     const dataDescription = getDataDescription(dataset);
 
     const result = await classifyMetaAnalysisWithCache({
       title: dataset.title,
-      abstract: dataset.abstract,
+      abstract: dataset.abstract!,
       dataDescription,
       dryadDatasetId: dataset.id,
     });

@@ -16,6 +16,10 @@ import {
   findByHash as findPdfReviewResultByHash,
   insertResult as insertPdfReviewResult,
 } from "../repositories/aiPdfReviewResults/aiPdfReviewResultsRepository";
+import {
+  findByHash as findMetaAnalysisByHash,
+  insertResult as insertMetaAnalysisResult,
+} from "../repositories/aiMetaAnalysisResults/aiMetaAnalysisResultsRepository";
 import { logger } from "../utils/logger";
 
 // Internal schema for parsing raw Gemini API response (uses prompt field names)
@@ -557,11 +561,6 @@ export async function reviewPdfWithCache(
 
 // ============ Meta-Analysis Classification ============
 
-import {
-  findByHash as findMetaAnalysisByHash,
-  insertResult as insertMetaAnalysisResult,
-} from "../repositories/aiMetaAnalysisResults/aiMetaAnalysisResultsRepository";
-
 const metaAnalysisResponseSchema = z.object({
   reasoning: z.string(),
   isMetaAnalysis: z.boolean(),
@@ -604,16 +603,14 @@ function buildMetaAnalysisPrompt({
   dataDescription,
 }: {
   title: string;
-  abstract?: string;
+  abstract: string;
   dataDescription?: string;
 }): string {
   const sections = [
     `Classify whether this scientific dataset is from a meta-analysis/systematic review (compiles data from multiple published studies) vs an original empirical study.`,
     `Title: ${title}`,
+    `Abstract: ${abstract}`,
   ];
-  if (abstract) {
-    sections.push(`Abstract: ${abstract}`);
-  }
   if (dataDescription) {
     sections.push(`Data description: ${dataDescription}`);
   }
@@ -656,7 +653,7 @@ async function classifyMetaAnalysisGemini(
 
 export type ClassifyMetaAnalysisWithCacheParams = {
   title: string;
-  abstract?: string;
+  abstract: string;
   dataDescription?: string;
   dryadDatasetId?: number;
 };
