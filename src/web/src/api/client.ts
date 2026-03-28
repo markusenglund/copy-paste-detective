@@ -165,7 +165,6 @@ export async function saveHumanReview(
     verdict: string;
     impactScore: number;
     notes: string | null;
-    prosecutionStatusId: string;
   },
 ): Promise<HumanReview> {
   const response = await apiFetch(
@@ -183,38 +182,6 @@ export async function saveHumanReview(
   }
 
   return response.json();
-}
-
-export interface ProsecutionStatus {
-  id: string;
-  name: string;
-}
-
-export async function fetchProsecutionStatuses(): Promise<ProsecutionStatus[]> {
-  const response = await apiFetch(`${BASE_URL}/prosecution-statuses`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch prosecution statuses");
-  }
-  const data = await response.json();
-  return data.statuses;
-}
-
-export async function createProsecutionStatus(
-  name: string,
-): Promise<ProsecutionStatus> {
-  const response = await apiFetch(`${BASE_URL}/prosecution-statuses`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to create prosecution status");
-  }
-
-  const data = await response.json();
-  return data.status;
 }
 
 export interface TagInfo {

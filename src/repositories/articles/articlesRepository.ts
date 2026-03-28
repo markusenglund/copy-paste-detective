@@ -29,7 +29,7 @@ import {
 } from "../aiReviewResults/aiReviewResultsRepository";
 import { dryadDatasets, datasetTags, tags } from "../datasets/schema";
 import { pdfFiles } from "../pdfFiles/schema";
-import { humanReviews, prosecutionStatuses } from "../humanReview/schema";
+import { humanReviews } from "../humanReview/schema";
 import { journals } from "../journals/schema";
 import { aiReviewResults } from "../aiReviewResults/schema";
 import { aiPdfReviewResults } from "../aiPdfReviewResults/schema";
@@ -230,7 +230,6 @@ export interface DashboardArticle {
   dryadExtId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
-  caseName: string | null;
   tags: Array<{ id: string; name: string; color: string }>;
 }
 
@@ -337,12 +336,6 @@ export async function getDashboardArticles(
         filterConditions.push(eq(humanReviews.verdict, "ambiguous"));
       }
       // "all" option adds no condition
-    } else if (filter.key === FILTER_KEYS.CASE_STATUS) {
-      if (filter.selectedStatusId !== null) {
-        filterConditions.push(
-          eq(prosecutionStatuses.id, filter.selectedStatusId),
-        );
-      }
     } else if (filter.key === FILTER_KEYS.TAG) {
       if (filter.selectedTagIds.length > 0) {
         filterConditions.push(
@@ -377,7 +370,6 @@ export async function getDashboardArticles(
       dryadExtId: dryadDatasets.extId,
       humanReviewVerdict: humanReviews.verdict,
       humanReviewImpactScore: humanReviews.impactScore,
-      caseName: prosecutionStatuses.name,
       tags: sql<
         Array<{ id: string; name: string; color: string }>
       >`(SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name, 'color', t.color)), '[]'::json) FROM ${datasetTags} dt JOIN ${tags} t ON t.id = dt.tag_id WHERE dt.dataset_id = ${dryadDatasets.id})`.as(
@@ -402,10 +394,6 @@ export async function getDashboardArticles(
         eq(humanReviews.dryadDatasetId, articles.dryadDatasetId),
         eq(humanReviews.isLatestReview, true),
       ),
-    )
-    .leftJoin(
-      prosecutionStatuses,
-      eq(prosecutionStatuses.id, humanReviews.prosecutionStatusId),
     )
     .innerJoin(
       maxScoresSubquery,

@@ -5,13 +5,7 @@ import {
   PdfAvailabilityOption,
   ReviewStatusOption,
 } from "../../../shared/filterTypes";
-import {
-  fetchAvailableFields,
-  fetchProsecutionStatuses,
-  fetchTags,
-  ProsecutionStatus,
-  TagInfo,
-} from "../api/client";
+import { fetchAvailableFields, fetchTags, TagInfo } from "../api/client";
 
 interface CompactSelectOption {
   value: string;
@@ -125,20 +119,12 @@ export function FilterPanel({
   onFilterChange,
 }: FilterPanelProps): React.ReactElement {
   const [availableFields, setAvailableFields] = useState<string[]>([]);
-  const [prosecutionStatuses, setProsecutionStatuses] = useState<
-    ProsecutionStatus[]
-  >([]);
   const [availableTags, setAvailableTags] = useState<TagInfo[]>([]);
 
   useEffect(() => {
     fetchAvailableFields()
       .then(setAvailableFields)
       .catch((err) => console.error("Failed to fetch available fields:", err));
-    fetchProsecutionStatuses()
-      .then(setProsecutionStatuses)
-      .catch((err) =>
-        console.error("Failed to fetch prosecution statuses:", err),
-      );
     fetchTags()
       .then(setAvailableTags)
       .catch((err) => console.error("Failed to fetch tags:", err));
@@ -168,10 +154,6 @@ export function FilterPanel({
     (f) => f.key === FILTER_KEYS.REVIEW_STATUS,
   );
 
-  const caseStatusFilter = filterParams.filters.find(
-    (f) => f.key === FILTER_KEYS.CASE_STATUS,
-  );
-
   const tagFilter = filterParams.filters.find((f) => f.key === FILTER_KEYS.TAG);
 
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
@@ -181,7 +163,6 @@ export function FilterPanel({
     minHumanReviewImpactScoreFilter?.minScore ?? null;
   const selectedField = fieldFilter?.selectedField ?? null;
   const reviewStatusOption = reviewStatusFilter?.option ?? "all";
-  const selectedCaseStatusId = caseStatusFilter?.selectedStatusId ?? null;
   const selectedTagIds =
     tagFilter && "selectedTagIds" in tagFilter ? tagFilter.selectedTagIds : [];
 
@@ -192,7 +173,6 @@ export function FilterPanel({
     (minHumanReviewImpactScore !== null ? 1 : 0) +
     (selectedField !== null ? 1 : 0) +
     (reviewStatusOption !== "all" ? 1 : 0) +
-    (selectedCaseStatusId !== null ? 1 : 0) +
     (selectedTagIds.length > 0 ? 1 : 0);
 
   const handleHighProbabilityChange = (enabled: boolean): void => {
@@ -251,16 +231,6 @@ export function FilterPanel({
     const updatedFilters = filterParams.filters.map((filter) =>
       filter.key === FILTER_KEYS.REVIEW_STATUS
         ? { ...filter, option: value }
-        : filter,
-    );
-
-    onFilterChange({ filters: updatedFilters });
-  };
-
-  const handleCaseStatusChange = (value: string | null): void => {
-    const updatedFilters = filterParams.filters.map((filter) =>
-      filter.key === FILTER_KEYS.CASE_STATUS
-        ? { ...filter, selectedStatusId: value }
         : filter,
     );
 
@@ -363,18 +333,6 @@ export function FilterPanel({
           />
 
           <div className="w-px self-stretch bg-gray-200" />
-
-          {/* Case Status - compact dropdown */}
-          <CompactSelect
-            label="Case Status"
-            value={selectedCaseStatusId}
-            options={prosecutionStatuses.map((s) => ({
-              value: String(s.id),
-              label: s.name,
-            }))}
-            onChange={handleCaseStatusChange}
-            allLabel="All statuses"
-          />
 
           {availableTags.length > 0 && (
             <>

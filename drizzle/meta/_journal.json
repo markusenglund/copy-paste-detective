@@ -183,6 +183,13 @@
       "when": 1774690484025,
       "tag": "0026_curious_doctor_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1774694465997,
+      "tag": "0027_medical_goliath",
+      "breakpoints": true
     }
   ]
 }

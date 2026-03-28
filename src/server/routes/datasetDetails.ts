@@ -1,19 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { getDatasetDetails } from "../services/datasetDetailsService";
-import {
-  upsertHumanReview,
-  getAllProsecutionStatuses,
-  insertProsecutionStatus,
-  getProsecutionStatusById,
-} from "../../repositories/humanReview/humanReviewRepository";
+import { upsertHumanReview } from "../../repositories/humanReview/humanReviewRepository";
 import {
   getAllTags,
   addTagToDataset,
   removeTagFromDataset,
   getTagsForDataset,
 } from "../../repositories/datasets/tagsRepository";
-import { prosecutionStatuses } from "../../repositories/humanReview/schema";
-import { toSnakeCase } from "../../utils/slugify";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import { db } from "../../db";
@@ -59,7 +52,6 @@ export async function datasetDetailsRoutes(
       verdict: string;
       impactScore: number;
       notes?: string | null;
-      prosecutionStatusId: string;
     };
   }>(
     "/datasets/:datasetId/human-review",
@@ -71,7 +63,7 @@ export async function datasetDetailsRoutes(
         return reply.status(400).send({ error: "Invalid dataset ID" });
       }
 
-      const { verdict, impactScore, notes, prosecutionStatusId } = request.body;
+      const { verdict, impactScore, notes } = request.body;
 
       const validVerdicts = ["true_positive", "false_positive", "ambiguous"];
       if (!validVerdicts.includes(verdict)) {
@@ -91,12 +83,6 @@ export async function datasetDetailsRoutes(
         });
       }
 
-      if (!prosecutionStatusId || typeof prosecutionStatusId !== "string") {
-        return reply.status(400).send({
-          error: "Invalid prosecutionStatusId. Must be a non-empty string",
-        });
-      }
-
       const userId = parseInt(request.user.sub, 10);
 
       try {
@@ -106,22 +92,13 @@ export async function datasetDetailsRoutes(
           verdict: verdict as "true_positive" | "false_positive" | "ambiguous",
           impactScore,
           notes: notes ?? null,
-          prosecutionStatusId,
         });
-
-        const prosecutionStatus = await db
-          .select({ name: prosecutionStatuses.name })
-          .from(prosecutionStatuses)
-          .where(eq(prosecutionStatuses.id, review.prosecutionStatusId))
-          .limit(1);
 
         return reply.send({
           verdict: review.verdict,
           impactScore: review.impactScore,
           notes: review.notes,
           updatedAt: review.updatedAt,
-          prosecutionStatusId: review.prosecutionStatusId,
-          caseName: prosecutionStatus[0]?.name ?? null,
           reviewerUsername: request.user.username,
           isLatestReview: review.isLatestReview,
         });
@@ -279,59 +256,6 @@ export async function datasetDetailsRoutes(
         return reply.type(mimeType).send(stream);
       } catch (error) {
         console.error("Error fetching highlighted Excel file:", error);
-        return reply.status(500).send({ error: "Internal server error" });
-      }
-    },
-  );
-
-  fastify.get(
-    "/prosecution-statuses",
-    { config: { requiredRole: "viewer" } },
-    async (_request, reply) => {
-      try {
-        const statuses = await getAllProsecutionStatuses();
-        return reply.send({ statuses });
-      } catch (error) {
-        console.error("Error fetching prosecution statuses:", error);
-        return reply.status(500).send({ error: "Internal server error" });
-      }
-    },
-  );
-
-  fastify.post<{
-    Body: { name: string };
-  }>(
-    "/prosecution-statuses",
-    { config: { requiredRole: "editor" } },
-    async (request, reply) => {
-      const { name } = request.body;
-
-      if (!name || typeof name !== "string" || name.trim() === "") {
-        return reply
-          .status(400)
-          .send({ error: "Name must be a non-empty string" });
-      }
-
-      const id = toSnakeCase(name.trim());
-
-      if (id === "") {
-        return reply.status(400).send({
-          error: "Name must contain at least one alphanumeric character",
-        });
-      }
-
-      try {
-        const existing = await getProsecutionStatusById(id);
-        if (existing) {
-          return reply
-            .status(409)
-            .send({ error: `Prosecution status "${id}" already exists` });
-        }
-
-        const status = await insertProsecutionStatus({ id, name: name.trim() });
-        return reply.send({ status: { id: status.id, name: status.name } });
-      } catch (error) {
-        console.error("Error creating prosecution status:", error);
         return reply.status(500).send({ error: "Internal server error" });
       }
     },

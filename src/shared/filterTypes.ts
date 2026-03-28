@@ -5,7 +5,6 @@ export const FILTER_KEYS = {
   MIN_HUMAN_REVIEW_IMPACT_SCORE: "minHumanReviewImpactScore",
   FIELD: "field",
   REVIEW_STATUS: "reviewStatus",
-  CASE_STATUS: "caseStatus",
   TAG: "tag",
 } as const;
 
@@ -52,11 +51,6 @@ export interface ReviewStatusFilter {
   option: ReviewStatusOption;
 }
 
-export interface CaseStatusFilter {
-  key: typeof FILTER_KEYS.CASE_STATUS;
-  selectedStatusId: string | null;
-}
-
 export interface TagFilter {
   key: typeof FILTER_KEYS.TAG;
   selectedTagIds: string[];
@@ -69,7 +63,6 @@ export type FilterConfig =
   | MinHumanReviewImpactScoreFilter
   | FieldFilter
   | ReviewStatusFilter
-  | CaseStatusFilter
   | TagFilter;
 
 export interface FilterParams {
@@ -102,10 +95,6 @@ export const DEFAULT_FILTERS: FilterParams = {
     {
       key: FILTER_KEYS.REVIEW_STATUS,
       option: "all",
-    },
-    {
-      key: FILTER_KEYS.CASE_STATUS,
-      selectedStatusId: null,
     },
     {
       key: FILTER_KEYS.TAG,
@@ -142,10 +131,6 @@ export function serializeFilters(
       }
     } else if (filter.key === FILTER_KEYS.REVIEW_STATUS) {
       params[`filter_${filter.key}`] = filter.option;
-    } else if (filter.key === FILTER_KEYS.CASE_STATUS) {
-      if (filter.selectedStatusId !== null) {
-        params[`filter_${filter.key}`] = filter.selectedStatusId;
-      }
     } else if (filter.key === FILTER_KEYS.TAG) {
       if (filter.selectedTagIds.length > 0) {
         params[`filter_${filter.key}`] = filter.selectedTagIds.join(",");
@@ -261,15 +246,6 @@ export function deserializeFilters(
       option: "all",
     });
   }
-
-  const caseStatusParam = searchParams.get(`filter_${FILTER_KEYS.CASE_STATUS}`);
-  filters.push({
-    key: FILTER_KEYS.CASE_STATUS,
-    selectedStatusId:
-      caseStatusParam !== null && caseStatusParam !== ""
-        ? caseStatusParam
-        : null,
-  });
 
   const tagParam = searchParams.get(`filter_${FILTER_KEYS.TAG}`);
   filters.push({

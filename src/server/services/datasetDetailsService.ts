@@ -247,8 +247,6 @@ export async function getDatasetDetails(
       impactScore: r.impactScore,
       notes: r.notes,
       updatedAt: r.updatedAt,
-      prosecutionStatusId: r.prosecutionStatusId,
-      caseName: r.caseName,
       reviewerUsername: r.reviewerUsername,
       isLatestReview: r.isLatestReview,
     })),

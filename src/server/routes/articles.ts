@@ -23,7 +23,6 @@ import {
   FieldFilter,
   ReviewStatusFilter,
   ReviewStatusOption,
-  CaseStatusFilter,
   TagFilter,
 } from "../../shared/filterTypes";
 
@@ -139,15 +138,6 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
           option: isValid ? (reviewStatusParam as ReviewStatusOption) : "all",
         };
         filters.push(reviewStatusFilter);
-      }
-
-      const caseStatusParam = queryParams[`filter_${FILTER_KEYS.CASE_STATUS}`];
-      if (caseStatusParam !== undefined) {
-        const caseStatusFilter: CaseStatusFilter = {
-          key: FILTER_KEYS.CASE_STATUS,
-          selectedStatusId: caseStatusParam !== "" ? caseStatusParam : null,
-        };
-        filters.push(caseStatusFilter);
       }
 
       const tagParam = queryParams[`filter_${FILTER_KEYS.TAG}`];

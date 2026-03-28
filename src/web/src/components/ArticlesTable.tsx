@@ -181,12 +181,6 @@ export function ArticlesTable({
             </th>
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              style={{ width: "130px" }}
-            >
-              Case
-            </th>
-            <th
-              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               style={{ width: "180px" }}
             >
               Tags
@@ -372,13 +366,6 @@ export function ArticlesTable({
                   </div>
                 ) : (
                   <span className="text-gray-400">No review</span>
-                )}
-              </td>
-              <td className="px-4 py-3 text-sm">
-                {article.caseName ? (
-                  <span className="break-words block">{article.caseName}</span>
-                ) : (
-                  <span className="text-gray-400">-</span>
                 )}
               </td>
               <td className="px-4 py-3 text-sm">

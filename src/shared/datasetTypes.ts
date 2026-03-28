@@ -57,8 +57,6 @@ export interface HumanReview {
   impactScore: number;
   notes: string | null;
   updatedAt: Date;
-  prosecutionStatusId: string;
-  caseName: string | null;
   reviewerUsername: string;
   isLatestReview: boolean;
 }
