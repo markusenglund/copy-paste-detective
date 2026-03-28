@@ -24,6 +24,7 @@
     "pdf-review": "tsx -r dotenv/config src/commands/pdfReview",
     "create-casefile": "tsx -r dotenv/config src/commands/createCasefile",
     "test-review-prompt": "tsx -r dotenv/config src/commands/testReviewPrompt",
+    "test-meta-analysis-prompt": "tsx -r dotenv/config src/commands/testMetaAnalysisPrompt",
     "backfill-pdf-metadata": "tsx -r dotenv/config src/scripts/backfillPdfMetadata.ts",
     "inspect-column-mapping": "tsx src/scripts/inspectColumnMapping.ts",
     "seed-admin": "tsx -r dotenv/config src/commands/seedAdmin.ts",

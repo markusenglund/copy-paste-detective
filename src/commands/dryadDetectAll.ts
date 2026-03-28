@@ -4,8 +4,10 @@ import Mutex from "p-mutex";
 import {
   getDownloadedNotAnalyzedDatasetsWithFiles,
   updateDatasetAnalysisStatus,
+  updateDatasetIsMetaAnalysis,
   resetAnalysisStatusesExceptFailed,
 } from "../repositories/datasets/datasetsRepository";
+import { classifyMetaAnalysisWithCache } from "../ai/geminiService";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
@@ -18,8 +20,53 @@ import {
 } from "../repositories/journals/journalsRepository";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
+import type { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
+import { readTextFile } from "../utils/readTextFile";
+import { storagePaths } from "../utils/paths/storagePaths";
+import path from "path";
+
+const metaAnalysisPattern = /meta[- ]?analysis|systematic review/i;
+
+function getDataDescription(
+  dataset: DryadDatasetWithFiles,
+): string | undefined {
+  if (dataset.readmeFile) {
+    const datasetFolder = storagePaths.dryadDataset(dataset.extId);
+    const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
+    try {
+      return readTextFile(readmePath);
+    } catch {
+      // Fall through to usageNotes
+    }
+  }
+  return dataset.usageNotes ?? undefined;
+}
+
+async function checkIsMetaAnalysis(
+  dataset: DryadDatasetWithFiles,
+): Promise<boolean> {
+  // Short circuit for obvious cases based on title
+  if (metaAnalysisPattern.test(dataset.title)) {
+    return true;
+  }
+
+  // If there's no abstract, we can't reliably classify - assume not a meta-analysis
+  if (!dataset.abstract) {
+    return false;
+  }
+
+  const dataDescription = getDataDescription(dataset);
+  const result = await classifyMetaAnalysisWithCache({
+    title: dataset.title,
+    abstract: dataset.abstract!,
+    dataDescription,
+    dryadDatasetId: dataset.id,
+  });
+
+  return result.isMetaAnalysis;
+}
 
 const program = new Command();
 
@@ -87,6 +134,23 @@ program
         logger.info(
           `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
         );
+
+        // Check if this is a meta-analysis and skip if so
+        try {
+          const isMetaAnalysis = await checkIsMetaAnalysis(dataset);
+          if (isMetaAnalysis) {
+            await updateDatasetIsMetaAnalysis(dataset.extId, true);
+            logger.info(
+              `[${i}] Dataset ${dataset.extId} classified as meta-analysis - skipping.`,
+            );
+            return;
+          }
+        } catch (error) {
+          logger.error(
+            `[${i}] Error checking meta-analysis for dataset ${dataset.extId}: ${error}`,
+          );
+          // Continue with analysis if meta-analysis check fails
+        }
 
         // Load all downloaded Excel files for this dataset
         const excelFilesData: ExcelFileData[] = [];

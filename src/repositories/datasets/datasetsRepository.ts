@@ -1,4 +1,14 @@
-import { and, desc, eq, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 import { db } from "../../db";
 import { AnalysisStatus, DownloadStatus } from "../../db/shared/enums";
 import { dryadDatasets } from "./schema";
@@ -397,6 +407,10 @@ export async function getDownloadedNotAnalyzedDatasetsWithFiles(): Promise<
       and(
         eq(dryadDatasets.downloadStatus, "completed"),
         inArray(dryadDatasets.analysisStatus, ["not_analyzed", "failed"]),
+        or(
+          isNull(dryadDatasets.isMetaAnalysis),
+          eq(dryadDatasets.isMetaAnalysis, false),
+        ),
       ),
     );
 
@@ -431,6 +445,16 @@ export async function updateDatasetAnalysisStatus(
   await db
     .update(dryadDatasets)
     .set({ analysisStatus: status, updatedTimestamp: new Date() })
+    .where(eq(dryadDatasets.extId, extId));
+}
+
+export async function updateDatasetIsMetaAnalysis(
+  extId: number,
+  isMetaAnalysis: boolean,
+): Promise<void> {
+  await db
+    .update(dryadDatasets)
+    .set({ isMetaAnalysis, updatedTimestamp: new Date() })
     .where(eq(dryadDatasets.extId, extId));
 }
 
