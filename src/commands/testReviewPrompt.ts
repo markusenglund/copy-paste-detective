@@ -377,6 +377,203 @@ const validatedTestCases: TestCase[] = [
     },
     confidence: "high",
   },
+  {
+    extId: 4826,
+    filename: "Leaflitter_physicochemical_properties_submitted.xlsx",
+    sheetName: "Sheet3",
+    description:
+      "It's almost certainly a genuine copy-paste mistake. 3 values in a row for both carbon and nitrogen is unlikely to happen naturally. It doesn't really impact the primary conclusions about community dynamics between different species so I think it should be medium impact.",
+    expectedResult: {
+      suspicionLevelInterval: [7, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 2313,
+    filename: "Biomass data for archiving.xlsx",
+    sheetName: "Sheet1",
+    description:
+      "Likely false positive stemming from how biomass is calculated. The AI was just given the two values in a row, but there are in fact a lot of shared values in the spreadsheet. The data might have been based on a measurement like 'Average grass height', which was then extrapolated to get the total biomass.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 2],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 9683,
+    filename: "Dataset_06_08_2017.xlsx",
+    sheetName: "Microcosm soil B",
+    description:
+      "The microcosm soil data for this paper has many instances where replicates of the same taxa combination have perfectly identical values for some columns but not others. In other cases the bacterial composition columns as well as enzyme activity columns are duplicated, but the respiration columns are not. Very weird, potentially serious.",
+    expectedResult: {
+      suspicionLevelInterval: [9, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 4209,
+    filename: "Morphological parameters of juvenile daphnia magna.xlsx",
+    sheetName: "K34J",
+    description:
+      "A single block of 5 perfectly duplicated rows in a sequence is definitely a true positive but it's one out of many sheets with 800 rows.",
+    expectedResult: {
+      suspicionLevelInterval: [7, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 13830,
+    filename: "interaction_data_final.xlsx",
+    sheetName: "Sheet1",
+    description:
+      "The 'direct pathogen inhibition' column has values that are the result of dividing by 30136 or a multiple thereof. That's what explains the large numbers of decimal points. There's also an unusual amount of clustering, but it's not particularly surprising to see a couple of duplicates. With that being said, there are some numbers at the start that are not anywhere close to being a 30136 fraction. That's very weird.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 3],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 77770,
+    filename: "Data_Fig5supp1.xlsx",
+    sheetName: "Sheet1",
+    description: "Two spreadsheets stacked on top of each other.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 0],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 58897,
+    filename: "Saha_et_al_2020_ERL_Data.xlsx",
+    sheetName: "Data",
+    description:
+      "The set has a ton of low-cardinality numbers including the WFPS25cm column that Gemini focuses on. Not sure why the numbers have such low uniqueness but it points to something structural about the data rather than copy-and-paste. It's a set used to test a the output of a model, I'm highly skeptical that those sorts of studies are likely to contain fraudulent data, though they might have mistakes.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 4],
+    },
+    confidence: "medium",
+  },
+  {
+    extId: 4358,
+    filename: "Allen et al17EL_Amphibian_reptile_invasion_&_life_history.xlsx",
+    sheetName: "invasive reptiles & LH DATA",
+    description:
+      "The dataset has a ton of Hatchling mass values that are shared between different species of the same family. The most likely theory is that they were imputed from other similar species to get data where they didn't have it for a particular species. Not a mistake and not fraud.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 3],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 68405,
+    filename: "Saprotrophicfungi_ASE_2020.xlsx",
+    sheetName: "Exp. WA",
+    description:
+      "The raw data of the WA experiment, contains pH measurements that seem to have been duplicated between different treatment groups. The pH values for observations at week 8 are the exact same for the four pots treated with sawdust from beech, hazel, willow and poplar as well as paper pulp.",
+    expectedResult: {
+      suspicionLevelInterval: [8, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 46465,
+    filename: "Yasuhara_pnas_data.xlsx",
+    sheetName: "SST_&_Diversity",
+    description:
+      "It seems like the duplicates are just in the weather data (which is probably based on coords), not the biodiversity data so I think we're just looking at separate measurements taken in the same locations ordered in the same way for some reason, that got slightly different results.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 3],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 6408,
+    filename: "Real-Time PCR final.xlsx",
+    sheetName: "Sheet1",
+    description: "It's a clear case of a completely fabricated control group.",
+    expectedResult: {
+      suspicionLevelInterval: [10, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 97510,
+    filename: "Science_Advances_(add6249)_data.xlsx",
+    sheetName: "precipitation experiment",
+    description:
+      "The total ANPP are duplicated, but its constituent parts are not, but they do correctly add up to the total values.",
+    expectedResult: {
+      suspicionLevelInterval: [9, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 72335,
+    filename: "Raw_data_Mertens_et_al_2021_NaturePlants.xlsx",
+    sheetName: "Performance_LnRR",
+    description:
+      "It's a false positive that stems from the suspicious column being a log response ratio. For example the PrPx duplicated sequence actually stem from the following five Response values in the Performance sheet: 1.0 1.8 1.7 1.8 1.6 Finding 5 such occurences in a row in a spreadsheet of thousands of rows is not suspicious at all.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 1],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 141979,
+    filename: "S1_data.xlsx",
+    sheetName: "Raw Data LME",
+    description:
+      "This looks to be a case of a few rows that were accidentally copy&pasted by the authors or incorrectly labelled by the museums.",
+    expectedResult: {
+      suspicionLevelInterval: [6, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 51969,
+    filename: "Vidal_et_al_richness.xlsx",
+    sheetName: "strain_redundancy",
+    description:
+      "Gemini has incorrectly overestimated how rare it is to see duplicate sequences of binary data. Yes, we have 50 values in a row, but only 6 of the values are 0s and we could have chosen any sequence from 5000 rows.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 1],
+    },
+    confidence: "high",
+  },
+
+  {
+    extId: 133183,
+    filename: "FigureData.xlsx",
+    sheetName: "Dermis Thickness",
+    description:
+      "The dataset contains both human measured numbers and numbers created from a digital scan. The digital scan numbers likely originated as integer pixel values, which explains why they have high occurrences. All datapoints are from one single elephant trunk. The reason why two adjacent rows often share the same value is likely because they are measurements of two adjacent pieces of skin.",
+    expectedResult: {
+      suspicionLevelInterval: [0, 1],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 146829,
+    filename: "Experimental_Data.xlsx",
+    sheetName: "Analysis data",
+    description:
+      "It seems like the authors duplicated replicates without taking care to mention it or do the correct statistics.",
+    expectedResult: {
+      suspicionLevelInterval: [8, 10],
+    },
+    confidence: "high",
+  },
+  {
+    extId: 145338,
+    filename: "Tree-DBH-BA_and_BM_Growth-Data-BySps.xlsx",
+    sheetName: "Data",
+    description:
+      "There are multiple sequences of 5-11 rows with exactly the same data, but sometimes listed as belonging to different plots. The paper mentions that 9214 samples were taken, but the spreadsheet has 9398 rows. Best guess is that the discrepancy stems from duplicated rows. But was the faulty Excel sheet actually used for the statistical results in the paper? I have not had time to check.",
+    expectedResult: {
+      suspicionLevelInterval: [8, 10],
+    },
+    confidence: "high",
+  },
 ];
 
 const casesWithIssuesUnrelatedToDuplications: TestCase[] = [
