@@ -230,6 +230,7 @@ export interface DashboardArticle {
   dryadExtId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
+  humanReviewUpdatedAt: string | null;
   tags: Array<{ id: string; name: string; color: string }>;
 }
 
@@ -283,6 +284,8 @@ export async function getDashboardArticles(
         return articles.numCitations;
       case SORT_FIELDS.CITATION_SCORE:
         return citationScoreExpr;
+      case SORT_FIELDS.HUMAN_REVIEW_DATE:
+        return humanReviews.updatedAt;
       default:
         return maxScoresSubquery.maxTruePositiveProbability;
     }
@@ -370,6 +373,9 @@ export async function getDashboardArticles(
       dryadExtId: dryadDatasets.extId,
       humanReviewVerdict: humanReviews.verdict,
       humanReviewImpactScore: humanReviews.impactScore,
+      humanReviewUpdatedAt: sql<string>`${humanReviews.updatedAt}::text`.as(
+        "humanReviewUpdatedAt",
+      ),
       tags: sql<
         Array<{ id: string; name: string; color: string }>
       >`(SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name, 'color', t.color)), '[]'::json) FROM ${datasetTags} dt JOIN ${tags} t ON t.id = dt.tag_id WHERE dt.dataset_id = ${dryadDatasets.id})`.as(

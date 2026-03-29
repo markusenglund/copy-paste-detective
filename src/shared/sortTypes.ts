@@ -7,6 +7,7 @@ export const SORT_FIELDS = {
   PUBLISHED: "published",
   CITATIONS: "citations",
   CITATION_SCORE: "citationScore",
+  HUMAN_REVIEW_DATE: "humanReviewDate",
 } as const;
 
 export const SORT_ORDERS = {

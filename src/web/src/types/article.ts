@@ -19,5 +19,6 @@ export interface ArticleForUpload {
   dryadExtId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
+  humanReviewUpdatedAt: string | null;
   tags: Array<{ id: string; name: string; color: string }>;
 }

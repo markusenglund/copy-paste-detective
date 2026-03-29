@@ -179,6 +179,14 @@ export function ArticlesTable({
             >
               Human Review
             </th>
+            <SortableColumnHeader
+              label="Review Date"
+              field={SORT_FIELDS.HUMAN_REVIEW_DATE}
+              currentSortBy={currentSortBy}
+              currentSortOrder={currentSortOrder}
+              onSort={onSort}
+              width="130px"
+            />
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               style={{ width: "180px" }}
@@ -367,6 +375,11 @@ export function ArticlesTable({
                 ) : (
                   <span className="text-gray-400">No review</span>
                 )}
+              </td>
+              <td className="px-4 py-3 text-sm text-gray-600">
+                <span className="truncate block">
+                  {formatDate(article.humanReviewUpdatedAt)}
+                </span>
               </td>
               <td className="px-4 py-3 text-sm">
                 <div className="flex flex-wrap gap-1">
