@@ -211,7 +211,7 @@ const reviewResultsResponseSchema = z.object({
 
 export type ReviewResultsResponse = z.infer<typeof reviewResultsResponseSchema>;
 
-const reviewResultsModel = "gemini-3-pro-preview";
+const reviewResultsModel = "gemini-3.1-pro-preview";
 
 const reviewResultsGeminiSchema = {
   type: Type.OBJECT,
@@ -343,7 +343,7 @@ const pdfReviewResponseSchema = z.object({
 
 export type PdfReviewResponse = z.infer<typeof pdfReviewResponseSchema>;
 
-const pdfReviewModel = "gemini-3-pro-preview";
+const pdfReviewModel = "gemini-3.1-pro-preview";
 
 const pdfReviewGeminiSchema = {
   type: Type.OBJECT,
