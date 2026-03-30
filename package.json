@@ -72,6 +72,7 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@commander-js/extra-typings": "^13.1.0",
     "@fast-csv/parse": "^5.0.5",
     "@fastify/cookie": "^11.0.2",
@@ -90,6 +91,7 @@
     "lodash-es": "^4.17.21",
     "lowdb": "^7.0.1",
     "markdown-table": "^3.0.4",
+    "openai": "^4.0.0",
     "p-map": "^7.0.3",
     "p-mutex": "^0.1.0",
     "p-retry": "^6.2.1",
@@ -103,10 +105,10 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.30.3",
     "remark-gfm": "^4.0.1",
-    "openai": "^4.0.0",
     "striptags": "^3.2.0",
     "undici": "^6.21.2",
     "xlsx": "^0.18.5",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.25.2"
   }
 }

@@ -1,4 +1,3 @@
-import type { z } from "zod";
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 import type {
@@ -7,117 +6,10 @@ import type {
   ResponseInputMessageContentList,
   ResponseTextConfig,
 } from "openai/resources/responses/responses";
-import {
-  ZodArray,
-  ZodBoolean,
-  ZodEnum,
-  ZodNumber,
-  ZodObject,
-  ZodString,
-} from "zod";
-import type {
-  AiMultiTurnRequest,
-  AiProvider,
-  AiTextRequest,
-} from "./types";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import type { AiMultiTurnRequest, AiProvider, AiTextRequest } from "./types";
 import { config } from "../../config/env";
 import { logger } from "../../utils/logger";
-
-type JsonSchemaProperty = {
-  type?: string | string[];
-  description?: string;
-  enum?: string[];
-  items?: JsonSchemaProperty;
-  properties?: Record<string, JsonSchemaProperty>;
-  required?: string[];
-  additionalProperties?: boolean;
-};
-
-type JsonSchema = JsonSchemaProperty;
-
-function zodToJsonSchema(schema: z.ZodType): JsonSchema {
-  if (schema instanceof ZodObject) {
-    const shape = schema.shape as Record<string, z.ZodType>;
-    const properties: Record<string, JsonSchemaProperty> = {};
-    const required: string[] = [];
-
-    for (const [key, value] of Object.entries(shape)) {
-      properties[key] = zodPropertyToJsonSchema(value);
-      if (!value.isOptional()) required.push(key);
-    }
-
-    return {
-      type: "object",
-      properties,
-      required,
-      additionalProperties: false,
-    };
-  }
-
-  throw new Error(
-    `Unsupported top-level Zod type: ${schema.constructor.name}. Expected ZodObject.`,
-  );
-}
-
-function zodPropertyToJsonSchema(schema: z.ZodType): JsonSchemaProperty {
-  const description = schema.description;
-
-  if (schema instanceof ZodString) {
-    return { type: "string", ...(description && { description }) };
-  }
-
-  if (schema instanceof ZodNumber) {
-    const checks = (schema as ZodNumber)._def.checks;
-    const isInt = checks?.some((c: { kind: string }) => c.kind === "int");
-    return {
-      type: isInt ? "integer" : "number",
-      ...(description && { description }),
-    };
-  }
-
-  if (schema instanceof ZodBoolean) {
-    return { type: "boolean", ...(description && { description }) };
-  }
-
-  if (schema instanceof ZodEnum) {
-    return {
-      type: "string",
-      enum: schema._def.values as string[],
-      ...(description && { description }),
-    };
-  }
-
-  if (schema instanceof ZodArray) {
-    return {
-      type: "array",
-      items: zodPropertyToJsonSchema(schema._def.type),
-      ...(description && { description }),
-    };
-  }
-
-  if (schema instanceof ZodObject) {
-    const shape = schema.shape as Record<string, z.ZodType>;
-    const properties: Record<string, JsonSchemaProperty> = {};
-    const required: string[] = [];
-
-    for (const [key, value] of Object.entries(shape)) {
-      properties[key] = zodPropertyToJsonSchema(value);
-      if (!value.isOptional()) required.push(key);
-    }
-
-    return {
-      type: "object",
-      properties,
-      required,
-      additionalProperties: false,
-      ...(description && { description }),
-    };
-  }
-
-  throw new Error(
-    `Unsupported Zod type for JSON schema conversion: ${schema.constructor.name}`,
-  );
-}
 
 let client: OpenAI | null = null;
 function getClient(): OpenAI {
@@ -132,7 +24,9 @@ function getClient(): OpenAI {
   return client;
 }
 
-async function callOpenAIJson<T>(body: ResponseCreateParamsNonStreaming): Promise<T> {
+async function callOpenAIJson<T>(
+  body: ResponseCreateParamsNonStreaming,
+): Promise<T> {
   const data = await getClient().responses.parse(body);
   const parsed = data.output_parsed as T | null;
   if (parsed == null) {
@@ -146,14 +40,20 @@ async function uploadPdfAndGetFileId(
   fileName: string,
 ): Promise<string> {
   const file = await toFile(pdfBuffer, fileName, { type: "application/pdf" });
-  const uploaded = await getClient().files.create({ file, purpose: "assistants" });
+  const uploaded = await getClient().files.create({
+    file,
+    purpose: "assistants",
+  });
   if (!uploaded?.id) {
     throw new Error("OpenAI file upload succeeded but no file id returned");
   }
   return String(uploaded.id);
 }
 
-function buildTextResponseConfig(schema: JsonSchema): ResponseTextConfig {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildTextResponseConfig(
+  schema: Record<string, any>,
+): ResponseTextConfig {
   return {
     format: {
       type: "json_schema",
@@ -166,7 +66,8 @@ function buildTextResponseConfig(schema: JsonSchema): ResponseTextConfig {
 
 export const openaiProvider: AiProvider = {
   async generateText<T>(request: AiTextRequest): Promise<T> {
-    const jsonSchema = zodToJsonSchema(request.responseSchema);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const jsonSchema = zodToJsonSchema(request.responseSchema as any);
 
     try {
       const body: ResponseCreateParamsNonStreaming = {
@@ -195,7 +96,8 @@ export const openaiProvider: AiProvider = {
   },
 
   async generateMultiTurn<T>(request: AiMultiTurnRequest): Promise<T> {
-    const jsonSchema = zodToJsonSchema(request.responseSchema);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const jsonSchema = zodToJsonSchema(request.responseSchema as any);
 
     // Upload PDFs first (if any)
     const fileIds = new Map<number, string>();
