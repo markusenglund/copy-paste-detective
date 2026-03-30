@@ -103,6 +103,7 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.30.3",
     "remark-gfm": "^4.0.1",
+    "openai": "^4.0.0",
     "striptags": "^3.2.0",
     "undici": "^6.21.2",
     "xlsx": "^0.18.5",

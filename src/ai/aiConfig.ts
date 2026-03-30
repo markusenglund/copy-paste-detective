@@ -24,8 +24,8 @@ const defaults: Record<UseCaseName, UseCaseConfig> = {
     temperature: 0,
   },
   reviewResults: {
-    provider: "gemini",
-    model: "gemini-3.1-pro-preview",
+    provider: "openai",
+    model: "gpt-5.4",
     temperature: 1,
   },
   reviewPdf: {

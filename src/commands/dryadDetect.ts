@@ -89,6 +89,7 @@ program
         }
       }
     } catch (error) {
+      console.error(error);
       if (fileIndex === undefined) {
         await updateDatasetAnalysisStatus(datasetExtId, "failed");
       }
