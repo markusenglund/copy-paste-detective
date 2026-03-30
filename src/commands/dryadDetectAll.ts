@@ -144,6 +144,8 @@ program
               `[${i}] Dataset ${dataset.extId} classified as meta-analysis - skipping.`,
             );
             return;
+          } else {
+            await updateDatasetIsMetaAnalysis(dataset.extId, false);
           }
         } catch (error) {
           logger.error(
