@@ -5,7 +5,7 @@ import { getDatasetsForPdfReview } from "../repositories/aiReviewResults/aiRevie
 import { updateDatasetAnalysisStatus } from "../repositories/datasets/datasetsRepository";
 import { loadPdfFile } from "../utils/loadPdfForGemini";
 import { createPdfReviewPrompt } from "../pdfReview/createPdfReviewPrompt";
-import { reviewPdfWithCache } from "../ai/geminiService";
+import { reviewPdfWithCache } from "../ai/useCases/reviewPdf";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
 

@@ -16,7 +16,7 @@ import { wrapInCodeBlock } from "../utils/markdown";
 import {
   reviewResultsWithCache,
   ReviewResultsResponse,
-} from "../ai/geminiService";
+} from "../ai/useCases/reviewResults";
 import { logger } from "../utils/logger";
 
 function getOutputFilePath(excelFileData: ExcelFileData, sheet: Sheet): string {

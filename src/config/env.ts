@@ -8,6 +8,8 @@ const envSchema = z.object({
   GEMINI_API_KEY: z
     .string()
     .min(1, "GEMINI_API_KEY must be a non-empty string"),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
   DRYAD_ACCOUNT_ID: z
     .string()
     .min(1, "DRYAD_ACCOUNT_ID must be a non-empty string"),
@@ -50,6 +52,8 @@ const env = validateEnv();
 export const config = {
   isProduction: env.NODE_ENV === "production",
   geminiApiKey: env.GEMINI_API_KEY,
+  anthropicApiKey: env.ANTHROPIC_API_KEY,
+  openaiApiKey: env.OPENAI_API_KEY,
   dryadAccountId: env.DRYAD_ACCOUNT_ID,
   dryadSecret: env.DRYAD_SECRET,
   openAlexApiKey: env.OPENALEX_API_KEY,

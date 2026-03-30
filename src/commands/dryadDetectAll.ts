@@ -7,7 +7,7 @@ import {
   updateDatasetIsMetaAnalysis,
   resetAnalysisStatusesExceptFailed,
 } from "../repositories/datasets/datasetsRepository";
-import { classifyMetaAnalysisWithCache } from "../ai/geminiService";
+import { classifyMetaAnalysisWithCache } from "../ai/useCases/classifyMetaAnalysis";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";

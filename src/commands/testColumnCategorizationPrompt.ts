@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import { loadExcelFileFromFolder } from "../utils/loadExcelFileFromFolder";
-import { screenColumnsWithCache } from "../ai/geminiService";
+import { screenColumnsWithCache } from "../ai/useCases/screenColumns";
 import { logger } from "../utils/logger";
 
 interface SheetTestCase {

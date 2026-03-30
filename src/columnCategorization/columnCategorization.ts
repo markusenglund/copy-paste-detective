@@ -13,7 +13,7 @@ import {
 import { detectNaturalLogarithm, LogarithmMatch } from "../utils/logarithm";
 import { EnhancedCell } from "../entities/EnhancedCell";
 import { ExcelFileData } from "../types/ExcelFileData";
-import { screenColumnsWithCache } from "../ai/geminiService";
+import { screenColumnsWithCache } from "../ai/useCases/screenColumns";
 import { logger } from "../utils/logger";
 
 type CalculatedColumnProfile = {

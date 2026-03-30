@@ -3,7 +3,7 @@ import { Command } from "@commander-js/extra-typings";
 import pMap from "p-map";
 import { getDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import type { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
-import { classifyMetaAnalysisWithCache } from "../ai/geminiService";
+import { classifyMetaAnalysisWithCache } from "../ai/useCases/classifyMetaAnalysis";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
 import { readTextFile } from "../utils/readTextFile";
