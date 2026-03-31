@@ -16,24 +16,7 @@ const responseSchema = z.object({
 
 export type MetaAnalysisResponse = z.infer<typeof responseSchema>;
 
-// ============ Hash input (must match legacy geminiService.ts exactly) ============
-
-const hashResponseSchema = {
-  type: "OBJECT",
-  properties: {
-    reasoning: {
-      type: "STRING",
-      description: "Brief reasoning for the classification",
-    },
-    isMetaAnalysis: {
-      type: "BOOLEAN",
-      description:
-        "Whether the dataset is from a meta-analysis or systematic review",
-    },
-  },
-  propertyOrdering: ["reasoning", "isMetaAnalysis"],
-  required: ["reasoning", "isMetaAnalysis"],
-} as const;
+// ============ Hash input ============
 
 function buildHashInput(prompt: string): object {
   const config = getUseCaseConfig("classifyMetaAnalysis");
@@ -43,7 +26,7 @@ function buildHashInput(prompt: string): object {
     config: {
       temperature: config.temperature,
       responseMimeType: "application/json",
-      responseSchema: hashResponseSchema,
+      responseJsonSchema: z.toJSONSchema(responseSchema),
     },
   };
 }

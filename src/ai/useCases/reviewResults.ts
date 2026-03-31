@@ -16,24 +16,7 @@ const responseSchema = z.object({
 
 export type ReviewResultsResponse = z.infer<typeof responseSchema>;
 
-// ============ Hash input (must match legacy geminiService.ts exactly) ============
-
-const hashResponseSchema = {
-  type: "OBJECT",
-  properties: {
-    response: {
-      type: "STRING",
-      description: "Full response to the prompt",
-    },
-    truePositiveProbability: {
-      type: "NUMBER",
-      description:
-        "The probability between 0 and 1 that the data contain real issues.",
-    },
-  },
-  propertyOrdering: ["response", "truePositiveProbability"],
-  required: ["response", "truePositiveProbability"],
-} as const;
+// ============ Hash input ============
 
 function buildHashInput(prompt: string): object {
   const config = getUseCaseConfig("reviewResults");
@@ -43,7 +26,7 @@ function buildHashInput(prompt: string): object {
     config: {
       temperature: config.temperature,
       responseMimeType: "application/json",
-      responseSchema: hashResponseSchema,
+      responseJsonSchema: z.toJSONSchema(responseSchema),
     },
   };
 }

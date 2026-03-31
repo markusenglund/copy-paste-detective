@@ -27,30 +27,7 @@ export type ScreenColumnsResponse = {
   excludedColumnNames: string[];
 };
 
-// ============ Hash input (must match legacy geminiService.ts exactly) ============
-
-const hashResponseSchema = {
-  type: "OBJECT",
-  properties: {
-    motivation: { type: "STRING" },
-    columns: {
-      type: "ARRAY",
-      items: {
-        type: "OBJECT",
-        properties: {
-          columnName: { type: "STRING" },
-          category: {
-            type: "STRING",
-            enum: ["unique", "shared"],
-          },
-        },
-        required: ["columnName", "category"],
-      },
-    },
-  },
-  propertyOrdering: ["motivation", "columns"],
-  required: ["motivation", "columns"],
-} as const;
+// ============ Hash input ============
 
 function buildHashInput(prompt: string): object {
   const config = getUseCaseConfig("screenColumns");
@@ -60,7 +37,7 @@ function buildHashInput(prompt: string): object {
     config: {
       temperature: config.temperature,
       responseMimeType: "application/json",
-      responseSchema: hashResponseSchema,
+      responseJsonSchema: z.toJSONSchema(responseSchema),
     },
   };
 }

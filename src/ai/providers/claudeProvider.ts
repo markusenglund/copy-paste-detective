@@ -3,7 +3,7 @@ import type {
   ContentBlockParam,
   MessageParam,
 } from "@anthropic-ai/sdk/resources/messages";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { z } from "zod";
 import type { AiMultiTurnRequest, AiProvider, AiTextRequest } from "./types";
 import { config } from "../../config/env";
 import { logger } from "../../utils/logger";
@@ -23,7 +23,7 @@ function getClient(): Anthropic {
 
 function buildSystemPrompt(responseSchema: unknown): string {
   const schemaJson = JSON.stringify(
-    zodToJsonSchema(responseSchema as Parameters<typeof zodToJsonSchema>[0]),
+    z.toJSONSchema(responseSchema as z.ZodType),
     null,
     2,
   );

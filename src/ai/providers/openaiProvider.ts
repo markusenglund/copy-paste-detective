@@ -6,7 +6,7 @@ import type {
   ResponseInputMessageContentList,
   ResponseTextConfig,
 } from "openai/resources/responses/responses";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { z } from "zod";
 import type { AiMultiTurnRequest, AiProvider, AiTextRequest } from "./types";
 import { config } from "../../config/env";
 import { logger } from "../../utils/logger";
@@ -50,9 +50,8 @@ async function uploadPdfAndGetFileId(
   return String(uploaded.id);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildTextResponseConfig(
-  schema: Record<string, any>,
+  schema: Record<string, unknown>,
 ): ResponseTextConfig {
   return {
     format: {
@@ -66,8 +65,7 @@ function buildTextResponseConfig(
 
 export const openaiProvider: AiProvider = {
   async generateText<T>(request: AiTextRequest): Promise<T> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const jsonSchema = zodToJsonSchema(request.responseSchema as any);
+    const jsonSchema = z.toJSONSchema(request.responseSchema);
 
     try {
       const body: ResponseCreateParamsNonStreaming = {
@@ -96,8 +94,7 @@ export const openaiProvider: AiProvider = {
   },
 
   async generateMultiTurn<T>(request: AiMultiTurnRequest): Promise<T> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const jsonSchema = zodToJsonSchema(request.responseSchema as any);
+    const jsonSchema = z.toJSONSchema(request.responseSchema);
 
     // Upload PDFs first (if any)
     const fileIds = new Map<number, string>();

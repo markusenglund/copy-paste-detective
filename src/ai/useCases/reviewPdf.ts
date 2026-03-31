@@ -16,24 +16,7 @@ const responseSchema = z.object({
 
 export type PdfReviewResponse = z.infer<typeof responseSchema>;
 
-// ============ Hash input (must match legacy geminiService.ts exactly) ============
-
-const hashResponseSchema = {
-  type: "OBJECT",
-  properties: {
-    response: {
-      type: "STRING",
-      description:
-        "Full analysis of affected conclusions, overall impact, and supporting evidence",
-    },
-    impactScore: {
-      type: "INTEGER",
-      description: "Impact score from 1 to 5",
-    },
-  },
-  propertyOrdering: ["response", "impactScore"],
-  required: ["response", "impactScore"],
-} as const;
+// ============ Hash input ============
 
 function buildHashInput(conversation: {
   originalUserPrompt: string;
@@ -47,7 +30,7 @@ function buildHashInput(conversation: {
     config: {
       temperature: config.temperature,
       responseMimeType: "application/json",
-      responseSchema: hashResponseSchema,
+      responseJsonSchema: z.toJSONSchema(responseSchema),
     },
   };
 }

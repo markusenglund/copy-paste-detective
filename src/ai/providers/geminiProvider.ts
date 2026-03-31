@@ -1,123 +1,14 @@
-import { ApiError, GoogleGenAI, Type } from "@google/genai";
-import type { z } from "zod";
-import {
-  ZodArray,
-  ZodBoolean,
-  ZodEnum,
-  ZodNumber,
-  ZodObject,
-  ZodString,
-} from "zod";
+import { ApiError, GoogleGenAI } from "@google/genai";
+import { z } from "zod";
 import { config } from "../../config/env";
 import { logger } from "../../utils/logger";
 import type { AiProvider, AiTextRequest, AiMultiTurnRequest } from "./types";
 
 const geminiClient = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
-type GeminiSchemaProperty = {
-  type: string;
-  description?: string;
-  enum?: string[];
-  items?: GeminiSchemaProperty;
-  properties?: Record<string, GeminiSchemaProperty>;
-  required?: string[];
-};
-
-type GeminiSchema = GeminiSchemaProperty & {
-  propertyOrdering?: string[];
-};
-
-function zodToGeminiSchema(schema: z.ZodType): GeminiSchema {
-  if (schema instanceof ZodObject) {
-    const shape = schema.shape as Record<string, z.ZodType>;
-    const properties: Record<string, GeminiSchemaProperty> = {};
-    const required: string[] = [];
-    const propertyOrdering: string[] = [];
-
-    for (const [key, value] of Object.entries(shape)) {
-      propertyOrdering.push(key);
-      properties[key] = zodPropertyToGemini(value);
-      if (!value.isOptional()) {
-        required.push(key);
-      }
-    }
-
-    return {
-      type: Type.OBJECT,
-      properties,
-      propertyOrdering,
-      required,
-    };
-  }
-
-  throw new Error(`Unsupported top-level Zod type: ${schema.constructor.name}`);
-}
-
-function zodPropertyToGemini(schema: z.ZodType): GeminiSchemaProperty {
-  // Unwrap .describe() wrappers
-  const description = schema.description;
-
-  if (schema instanceof ZodString) {
-    return { type: Type.STRING, ...(description && { description }) };
-  }
-
-  if (schema instanceof ZodNumber) {
-    const checks = (schema as ZodNumber)._def.checks;
-    const isInt = checks?.some((c: { kind: string }) => c.kind === "int");
-    return {
-      type: isInt ? Type.INTEGER : Type.NUMBER,
-      ...(description && { description }),
-    };
-  }
-
-  if (schema instanceof ZodBoolean) {
-    return { type: Type.BOOLEAN, ...(description && { description }) };
-  }
-
-  if (schema instanceof ZodEnum) {
-    return {
-      type: Type.STRING,
-      enum: schema._def.values as string[],
-      ...(description && { description }),
-    };
-  }
-
-  if (schema instanceof ZodArray) {
-    return {
-      type: Type.ARRAY,
-      items: zodPropertyToGemini(schema._def.type),
-      ...(description && { description }),
-    };
-  }
-
-  if (schema instanceof ZodObject) {
-    const shape = schema.shape as Record<string, z.ZodType>;
-    const properties: Record<string, GeminiSchemaProperty> = {};
-    const required: string[] = [];
-
-    for (const [key, value] of Object.entries(shape)) {
-      properties[key] = zodPropertyToGemini(value);
-      if (!value.isOptional()) {
-        required.push(key);
-      }
-    }
-
-    return {
-      type: Type.OBJECT,
-      properties,
-      required,
-      ...(description && { description }),
-    };
-  }
-
-  throw new Error(
-    `Unsupported Zod type for Gemini schema conversion: ${schema.constructor.name}`,
-  );
-}
-
 export const geminiProvider: AiProvider = {
   async generateText<T>(request: AiTextRequest): Promise<T> {
-    const geminiSchema = zodToGeminiSchema(request.responseSchema);
+    const jsonSchema = z.toJSONSchema(request.responseSchema);
 
     try {
       const response = await geminiClient.models.generateContent({
@@ -126,7 +17,7 @@ export const geminiProvider: AiProvider = {
         config: {
           temperature: request.temperature,
           responseMimeType: "application/json" as const,
-          responseSchema: geminiSchema,
+          responseJsonSchema: jsonSchema,
         },
       });
 
@@ -156,7 +47,7 @@ export const geminiProvider: AiProvider = {
   },
 
   async generateMultiTurn<T>(request: AiMultiTurnRequest): Promise<T> {
-    const geminiSchema = zodToGeminiSchema(request.responseSchema);
+    const jsonSchema = z.toJSONSchema(request.responseSchema);
 
     // Upload any PDFs first
     const fileUris = new Map<number, string>();
@@ -202,7 +93,7 @@ export const geminiProvider: AiProvider = {
         config: {
           temperature: request.temperature,
           responseMimeType: "application/json" as const,
-          responseSchema: geminiSchema,
+          responseJsonSchema: jsonSchema,
         },
       });
 
