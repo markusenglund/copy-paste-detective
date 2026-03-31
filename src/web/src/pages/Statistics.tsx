@@ -70,9 +70,14 @@ export function Statistics(): React.ReactElement {
                     color="blue"
                     breakdown={[
                       {
-                        label: "Successfully downloaded",
+                        label: "Downloaded",
                         count: statistics.downloadStatus.completed,
                         color: "blue",
+                      },
+                      {
+                        label: "Meta-analysis (skipped)",
+                        count: statistics.downloadStatus.metaAnalysis,
+                        color: "purple",
                       },
                       {
                         label: "Failed downloads",

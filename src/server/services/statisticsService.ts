@@ -28,30 +28,52 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   const totalExcelFiles = totalExcelFilesResult[0]?.count ?? 0;
   const totalArticles = totalArticlesResult[0]?.count ?? 0;
 
-  // 2. Get download status breakdown
+  // 2. Get download status breakdown (split completed by meta-analysis status)
   const downloadBreakdownResults = await db
     .select({
       status: dryadDatasets.downloadStatus,
+      isMetaAnalysis: dryadDatasets.isMetaAnalysis,
       count: sql<number>`count(*)::int`,
     })
     .from(dryadDatasets)
-    .groupBy(dryadDatasets.downloadStatus);
+    .groupBy(dryadDatasets.downloadStatus, dryadDatasets.isMetaAnalysis);
 
-  const downloadStatusMap = new Map(
-    downloadBreakdownResults.map((r) => [r.status, r.count]),
-  );
+  let completedNonMeta = 0;
+  let completedMeta = 0;
+  let downloadFailed = 0;
+  let notStarted = 0;
+  let inProgress = 0;
+  let skipped = 0;
+
+  for (const r of downloadBreakdownResults) {
+    if (r.status === "completed") {
+      if (r.isMetaAnalysis === true) {
+        completedMeta += r.count;
+      } else {
+        completedNonMeta += r.count;
+      }
+    } else if (
+      r.status === "failed" ||
+      r.status === "api_forbidden" ||
+      r.status === "api_not_found"
+    ) {
+      downloadFailed += r.count;
+    } else if (r.status === "not_started") {
+      notStarted += r.count;
+    } else if (r.status === "in_progress") {
+      inProgress += r.count;
+    } else if (r.status === "skipped" || r.status === "manually_added") {
+      skipped += r.count;
+    }
+  }
 
   const downloadStatus = {
-    completed: downloadStatusMap.get("completed") ?? 0,
-    failed:
-      (downloadStatusMap.get("failed") ?? 0) +
-      (downloadStatusMap.get("api_forbidden") ?? 0) +
-      (downloadStatusMap.get("api_not_found") ?? 0),
-    notStarted: downloadStatusMap.get("not_started") ?? 0,
-    inProgress: downloadStatusMap.get("in_progress") ?? 0,
-    skipped:
-      (downloadStatusMap.get("skipped") ?? 0) +
-      (downloadStatusMap.get("manually_added") ?? 0),
+    completed: completedNonMeta,
+    metaAnalysis: completedMeta,
+    failed: downloadFailed,
+    notStarted,
+    inProgress,
+    skipped,
   };
 
   // 3. Get analysis status breakdown (only from downloaded datasets)
@@ -61,7 +83,12 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       count: sql<number>`count(*)::int`,
     })
     .from(dryadDatasets)
-    .where(eq(dryadDatasets.downloadStatus, "completed"))
+    .where(
+      and(
+        eq(dryadDatasets.downloadStatus, "completed"),
+        sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`,
+      ),
+    )
     .groupBy(dryadDatasets.analysisStatus);
 
   const analysisStatusMap = new Map(
@@ -87,12 +114,21 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     notAnalyzed,
   };
 
-  // 4. Step 3: AI Review Status
+  // 4. Step 3: AI Review Status (excluding meta-analysis datasets)
   // Find all datasets with at least one non-obsolete ai_review_result
   const allReviewedDatasetsResult = await db
     .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
     .from(aiReviewResults)
-    .where(gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE));
+    .innerJoin(
+      dryadDatasets,
+      eq(dryadDatasets.id, aiReviewResults.dryadDatasetId),
+    )
+    .where(
+      and(
+        gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
+        sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`,
+      ),
+    );
 
   const allReviewedDatasetIds = allReviewedDatasetsResult.map(
     (r) => r.datasetId,
@@ -103,11 +139,16 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   const suspiciousDatasetIdsResult = await db
     .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
     .from(aiReviewResults)
+    .innerJoin(
+      dryadDatasets,
+      eq(dryadDatasets.id, aiReviewResults.dryadDatasetId),
+    )
     .where(
       and(
         eq(aiReviewResults.isLatestReview, true),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
         gt(aiReviewResults.truePositiveProbability, SUSPICION_THRESHOLD),
+        sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`,
       ),
     );
 

@@ -24,6 +24,8 @@ import {
   ReviewStatusFilter,
   ReviewStatusOption,
   TagFilter,
+  MetaAnalysisFilter,
+  MetaAnalysisOption,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -150,6 +152,23 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
               : [],
         };
         filters.push(tagFilter);
+      }
+
+      const metaAnalysisParam =
+        queryParams[`filter_${FILTER_KEYS.META_ANALYSIS}`];
+      if (metaAnalysisParam !== undefined) {
+        const validOptions: MetaAnalysisOption[] = ["all", "exclude", "only"];
+        const option = validOptions.includes(
+          metaAnalysisParam as MetaAnalysisOption,
+        )
+          ? (metaAnalysisParam as MetaAnalysisOption)
+          : "exclude";
+
+        const metaAnalysisFilter: MetaAnalysisFilter = {
+          key: FILTER_KEYS.META_ANALYSIS,
+          option,
+        };
+        filters.push(metaAnalysisFilter);
       }
 
       const filterParams: FilterParams = { filters };

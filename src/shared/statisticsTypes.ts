@@ -6,7 +6,8 @@ export interface StatisticsResponse {
 
   // Download funnel
   downloadStatus: {
-    completed: number;
+    completed: number; // non-meta-analysis completed only
+    metaAnalysis: number; // completed datasets where is_meta_analysis = true
     failed: number; // includes: failed, api_forbidden, api_not_found
     notStarted: number;
     inProgress: number;

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   FilterParams,
   FILTER_KEYS,
+  MetaAnalysisOption,
   PdfAvailabilityOption,
   ReviewStatusOption,
 } from "../../../shared/filterTypes";
@@ -156,6 +157,10 @@ export function FilterPanel({
 
   const tagFilter = filterParams.filters.find((f) => f.key === FILTER_KEYS.TAG);
 
+  const metaAnalysisFilter = filterParams.filters.find(
+    (f) => f.key === FILTER_KEYS.META_ANALYSIS,
+  );
+
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
   const pdfAvailabilityOption = pdfAvailabilityFilter?.option ?? "all";
   const minImpactScore = minImpactScoreFilter?.minScore ?? null;
@@ -165,6 +170,10 @@ export function FilterPanel({
   const reviewStatusOption = reviewStatusFilter?.option ?? "all";
   const selectedTagIds =
     tagFilter && "selectedTagIds" in tagFilter ? tagFilter.selectedTagIds : [];
+  const metaAnalysisOption: MetaAnalysisOption =
+    metaAnalysisFilter && "option" in metaAnalysisFilter
+      ? metaAnalysisFilter.option
+      : "exclude";
 
   const activeFilterCount =
     (isHighProbabilityEnabled ? 1 : 0) +
@@ -173,7 +182,8 @@ export function FilterPanel({
     (minHumanReviewImpactScore !== null ? 1 : 0) +
     (selectedField !== null ? 1 : 0) +
     (reviewStatusOption !== "all" ? 1 : 0) +
-    (selectedTagIds.length > 0 ? 1 : 0);
+    (selectedTagIds.length > 0 ? 1 : 0) +
+    (metaAnalysisOption !== "all" ? 1 : 0);
 
   const handleHighProbabilityChange = (enabled: boolean): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
@@ -237,6 +247,13 @@ export function FilterPanel({
     onFilterChange({ filters: updatedFilters });
   };
 
+  const handleMetaAnalysisChange = (option: MetaAnalysisOption): void => {
+    const updatedFilters = filterParams.filters.map((filter) =>
+      filter.key === FILTER_KEYS.META_ANALYSIS ? { ...filter, option } : filter,
+    );
+    onFilterChange({ filters: updatedFilters });
+  };
+
   const handleTagToggle = (tagId: string): void => {
     const newSelectedTagIds = selectedTagIds.includes(tagId)
       ? selectedTagIds.filter((id) => id !== tagId)
@@ -279,8 +296,52 @@ export function FilterPanel({
       </div>
 
       <div className="flex items-start gap-4">
-        {/* Left group: PDF, Field, Case Status */}
+        {/* Left group: Meta-analysis, PDF, Field, Case Status */}
         <div className="flex items-start gap-4">
+          {/* Meta-analysis filter */}
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-gray-700 font-medium">
+              Meta-analysis
+            </span>
+            <div className="flex flex-col gap-0.5">
+              <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="metaAnalysis"
+                  value="exclude"
+                  checked={metaAnalysisOption === "exclude"}
+                  onChange={() => handleMetaAnalysisChange("exclude")}
+                  className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                />
+                <span>Exclude</span>
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="metaAnalysis"
+                  value="all"
+                  checked={metaAnalysisOption === "all"}
+                  onChange={() => handleMetaAnalysisChange("all")}
+                  className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                />
+                <span>All</span>
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="metaAnalysis"
+                  value="only"
+                  checked={metaAnalysisOption === "only"}
+                  onChange={() => handleMetaAnalysisChange("only")}
+                  className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                />
+                <span>Only</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="w-px self-stretch bg-gray-200" />
+
           {/* PDF Availability - stacked radio buttons */}
           <div className="flex flex-col gap-1">
             <span className="text-sm text-gray-700 font-medium">PDF</span>

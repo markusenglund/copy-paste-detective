@@ -345,6 +345,12 @@ export async function getDashboardArticles(
           sql`${articles.dryadDatasetId} IN (SELECT ${datasetTags.datasetId} FROM ${datasetTags} WHERE ${inArray(datasetTags.tagId, filter.selectedTagIds)})`,
         );
       }
+    } else if (filter.key === FILTER_KEYS.META_ANALYSIS) {
+      if (filter.option === "exclude") {
+        filterConditions.push(sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`);
+      } else if (filter.option === "only") {
+        filterConditions.push(eq(dryadDatasets.isMetaAnalysis, true));
+      }
     }
   }
 

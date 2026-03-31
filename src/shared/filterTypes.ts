@@ -6,6 +6,7 @@ export const FILTER_KEYS = {
   FIELD: "field",
   REVIEW_STATUS: "reviewStatus",
   TAG: "tag",
+  META_ANALYSIS: "metaAnalysis",
 } as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS];
@@ -19,6 +20,8 @@ export type ReviewStatusOption =
   | "true_positive"
   | "false_positive"
   | "ambiguous";
+
+export type MetaAnalysisOption = "all" | "exclude" | "only";
 
 export interface HighProbabilityFilter {
   key: typeof FILTER_KEYS.HIGH_PROBABILITY;
@@ -56,6 +59,11 @@ export interface TagFilter {
   selectedTagIds: string[];
 }
 
+export interface MetaAnalysisFilter {
+  key: typeof FILTER_KEYS.META_ANALYSIS;
+  option: MetaAnalysisOption;
+}
+
 export type FilterConfig =
   | HighProbabilityFilter
   | PdfAvailabilityFilter
@@ -63,7 +71,8 @@ export type FilterConfig =
   | MinHumanReviewImpactScoreFilter
   | FieldFilter
   | ReviewStatusFilter
-  | TagFilter;
+  | TagFilter
+  | MetaAnalysisFilter;
 
 export interface FilterParams {
   filters: FilterConfig[];
@@ -100,6 +109,10 @@ export const DEFAULT_FILTERS: FilterParams = {
       key: FILTER_KEYS.TAG,
       selectedTagIds: [],
     },
+    {
+      key: FILTER_KEYS.META_ANALYSIS,
+      option: "exclude",
+    },
   ],
 };
 
@@ -135,6 +148,8 @@ export function serializeFilters(
       if (filter.selectedTagIds.length > 0) {
         params[`filter_${filter.key}`] = filter.selectedTagIds.join(",");
       }
+    } else if (filter.key === FILTER_KEYS.META_ANALYSIS) {
+      params[`filter_${filter.key}`] = filter.option;
     }
   }
 
@@ -255,6 +270,29 @@ export function deserializeFilters(
         ? tagParam.split(",").filter((id) => id !== "")
         : [],
   });
+
+  const metaAnalysisParam = searchParams.get(
+    `filter_${FILTER_KEYS.META_ANALYSIS}`,
+  );
+  const validMetaAnalysisOptions: MetaAnalysisOption[] = [
+    "all",
+    "exclude",
+    "only",
+  ];
+  if (
+    metaAnalysisParam !== null &&
+    validMetaAnalysisOptions.includes(metaAnalysisParam as MetaAnalysisOption)
+  ) {
+    filters.push({
+      key: FILTER_KEYS.META_ANALYSIS,
+      option: metaAnalysisParam as MetaAnalysisOption,
+    });
+  } else {
+    filters.push({
+      key: FILTER_KEYS.META_ANALYSIS,
+      option: "exclude",
+    });
+  }
 
   return { filters };
 }
