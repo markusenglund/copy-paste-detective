@@ -4,6 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Common Commands
 
+- **Download Dryad datasets**: `npm run dryad-download [count] [--extId <extIds>]`
+  - Example: `npm run dryad-download -- --extId 158552` (downloads specific dataset)
+  - Example: `npm run dryad-download -- --extId 158552,160001` (downloads multiple specific datasets)
+- **Analyze all downloaded datasets**: `npm run dryad-detect-all [count] [--extId <extIds>] [--reset]`
+  - Example: `npm run dryad-detect-all -- --extId 158552` (analyzes specific dataset)
+  - Example: `npm run dryad-detect-all -- --extId 158552,160001` (analyzes multiple specific datasets)
 - **Run copy-paste detection**: `npm run detect excel <folder> [fileIndex] [--strategies <strategies>]`
   - Example: `npm run detect excel benchmark-files/doi_10_5061_dryad_stqjq2cdp__v20250418 1 --strategies duplicateRows,individualNumbers` (analyzes second Excel file in the folder)
 - **Review PDFs for suspicious datasets**: `npm run pdf-review [--limit <number>] [--ext-id <number>]`

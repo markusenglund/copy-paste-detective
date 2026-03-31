@@ -8,6 +8,22 @@ export const parseIntArgument = (value: string): number => {
   return parsed;
 };
 
+export const parseExtIds = (value: string): number[] => {
+  const ids = value.split(",").map((s) => {
+    const parsed = parseInt(s.trim(), 10);
+    if (isNaN(parsed)) {
+      throw new Error(
+        `Must be a comma-separated list of integers, got: ${value}`,
+      );
+    }
+    return parsed;
+  });
+  if (ids.length === 0) {
+    throw new Error("Must provide at least one extId");
+  }
+  return ids;
+};
+
 export const parseStrategies = (value: string): StrategyName[] => {
   const allStrategies = Object.values(StrategyName);
   const requestedStrategies = value.split(",").map((s) => s.trim());

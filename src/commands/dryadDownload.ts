@@ -8,7 +8,7 @@ import {
 import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelFilesRepository";
 import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
 import { downloadFile } from "../dryad/downloadFile";
-import { parseIntArgument } from "../utils/command";
+import { parseIntArgument, parseExtIds } from "../utils/command";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
 
@@ -21,26 +21,27 @@ program
   )
   .version("0.1.0")
   .argument("[count]", "Number of datasets to download", parseIntArgument, 100)
-  .option("--id <extId>", "Download a specific dataset by its Dryad ID (extId)")
+  .option(
+    "--extId <extIds>",
+    "Download specific datasets by Dryad extId (comma-separated)",
+    parseExtIds,
+  )
   .action(async (count, options) => {
     try {
       const maxFileSize = 10_000_000; // 10MB
       let datasetsToDownload: DryadDatasetWithFiles[];
       logger.info("Dryad download");
-      if (options.id) {
-        logger.info(`Options id: ${options.id}`);
-        // Get single dataset by ID, put in array
-        const extId = parseInt(options.id, 10);
-        if (isNaN(extId)) {
-          logger.error(`Invalid extId "${options.id}". Must be a number.`);
-          process.exit(1);
+      if (options.extId) {
+        const datasets: DryadDatasetWithFiles[] = [];
+        for (const extId of options.extId) {
+          const dataset = await getDatasetWithFiles(extId);
+          if (!dataset) {
+            logger.error(`Dataset with extId ${extId} not found.`);
+            process.exit(1);
+          }
+          datasets.push(dataset);
         }
-        const dataset = await getDatasetWithFiles(extId);
-        if (!dataset) {
-          logger.error(`Dataset with extId "${options.id}" not found.`);
-          process.exit(1);
-        }
-        datasetsToDownload = [dataset];
+        datasetsToDownload = datasets;
       } else {
         logger.info("Fetching datasets for download...");
         const datasets = await getDatasetsForDownload(count);

@@ -3,6 +3,7 @@ import pMap from "p-map";
 import Mutex from "p-mutex";
 import {
   getDownloadedNotAnalyzedDatasetsWithFiles,
+  getDatasetWithFiles,
   updateDatasetAnalysisStatus,
   updateDatasetIsMetaAnalysis,
   resetAnalysisStatusesExceptFailed,
@@ -13,7 +14,7 @@ import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadInde
 import { StrategyName } from "../types/strategies";
 import { analyzeDataset } from "../detection/analyzeDataset";
 import { AnalysisResults } from "../dryad/analysisResultsDb";
-import { parseIntArgument } from "../utils/command";
+import { parseIntArgument, parseExtIds } from "../utils/command";
 import {
   getJournalsByIssnMap,
   formatIssn,
@@ -79,6 +80,11 @@ program
     "--reset",
     "Reset all non-failed analysis statuses to 'not_analyzed' before processing",
   )
+  .option(
+    "--extId <extIds>",
+    "Analyze specific datasets by Dryad extId (comma-separated)",
+    parseExtIds,
+  )
   .action(async (count, options) => {
     // Handle --reset option
     if (options.reset) {
@@ -93,20 +99,37 @@ program
 
     const journalByIssn = await getJournalsByIssnMap();
 
-    // Get datasets that have been downloaded but not yet analyzed
-    const downloadedDatasets = (
-      await getDownloadedNotAnalyzedDatasetsWithFiles()
-    ).toSorted((a, b) => {
-      return (
-        new Date(b.dryadPublicationDate).getTime() -
-        new Date(a.dryadPublicationDate).getTime()
-      );
-    });
+    let downloadedDatasets: DryadDatasetWithFiles[];
 
-    const numDatasetsToAnalyze = Math.min(count, downloadedDatasets.length);
+    if (options.extId) {
+      const datasets: DryadDatasetWithFiles[] = [];
+      for (const extId of options.extId) {
+        const dataset = await getDatasetWithFiles(extId);
+        if (!dataset) {
+          logger.error(`Dataset with extId ${extId} not found.`);
+          process.exit(1);
+        }
+        datasets.push(dataset);
+      }
+      downloadedDatasets = datasets;
+    } else {
+      // Get datasets that have been downloaded but not yet analyzed
+      downloadedDatasets = (
+        await getDownloadedNotAnalyzedDatasetsWithFiles()
+      ).toSorted((a, b) => {
+        return (
+          new Date(b.dryadPublicationDate).getTime() -
+          new Date(a.dryadPublicationDate).getTime()
+        );
+      });
+    }
+
+    const numDatasetsToAnalyze = options.extId
+      ? downloadedDatasets.length
+      : Math.min(count, downloadedDatasets.length);
 
     logger.info(
-      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets that are downloaded and not yet analyzed.`,
+      `Analyzing ${numDatasetsToAnalyze} of ${downloadedDatasets.length} datasets.`,
     );
 
     // For each dataset, log the journal name, journal score and title
