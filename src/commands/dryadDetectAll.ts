@@ -126,6 +126,7 @@ program
       reviewed_by_ai: 0,
       flagged_for_review: 0,
       failed: 0,
+      meta_analysis: 0,
     };
 
     await pMap(
@@ -140,6 +141,7 @@ program
           const isMetaAnalysis = await checkIsMetaAnalysis(dataset);
           if (isMetaAnalysis) {
             await updateDatasetIsMetaAnalysis(dataset.extId, true);
+            statusCounts.meta_analysis++;
             logger.info(
               `[${i}] Dataset ${dataset.extId} classified as meta-analysis - skipping.`,
             );

@@ -135,13 +135,19 @@ export const geminiProvider: AiProvider = {
       }
 
       const parsed = JSON.parse(response.text);
-      return request.responseSchema.parse(parsed) as T;
+      const zodResult = request.responseSchema.safeParse(parsed);
+      if (!zodResult.success) {
+        logger.error(
+          `Zod validation failed for Gemini response. Response: ${response.text}`,
+        );
+        throw zodResult.error;
+      }
+      return zodResult.data as T;
     } catch (error) {
       if (error instanceof ApiError && error.status === 503) {
         throw error;
       }
 
-      logger.error(`Error calling Gemini API: ${error}`);
       logger.error(`Prompt: ${request.prompt}`);
       throw new Error(
         `Failed to call Gemini API: ${error instanceof Error ? error.message : "Unknown error"}`,
