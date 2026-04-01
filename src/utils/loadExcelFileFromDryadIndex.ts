@@ -63,7 +63,7 @@ export function loadExcelFileFromDryadIndex(
   }
   if (!dataDescription) {
     logger.error(
-      `Dataset ${dataset.extId} has no README or usage notes available. Bailing out...`,
+      `Dataset ${dataset.extId} has no README or usage notes available, continuing without it.`,
     );
     dataDescription = "No data description available.";
   }
