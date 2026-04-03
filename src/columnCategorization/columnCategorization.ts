@@ -38,15 +38,29 @@ export type CategorizedColumnBasic = Pick<Column, "index" | "name" | "id"> &
 export async function categorizeColumns(
   sheet: Sheet,
   excelFileData: ExcelFileData,
-  options?: { excludeAiProfile: boolean },
+  options?: { excludeAiProfile: boolean; includedColumns?: string[] },
 ): Promise<CategorizedColumn[]> {
   const calculatedColumnProfiles = getCalculatedColumnsProfiles(sheet);
 
   if (options?.excludeAiProfile) {
+    if (options.includedColumns) {
+      const sheetColumnNames = sheet.getColumns().map((c) => c.name);
+      const unmatchedColumns = options.includedColumns.filter(
+        (name) => !sheetColumnNames.includes(name),
+      );
+      if (unmatchedColumns.length > 0) {
+        logger.warn(
+          `[${sheet.name}] --columns: the following names did not match any columns in this sheet: ${unmatchedColumns.join(", ")}`,
+        );
+      }
+    }
+
     const categorizedColumns = sheet.getColumns().map((column, index) => ({
       ...column,
       ...calculatedColumnProfiles[index],
-      isIncludedInAnalysis: true,
+      isIncludedInAnalysis: options.includedColumns
+        ? options.includedColumns.includes(column.name)
+        : true,
     }));
     return categorizedColumns;
   }

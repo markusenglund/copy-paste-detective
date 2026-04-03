@@ -24,6 +24,17 @@ export const parseExtIds = (value: string): number[] => {
   return ids;
 };
 
+export const parseColumns = (value: string): string[] => {
+  const columns = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  if (columns.length === 0) {
+    throw new Error("Must provide at least one column name");
+  }
+  return columns;
+};
+
 export const parseStrategies = (value: string): StrategyName[] => {
   const allStrategies = Object.values(StrategyName);
   const requestedStrategies = value.split(",").map((s) => s.trim());

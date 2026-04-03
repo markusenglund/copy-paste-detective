@@ -34,7 +34,7 @@ export type ExcelFileAnalysis = {
 export async function analyzeExcelFile(
   strategies: StrategyName[],
   excelFileData: ExcelFileData,
-  options?: { excludeAiProfile?: boolean },
+  options?: { excludeAiProfile?: boolean; includedColumns?: string[] },
 ): Promise<ExcelFileAnalysis> {
   logger.info(`🔍 Running strategies: ${strategies.join(", ")}`);
   const { sheets } = excelFileData;
@@ -52,6 +52,7 @@ export async function analyzeExcelFile(
     sheets.map(async (sheet) => {
       const categorizedColumns = await categorizeColumns(sheet, excelFileData, {
         excludeAiProfile: options?.excludeAiProfile ?? false,
+        includedColumns: options?.includedColumns,
       });
 
       categorizedColumnsBySheet.set(sheet.name, categorizedColumns);

@@ -206,7 +206,11 @@ async function reviewMostSuspiciousResults(
 export async function analyzeDataset(
   excelFiles: ExcelFileData[],
   strategies: StrategyName[],
-  options?: { excludeAiProfile?: boolean; skipResultsReview?: boolean },
+  options?: {
+    excludeAiProfile?: boolean;
+    skipResultsReview?: boolean;
+    includedColumns?: string[];
+  },
 ): Promise<AnalyzeDatasetResult> {
   const selectedExcelFilesByFilename = Object.fromEntries(
     excelFiles
@@ -218,6 +222,7 @@ export async function analyzeDataset(
   for (const excelFile of Object.values(selectedExcelFilesByFilename)) {
     const excelFileAnalysis = await analyzeExcelFile(strategies, excelFile, {
       excludeAiProfile: options?.excludeAiProfile,
+      includedColumns: options?.includedColumns,
     });
     excelFileAnalyses.push(excelFileAnalysis);
   }
