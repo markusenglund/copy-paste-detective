@@ -1,52 +1,92 @@
 import { Command } from "@commander-js/extra-typings";
 import { logger } from "../utils/logger";
-import { SearchResponseSchema } from "../pmc/schemas";
-
-const EUROPE_PMC_SEARCH_URL =
-  "https://www.ebi.ac.uk/europepmc/webservices/rest/search";
+import { closeDb } from "../db";
+import { getAllExtPmcIds } from "../repositories/pmcDatasets/pmcDatasetsRepository";
+import {
+  getLastCursorMark,
+  setLastCursorMark,
+} from "../repositories/pmcIndexingState/pmcIndexingStateRepository";
+import { searchArticles } from "../pmc/searchArticles";
+import { indexPmcArticleBatch } from "../pmc/indexPmcArticleBatch";
 
 const program = new Command();
 
 program
   .name("pmc-index")
   .description(
-    "Search Europe PMC for open access articles with supplementary files",
+    "Index open-access PubMed Central articles with supplementary files into the database",
   )
   .version("0.1.0")
-  .action(async () => {
+  .option("--limit <number>", "Maximum number of articles to index", parseInt)
+  .action(async (options) => {
     try {
-      const params = new URLSearchParams({
-        query: "HAS_SUPPL:y OPEN_ACCESS:y",
-        format: "json",
-        pageSize: "25",
-        sort: "CITED desc",
-        cursorMark: "*",
-      });
+      const alreadyIndexedPmcIds = await getAllExtPmcIds();
+      logger.info(`Already indexed: ${alreadyIndexedPmcIds.size} PMC articles`);
 
-      const url = `${EUROPE_PMC_SEARCH_URL}?${params.toString()}`;
-      logger.info(`Fetching: ${url}`);
+      const { cursorMark: savedCursorMark, totalIndexed: savedTotalIndexed } =
+        await getLastCursorMark();
 
-      const response = await fetch(url);
+      let cursorMark = savedCursorMark ?? "*";
+      let totalIndexed = savedTotalIndexed;
+      let totalNewlyIndexed = 0;
+      let totalArticlesProcessed = 0;
+      const limit = options.limit ?? Infinity;
 
-      if (!response.ok) {
-        throw new Error(
-          `Europe PMC API error: ${response.status} ${response.statusText}`,
+      if (savedCursorMark) {
+        logger.info(
+          `Resuming from cursor: ${savedCursorMark}, previously indexed: ${savedTotalIndexed}`,
         );
+      } else {
+        logger.info("Starting fresh indexing run");
       }
 
-      const json = await response.json();
-      const data = SearchResponseSchema.parse(json);
+      while (totalArticlesProcessed < limit) {
+        const searchResponse = await searchArticles(cursorMark);
+        const extPmcArticles = searchResponse.resultList.result;
 
-      logger.info(`Total results: ${data.hitCount}`);
-      logger.info(`Results in this page: ${data.resultList.result.length}`);
-      logger.info(`Next cursor: ${data.nextCursorMark}`);
+        if (extPmcArticles.length === 0) {
+          logger.info("No more results from Europe PMC");
+          break;
+        }
 
-      for (const article of data.resultList.result) {
-        console.log(article);
+        logger.info(
+          `Processing page with ${extPmcArticles.length} articles (total hits: ${searchResponse.hitCount})`,
+        );
+
+        const batchResult = await indexPmcArticleBatch(
+          extPmcArticles,
+          alreadyIndexedPmcIds,
+        );
+
+        totalNewlyIndexed += batchResult.indexed;
+        totalIndexed += batchResult.indexed;
+        totalArticlesProcessed += extPmcArticles.length;
+
+        logger.info(
+          `Page results: indexed=${batchResult.indexed} (${batchResult.indexedWithExcel} with Excel), skipped_already=${batchResult.skippedAlreadyIndexed}, skipped_no_s3=${batchResult.skippedNoS3}`,
+        );
+        logger.info(
+          `Progress: ${totalNewlyIndexed} indexed this run (${totalArticlesProcessed} articles processed), ${totalIndexed} total`,
+        );
+
+        // Check if we've reached the end of pagination
+        if (searchResponse.nextCursorMark === cursorMark) {
+          logger.info("Reached end of Europe PMC results");
+          break;
+        }
+
+        cursorMark = searchResponse.nextCursorMark;
+        await setLastCursorMark(cursorMark, totalIndexed);
       }
+
+      logger.info(
+        `Finished: ${totalNewlyIndexed} articles indexed this run (${totalArticlesProcessed} articles processed), ${totalIndexed} total`,
+      );
     } catch (error) {
-      logger.error(error, "Failed to search Europe PMC");
+      logger.error(error, "PMC indexing failed");
       process.exit(1);
+    } finally {
+      await closeDb();
     }
   });
 

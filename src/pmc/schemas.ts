@@ -5,58 +5,40 @@ const YesNo = z.enum(["Y", "N"]);
 const SearchResultArticleSchema = z.object({
   id: z.string(),
   source: z.string(),
-  pmid: z.string(),
+  pmid: z.string().optional(),
   pmcid: z.string(),
-  fullTextIdList: z.object({
-    fullTextId: z.array(z.string()),
-  }),
-  doi: z.string(),
+  doi: z.string().optional(),
   title: z.string(),
-  authorString: z.string(),
-  journalTitle: z.string(),
-  issue: z.string().optional(),
-  journalVolume: z.string(),
-  pubYear: z.string(),
-  journalIssn: z.string(),
-  pageInfo: z.string(),
-  pubType: z.string(),
-  isOpenAccess: YesNo,
-  inEPMC: YesNo,
-  inPMC: YesNo,
-  hasPDF: YesNo,
-  hasBook: YesNo,
-  hasSuppl: YesNo,
+  authorString: z.string().optional(),
+  journalInfo: z
+    .object({
+      journal: z
+        .object({
+          issn: z.string().optional(),
+          title: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  abstractText: z.string().optional(),
+  pubYear: z.string().optional(),
+  isOpenAccess: YesNo.optional(),
+  hasSuppl: YesNo.optional(),
   citedByCount: z.number(),
-  hasReferences: YesNo,
-  hasTextMinedTerms: YesNo,
-  hasDbCrossReferences: YesNo,
-  hasLabsLinks: YesNo,
-  hasTMAccessionNumbers: YesNo,
-  firstIndexDate: z.string(),
   firstPublicationDate: z.string(),
-  // Optional fields (not present on every result)
-  dbCrossReferenceList: z
-    .object({ dbName: z.array(z.string()).optional() })
-    .optional(),
-  tmAccessionTypeList: z
-    .object({ accessionType: z.array(z.string()).optional() })
-    .optional(),
 });
 
 export type SearchResultArticle = z.infer<typeof SearchResultArticleSchema>;
 
 export const SearchResponseSchema = z.object({
-  version: z.string(),
   hitCount: z.number(),
   nextCursorMark: z.string(),
-  nextPageUrl: z.string(),
   request: z.object({
     queryString: z.string(),
     resultType: z.string(),
     cursorMark: z.string(),
     pageSize: z.number(),
     sort: z.string(),
-    synonym: z.boolean(),
   }),
   resultList: z.object({
     result: z.array(SearchResultArticleSchema),
@@ -64,3 +46,20 @@ export const SearchResponseSchema = z.object({
 });
 
 export type SearchResponse = z.infer<typeof SearchResponseSchema>;
+
+// S3 metadata response
+const S3MetadataSchema = z.object({
+  pmcid: z.string(),
+  version: z.number(),
+  pmid: z.number().nullable(),
+  doi: z.string().nullable(),
+  title: z.string(),
+  is_retracted: z.boolean(),
+  license_code: z.string().nullable(),
+  pdf_url: z.string().nullish(),
+  media_urls: z.array(z.string()).default([]),
+});
+
+export type S3Metadata = z.infer<typeof S3MetadataSchema>;
+
+export { S3MetadataSchema };

@@ -23,3 +23,7 @@ export const analysisStatusEnum = pgEnum("analysis_status", [
 ]);
 
 export type AnalysisStatus = (typeof analysisStatusEnum.enumValues)[number];
+
+export const dataFileTypeEnum = pgEnum("data_file_type", ["excel"]);
+
+export type DataFileType = (typeof dataFileTypeEnum.enumValues)[number];

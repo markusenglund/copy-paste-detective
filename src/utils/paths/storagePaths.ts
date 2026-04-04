@@ -13,5 +13,7 @@ export const storagePaths = {
   highlightedFiles: path.join(STORAGE_ROOT, "highlighted-files"),
   highlightedDataset: (extId: string | number): string =>
     path.join(STORAGE_ROOT, "highlighted-files", extId.toString()),
+  pmc: path.join(STORAGE_ROOT, "pmc"),
+  pmcArticle: (pmcid: string): string => path.join(STORAGE_ROOT, "pmc", pmcid),
   other: path.join(STORAGE_ROOT, "other"),
 };

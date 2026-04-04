@@ -1,0 +1,1 @@
+ALTER TABLE "pmc_datasets" ADD COLUMN "supplemental_file_urls" text[];
