@@ -11,7 +11,7 @@ export async function searchArticles(
   const params = new URLSearchParams({
     query: "HAS_SUPPL:y OPEN_ACCESS:y",
     format: "json",
-    pageSize: "25",
+    pageSize: "100",
     sort: "CITED desc",
     resultType: "core",
     cursorMark,

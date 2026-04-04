@@ -41,6 +41,7 @@ export async function indexPmcArticleBatch(
 
       // Fetch S3 metadata
       const s3Metadata = await getS3Metadata(extPmcId);
+
       if (!s3Metadata) {
         result.skippedNoS3++;
         return;
