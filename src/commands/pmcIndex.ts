@@ -29,6 +29,9 @@ program
       let cursorMark = savedCursorMark ?? "*";
       let totalIndexed = savedTotalIndexed;
       let totalNewlyIndexed = 0;
+      let totalNewlyIndexedWithExcel = 0;
+      let totalSkippedAlreadyIndexed = 0;
+      let totalSkippedNoS3 = 0;
       let totalArticlesProcessed = 0;
       const limit = options.limit ?? Infinity;
 
@@ -59,6 +62,9 @@ program
         );
 
         totalNewlyIndexed += batchResult.indexed;
+        totalNewlyIndexedWithExcel += batchResult.indexedWithExcel;
+        totalSkippedAlreadyIndexed += batchResult.skippedAlreadyIndexed;
+        totalSkippedNoS3 += batchResult.skippedNoS3;
         totalIndexed += batchResult.indexed;
         totalArticlesProcessed += extPmcArticles.length;
 
@@ -80,7 +86,7 @@ program
       }
 
       logger.info(
-        `Finished: ${totalNewlyIndexed} articles indexed this run (${totalArticlesProcessed} articles processed), ${totalIndexed} total`,
+        `Finished: ${totalNewlyIndexed} indexed this run (${totalNewlyIndexedWithExcel} with Excel), ${totalSkippedAlreadyIndexed} skipped (already indexed), ${totalSkippedNoS3} skipped (no S3 metadata), ${totalArticlesProcessed} articles processed, ${totalIndexed} total indexed`,
       );
     } catch (error) {
       logger.error(error, "PMC indexing failed");

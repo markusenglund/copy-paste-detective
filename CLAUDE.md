@@ -86,3 +86,8 @@ When detection strategies (`repeatedColumnSequences` or `duplicateRows`) find su
 
 - You must never use emojis in console.log statements.
 - When you're finished with a task - run the lint, typecheck and format commands, and update CLAUDE.md if needed.
+- **No `any` types**: All responses from third-party APIs and external data formats (JSON, XML, CSV, etc.) must be validated with zod schemas before accessing any properties. Never use `any`, never cast to a type without validation. If a library returns `any` (e.g., XML parsers), run it through zod immediately.
+- **Ask before implementing**: When the user asks a question or gives an ambiguous instruction, answer the question or ask for clarification. Do not start implementing until the user confirms the approach. If an instruction could mean two different things, ask which one.
+- **Think before writing code**: Before writing code, consider: Is this type-safe? Is the library configured correctly? Are there edge cases? Write it right the first time instead of writing something sloppy and fixing it when called out.
+- **Never use `drizzle-kit push`**: Only use `drizzle-kit generate` for migrations. Push is not allowed.
+- **Follow existing conventions**: Before inventing a new column name, variable name, or pattern, check how the existing codebase does it. Do not invent new conventions.

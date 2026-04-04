@@ -18,7 +18,7 @@ export async function searchArticles(
   });
 
   const url = `${EUROPE_PMC_SEARCH_URL}?${params.toString()}`;
-  logger.info(`Fetching Europe PMC page: cursorMark=${cursorMark}`);
+  logger.info(`Fetching Europe PMC page ${url}`);
 
   const response = await europePmcFetch(url);
 

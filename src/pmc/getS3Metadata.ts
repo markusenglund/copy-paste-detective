@@ -43,7 +43,7 @@ async function getLatestVersion(pmcid: string): Promise<number | null> {
 
   if (!response.ok) {
     logger.warn(
-      `S3 prefix listing failed for ${pmcid}: ${response.status} ${response.statusText}`,
+      `S3 prefix listing failed with ${response.status} ${response.statusText} ${url}`,
     );
     return null;
   }
@@ -54,7 +54,7 @@ async function getLatestVersion(pmcid: string): Promise<number | null> {
 
   if (!parseResult.success) {
     logger.warn(
-      `S3 prefix listing parse failed for ${pmcid}: ${parseResult.error.message}`,
+      `S3 prefix listing parse failed for ${pmcid} ${url} - ${parseResult.error.message}`,
     );
     return null;
   }
@@ -80,7 +80,9 @@ async function getLatestVersion(pmcid: string): Promise<number | null> {
 export async function getS3Metadata(pmcid: string): Promise<S3Metadata | null> {
   const version = await getLatestVersion(pmcid);
   if (version === null) {
-    logger.warn(`No S3 versions found for ${pmcid}`);
+    logger.warn(
+      `No S3 versions found for ${pmcid} ${S3_BASE}/?list-type=2&prefix=${pmcid}.&delimiter=/`,
+    );
     return null;
   }
 
@@ -90,7 +92,9 @@ export async function getS3Metadata(pmcid: string): Promise<S3Metadata | null> {
 
   if (!response.ok) {
     if (response.status === 404 || response.status === 403) {
-      logger.warn(`S3 metadata not found for ${pmcid} at version ${version}`);
+      logger.warn(
+        `S3 metadata not found for ${pmcid} at version ${version} ${url}`,
+      );
       return null;
     }
     throw new Error(
