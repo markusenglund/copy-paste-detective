@@ -63,3 +63,14 @@ const S3MetadataSchema = z.object({
 export type S3Metadata = z.infer<typeof S3MetadataSchema>;
 
 export { S3MetadataSchema };
+
+// S3 ListBucketResult response (list-type=2 with delimiter)
+const S3CommonPrefixSchema = z.object({
+  Prefix: z.string(),
+});
+
+export const S3ListBucketResultSchema = z.object({
+  ListBucketResult: z.object({
+    CommonPrefixes: z.array(S3CommonPrefixSchema).optional(),
+  }),
+});

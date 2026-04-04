@@ -1,10 +1,19 @@
+import { XMLParser } from "fast-xml-parser";
 import { s3Fetch } from "./pmcFetch";
-import { S3Metadata, S3MetadataSchema } from "./schemas";
+import {
+  S3Metadata,
+  S3MetadataSchema,
+  S3ListBucketResultSchema,
+} from "./schemas";
 import { logger } from "../utils/logger";
 
 const S3_BASE = "https://pmc-oa-opendata.s3.amazonaws.com";
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+
+const xmlParser = new XMLParser({
+  isArray: (name) => name === "CommonPrefixes",
+});
 
 async function s3FetchWithRetry(
   url: string,
@@ -28,19 +37,60 @@ async function s3FetchWithRetry(
   throw new Error("Unreachable");
 }
 
-export async function getS3Metadata(
-  pmcid: string,
-  version: number = 1,
-): Promise<S3Metadata | null> {
-  const url = `${S3_BASE}/${pmcid}.${version}/${pmcid}.${version}.json`;
+async function getLatestVersion(pmcid: string): Promise<number | null> {
+  const url = `${S3_BASE}/?list-type=2&prefix=${pmcid}.&delimiter=/`;
+  const response = await s3FetchWithRetry(url);
 
+  if (!response.ok) {
+    logger.warn(
+      `S3 prefix listing failed for ${pmcid}: ${response.status} ${response.statusText}`,
+    );
+    return null;
+  }
+
+  const xml = await response.text();
+  const rawParsed = xmlParser.parse(xml);
+  const parseResult = S3ListBucketResultSchema.safeParse(rawParsed);
+
+  if (!parseResult.success) {
+    logger.warn(
+      `S3 prefix listing parse failed for ${pmcid}: ${parseResult.error.message}`,
+    );
+    return null;
+  }
+
+  const prefixes = parseResult.data.ListBucketResult.CommonPrefixes;
+  if (!prefixes || prefixes.length === 0) {
+    return null;
+  }
+
+  let maxVersion = 0;
+  for (const entry of prefixes) {
+    // Prefix looks like "PMC1234567.2/"
+    const versionStr = entry.Prefix.replace(`${pmcid}.`, "").replace("/", "");
+    const version = parseInt(versionStr);
+    if (!isNaN(version) && version > maxVersion) {
+      maxVersion = version;
+    }
+  }
+
+  return maxVersion > 0 ? maxVersion : null;
+}
+
+export async function getS3Metadata(pmcid: string): Promise<S3Metadata | null> {
+  const version = await getLatestVersion(pmcid);
+  if (version === null) {
+    logger.warn(`No S3 versions found for ${pmcid}`);
+    return null;
+  }
+
+  const versionedId = `${pmcid}.${version}`;
+  const url = `${S3_BASE}/${versionedId}/${versionedId}.json`;
   const response = await s3FetchWithRetry(url);
 
   if (!response.ok) {
     if (response.status === 404 || response.status === 403) {
-      logger.warn(
-        `S3 metadata not found for ${pmcid} v${version} (URL: ${url})`,
-      );
+      logger.warn(`S3 metadata not found for ${pmcid} at version ${version}`);
       return null;
     }
     throw new Error(
