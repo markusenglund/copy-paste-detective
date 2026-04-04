@@ -1,0 +1,1 @@
+ALTER TABLE "pmc_data_files" ALTER COLUMN "size" SET NOT NULL;

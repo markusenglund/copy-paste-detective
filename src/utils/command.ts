@@ -24,6 +24,17 @@ export const parseExtIds = (value: string): number[] => {
   return ids;
 };
 
+export const parseExtPmcIds = (value: string): string[] => {
+  const ids = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  if (ids.length === 0) {
+    throw new Error("Must provide at least one PMC ID");
+  }
+  return ids;
+};
+
 export const parseColumns = (value: string): string[] => {
   const columns = value
     .split(",")

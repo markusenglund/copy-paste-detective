@@ -9,6 +9,7 @@
     "test-column-ai": "tsx -r dotenv/config src/commands/testColumnCategorizationPrompt",
     "list-gemini-models": "tsx -r dotenv/config src/commands/listGeminiModels",
     "pmc-index": "tsx -r dotenv/config src/commands/pmcIndex",
+    "pmc-download": "tsx -r dotenv/config src/commands/pmcDownload",
     "dryad-index": "tsx -r dotenv/config src/commands/dryadIndex",
     "dryad-download": "tsx -r dotenv/config src/commands/dryadDownload",
     "dryad-get-dataset": "tsx -r dotenv/config src/commands/dryadGetDataset",

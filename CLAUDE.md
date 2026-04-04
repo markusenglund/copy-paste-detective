@@ -23,6 +23,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Download PDFs for articles**: `npm run pdf-download [--limit <number>] [--extId <number>]`
   - Example: `npm run pdf-download --limit 5` (downloads up to 5 PDFs for articles with suspicious datasets)
   - Example: `npm run pdf-download --extId 158552` (downloads PDF only for dataset with extId 158552, ignores download status)
+- **Download PMC datasets**: `npm run pmc-download [count] [--extId <pmcIds>]`
+  - Example: `npm run pmc-download -- --extId PMC7305608` (downloads specific dataset)
+  - Example: `npm run pmc-download -- --extId PMC7305608,PMC1234567` (downloads multiple specific datasets)
+  - Example: `npm run pmc-download 50` (downloads top 50 by citation score)
 - **Seed admin user**: `npm run seed-admin -- --username <username>`
   - Example: `npm run seed-admin -- --username admin` (creates admin user with a temporary password)
 - **Run tests**: `npm test`

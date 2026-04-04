@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
-import { DataFileType } from "../../db/shared/enums";
+import { DataFileType, DownloadStatus } from "../../db/shared/enums";
 import { pmcDataFiles } from "./schema";
 
 export type PmcDataFileRow = typeof pmcDataFiles.$inferSelect;
@@ -10,7 +10,7 @@ export async function upsertPmcDataFile(data: {
   filename: string;
   fileType: DataFileType;
   s3Url: string;
-  size: number | null;
+  size: number;
 }): Promise<PmcDataFileRow> {
   const [result] = await db
     .insert(pmcDataFiles)
@@ -38,4 +38,14 @@ export async function getPmcDataFilesByDatasetId(
     .select()
     .from(pmcDataFiles)
     .where(eq(pmcDataFiles.pmcDatasetId, datasetId));
+}
+
+export async function updatePmcDataFileDownloadStatus(
+  fileId: number,
+  status: DownloadStatus,
+): Promise<void> {
+  await db
+    .update(pmcDataFiles)
+    .set({ downloadStatus: status })
+    .where(eq(pmcDataFiles.id, fileId));
 }

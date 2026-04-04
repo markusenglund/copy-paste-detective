@@ -19,7 +19,7 @@ export const pmcDataFiles = pgTable(
     filename: text("filename").notNull(),
     fileType: dataFileTypeEnum("file_type").notNull(),
     s3Url: text("s3_url").notNull().unique(),
-    size: bigint("size", { mode: "number" }),
+    size: bigint("size", { mode: "number" }).notNull(),
     downloadStatus: downloadStatusEnum("download_status")
       .notNull()
       .default("not_started"),
