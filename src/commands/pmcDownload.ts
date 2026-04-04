@@ -30,6 +30,7 @@ program
     try {
       const maxFileSize = 10_000_000; // 10MB
       let datasetsToDownload: PmcDatasetWithFiles[];
+      let totalDatasetsSkipped = 0;
       logger.info("PMC download");
       if (options.extId) {
         const datasets: PmcDatasetWithFiles[] = [];
@@ -70,6 +71,8 @@ program
           await updatePmcDatasetDownloadStatus(dataset.extPmcId, "skipped");
         }
 
+        totalDatasetsSkipped = skipped.length;
+
         logger.info(
           `Found ${downloadable.length} datasets to download, ${skipped.length} skipped`,
         );
@@ -87,6 +90,7 @@ program
       let totalDatasetsFailed = 0;
       let totalFilesDownloaded = 0;
       let totalFilesFailed = 0;
+      let totalSizeDownloaded = 0;
 
       for (let i = 0; i < datasetsToDownload.length; i++) {
         const dataset = datasetsToDownload[i];
@@ -110,6 +114,7 @@ program
               });
               await updatePmcDataFileDownloadStatus(dataFile.id, "completed");
               totalFilesDownloaded += 1;
+              totalSizeDownloaded += dataFile.size || 0;
             } catch (err) {
               logger.error(err);
               await updatePmcDataFileDownloadStatus(dataFile.id, "failed");
@@ -130,7 +135,7 @@ program
       }
 
       logger.info(
-        `\nSummary: ${totalDatasetsCompleted} datasets completed, ${totalDatasetsFailed} failed. ${totalFilesDownloaded} Excel files downloaded, ${totalFilesFailed} failed.`,
+        `\nSummary: ${totalDatasetsCompleted} datasets completed, ${totalDatasetsFailed} failed, ${totalDatasetsSkipped} skipped (all files > ${maxFileSize / 1_000_000}MB). ${totalFilesDownloaded} Excel files downloaded (${(totalSizeDownloaded / 1_000_000).toFixed(2)} MB), ${totalFilesFailed} failed.`,
       );
     } finally {
       await closeDb();
