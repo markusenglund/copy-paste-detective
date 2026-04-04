@@ -65,7 +65,7 @@ export async function listFiles({
 
   const zodResult = FilesResponseSchema.safeParse(responseData);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url}: ${zodResult.error}`);
+    throw new Error(`Zod validation failed for ${url} - ${zodResult.error}`);
   }
   return zodResult.data;
 }
