@@ -1,7 +1,50 @@
 import { db } from "../../db";
 import { pmcDatasets } from "./schema";
+import { and, eq, isNull, exists } from "drizzle-orm";
+import { pmcDataFiles } from "../pmcDataFiles/schema";
 
 export type PmcDataset = typeof pmcDatasets.$inferSelect;
+
+export async function getPmcDatasetsWithoutArticles(
+  limit?: number,
+): Promise<PmcDataset[]> {
+  const query = db
+    .select()
+    .from(pmcDatasets)
+    .where(
+      and(
+        isNull(pmcDatasets.articleId),
+        exists(
+          db
+            .select()
+            .from(pmcDataFiles)
+            .where(eq(pmcDataFiles.pmcDatasetId, pmcDatasets.id)),
+        ),
+      ),
+    );
+  const results = await query;
+  return limit ? results.slice(0, limit) : results;
+}
+
+export async function getPmcDatasetByExtPmcId(
+  extPmcId: string,
+): Promise<PmcDataset | undefined> {
+  const [result] = await db
+    .select()
+    .from(pmcDatasets)
+    .where(eq(pmcDatasets.extPmcId, extPmcId));
+  return result;
+}
+
+export async function updatePmcDatasetArticleId(
+  pmcDatasetId: number,
+  articleId: number,
+): Promise<void> {
+  await db
+    .update(pmcDatasets)
+    .set({ articleId, updatedTimestamp: new Date() })
+    .where(eq(pmcDatasets.id, pmcDatasetId));
+}
 
 export async function getAllExtPmcIds(): Promise<Set<string>> {
   const result = await db

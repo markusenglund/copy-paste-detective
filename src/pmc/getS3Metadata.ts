@@ -12,7 +12,7 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
 const xmlParser = new XMLParser({
-  isArray: (name) => name === "CommonPrefixes",
+  isArray: (name): boolean => name === "CommonPrefixes",
 });
 
 async function s3FetchWithRetry(

@@ -211,6 +211,13 @@
       "when": 1775299481840,
       "tag": "0030_goofy_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1775316976051,
+      "tag": "0031_illegal_groot",
+      "breakpoints": true
     }
   ]
 }

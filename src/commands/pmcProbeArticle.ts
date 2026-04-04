@@ -3,28 +3,36 @@ import { logger } from "../utils/logger";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { storagePaths } from "../utils/paths/storagePaths";
+import { z } from "zod";
+import { S3MetadataSchema } from "../pmc/schemas";
 
 const PMCID = "PMC7305608";
 const S3_BASE = "https://pmc-oa-opendata.s3.amazonaws.com";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-interface S3Metadata {
-  pmcid: string;
-  version: number;
-  pmid: number | null;
-  doi: string | null;
-  title: string;
-  citation: string;
-  is_pmc_openaccess: boolean;
-  is_manuscript: boolean;
-  is_historical_ocr: boolean;
-  is_retracted: boolean;
-  license_code: string | null;
-  xml_url: string;
-  pdf_url: string | null;
-  text_url: string;
-  media_urls: string[];
-}
+const ProbeSearchResultSchema = z.object({
+  pmcid: z.string(),
+  pmid: z.string().optional(),
+  doi: z.string().optional(),
+  title: z.string(),
+  journalTitle: z.string().optional(),
+  journalIssn: z.string().optional(),
+  firstPublicationDate: z.string(),
+  citedByCount: z.number(),
+  hasSuppl: z.string().optional(),
+  abstractText: z.string().optional(),
+});
+
+const ProbeSearchResponseSchema = z.object({
+  resultList: z.object({
+    result: z.array(ProbeSearchResultSchema),
+  }),
+});
+
+const ProbeS3MetadataSchema = S3MetadataSchema.extend({
+  citation: z.string().optional(),
+  text_url: z.string(),
+});
 
 function s3UrlToHttps(s3Url: string): string {
   return s3Url
@@ -72,8 +80,10 @@ program
       logger.info("=== SEARCH METADATA (Europe PMC) ===");
       const searchUrl = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=PMCID:${PMCID}&format=json&resultType=core`;
       const searchResponse = await fetch(searchUrl);
-      const searchData = await searchResponse.json();
-      const article = searchData.resultList?.result?.[0];
+      const searchData = ProbeSearchResponseSchema.parse(
+        await searchResponse.json(),
+      );
+      const article = searchData.resultList.result[0];
       console.log({
         pmcid: article.pmcid,
         pmid: article.pmid,
@@ -97,7 +107,9 @@ program
           `Failed to fetch S3 metadata: ${metadataResponse.status}`,
         );
       }
-      const metadata: S3Metadata = await metadataResponse.json();
+      const metadata = ProbeS3MetadataSchema.parse(
+        await metadataResponse.json(),
+      );
 
       // Save metadata JSON
       const metadataPath = path.join(outputDir, `${PMCID}.json`);
