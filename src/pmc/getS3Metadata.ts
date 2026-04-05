@@ -271,6 +271,27 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
     }
   }
 
+  // Pattern C: standalone <media xlink:href="..."> not wrapped in
+  // <supplementary-material> (e.g. PMC7676259 MOESM6)
+  const allMedia = findDescendants(parsed, "media");
+  for (const media of allMedia) {
+    const href = media.attrs["@_xlink:href"];
+    if (!href) continue;
+
+    const filename = getFilenameFromHref(href);
+    if (captions.has(filename)) continue;
+
+    const mediaCaptions = findChildren(media.content, "caption");
+    const mediaCaption =
+      mediaCaptions.length > 0
+        ? extractOrderedText(mediaCaptions[0].content).trim()
+        : null;
+
+    if (mediaCaption) {
+      captions.set(filename, mediaCaption);
+    }
+  }
+
   return captions;
 }
 

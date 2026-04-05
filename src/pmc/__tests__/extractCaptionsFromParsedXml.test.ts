@@ -163,6 +163,55 @@ describe("extractCaptionsFromParsedXml", () => {
     });
   });
 
+  describe("PMC7676259 - standalone <media> not wrapped in <supplementary-material>", () => {
+    // Pared-down PMC7676259.1.xml — MOESM5 is inside <supplementary-material>,
+    // but MOESM6 is a bare <media> inside <back>/<app-group>/<app>/<sec>/<p>.
+    const PMC7676259_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns:xlink="http://www.w3.org/1999/xlink">
+  <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
+  <body>
+    <sec>
+      <sec id="Sec27">
+        <supplementary-material content-type="local-data" id="MOESM5">
+          <media xlink:href="41467_2020_19701_MOESM5_ESM.xlsx" id="MOESM5">
+            <caption><p>Supplementary Data 1-35</p></caption>
+          </media>
+        </supplementary-material>
+      </sec>
+    </sec>
+  </body>
+  <back>
+    <app-group>
+      <app id="App1">
+        <sec id="Sec28">
+          <p id="Par51">
+            <media position="anchor" xlink:href="41467_2020_19701_MOESM6_ESM.xlsx" id="MOESM6" orientation="portrait">
+              <caption><p>Source data</p></caption>
+            </media>
+          </p>
+        </sec>
+      </app>
+    </app-group>
+  </back>
+</article>`;
+
+    it("extracts caption from media inside supplementary-material", () => {
+      const captions = extractCaptionsFromParsedXml(PMC7676259_XML);
+
+      expect(captions.get("41467_2020_19701_MOESM5_ESM.xlsx")).toBe(
+        "Supplementary Data 1-35",
+      );
+    });
+
+    it("extracts caption from standalone media not in supplementary-material", () => {
+      const captions = extractCaptionsFromParsedXml(PMC7676259_XML);
+
+      expect(captions.get("41467_2020_19701_MOESM6_ESM.xlsx")).toBe(
+        "Source data",
+      );
+    });
+  });
+
   describe("edge cases", () => {
     it("returns empty map for XML without supplementary materials", () => {
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
