@@ -7,4 +7,5 @@ export const pmcDatasetFileDetails = pgTable("pmc_dataset_file_details", {
     .unique()
     .references(() => datasetFiles.id),
   s3Url: text("s3_url").notNull().unique(),
+  caption: text("caption"),
 });

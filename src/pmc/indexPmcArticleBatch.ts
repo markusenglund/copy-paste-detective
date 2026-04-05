@@ -6,6 +6,7 @@ import {
   getFilenameFromS3Url,
   isExcelFile,
   getFileSize,
+  getSupplementaryCaptions,
 } from "./getS3Metadata";
 import {
   upsertPmcDataset,
@@ -72,6 +73,12 @@ export async function indexPmcArticleBatch(
         (f): f is NonNullable<typeof f> => f !== null,
       );
 
+      // Fetch supplementary captions from XML (best-effort)
+      let captions = new Map<string, string>();
+      if (s3Metadata.xml_url && excelFiles.length > 0) {
+        captions = await getSupplementaryCaptions(s3Metadata.xml_url);
+      }
+
       // Extract journal ISSN from core response
       const journalIssn = extPmcArticle.journalInfo?.journal?.issn ?? null;
 
@@ -92,19 +99,30 @@ export async function indexPmcArticleBatch(
         fullPdfUrl: s3Metadata.pdf_url
           ? s3UrlToHttps(s3Metadata.pdf_url)
           : null,
+        textUrl: s3Metadata.text_url ? s3UrlToHttps(s3Metadata.text_url) : null,
         supplementalFileUrls:
           s3Metadata.media_urls.length > 0 ? s3Metadata.media_urls : null,
         isMetaAnalysis: null,
       });
 
       // Upsert Excel data files
+      const xmlHttpsUrl = s3Metadata.xml_url
+        ? s3UrlToHttps(s3Metadata.xml_url)
+        : null;
       for (const file of excelFiles) {
+        const caption = captions.get(file.filename) ?? null;
+        if (!caption && xmlHttpsUrl) {
+          logger.warn(
+            `No caption found for ${file.filename} in ${extPmcId} ${xmlHttpsUrl}`,
+          );
+        }
         await upsertPmcDataFile({
           pmcDatasetId: dataset.id,
           filename: file.filename,
           fileType: "excel",
           s3Url: file.s3Url,
           size: file.size,
+          caption,
         });
       }
 

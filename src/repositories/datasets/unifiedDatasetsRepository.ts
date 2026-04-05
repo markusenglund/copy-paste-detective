@@ -81,7 +81,11 @@ export async function getPmcDatasetByExtId(
     .from(datasetFiles)
     .where(eq(datasetFiles.datasetId, match.dataset.id));
 
-  return { ...match.dataset, pmcDetails: match.pmcDetails, dataFiles: dataFilesRows };
+  return {
+    ...match.dataset,
+    pmcDetails: match.pmcDetails,
+    dataFiles: dataFilesRows,
+  };
 }
 
 export async function updateDatasetAnalysisStatus(
@@ -137,6 +141,7 @@ export async function upsertPmcDataset(data: {
   license: string | null;
   isRetracted: boolean | null;
   fullPdfUrl: string | null;
+  textUrl: string | null;
   supplementalFileUrls: string[] | null;
   isMetaAnalysis: boolean | null;
 }): Promise<{ dataset: DatasetRow; isNew: boolean }> {
@@ -179,6 +184,7 @@ export async function upsertPmcDataset(data: {
         license: data.license,
         isRetracted: data.isRetracted,
         fullPdfUrl: data.fullPdfUrl,
+        textUrl: data.textUrl,
         supplementalFileUrls: data.supplementalFileUrls,
       })
       .onConflictDoUpdate({
@@ -191,6 +197,7 @@ export async function upsertPmcDataset(data: {
           license: data.license,
           isRetracted: data.isRetracted,
           fullPdfUrl: data.fullPdfUrl,
+          textUrl: data.textUrl,
           supplementalFileUrls: data.supplementalFileUrls,
         },
       });
@@ -207,6 +214,7 @@ export async function upsertPmcDataFile(data: {
   fileType: DataFileType;
   s3Url: string;
   size: number;
+  caption: string | null;
 }): Promise<void> {
   await db.transaction(async (tx) => {
     const existingDetail = await tx
@@ -224,6 +232,15 @@ export async function upsertPmcDataFile(data: {
           size: data.size,
         })
         .where(eq(datasetFiles.id, existingDetail[0].datasetFileId));
+      await tx
+        .update(pmcDatasetFileDetails)
+        .set({ caption: data.caption })
+        .where(
+          eq(
+            pmcDatasetFileDetails.datasetFileId,
+            existingDetail[0].datasetFileId,
+          ),
+        );
     } else {
       const [newFile] = await tx
         .insert(datasetFiles)
@@ -239,6 +256,7 @@ export async function upsertPmcDataFile(data: {
       await tx.insert(pmcDatasetFileDetails).values({
         datasetFileId: newFile.id,
         s3Url: data.s3Url,
+        caption: data.caption,
       });
     }
   });
@@ -310,10 +328,10 @@ export async function getPmcDatasetsForDownload(
     );
 
   const matchedDatasets = await db
-    .select({ 
-      dataset: datasets, 
+    .select({
+      dataset: datasets,
       pmcDetails: pmcDatasetDetails,
-      citationScore: citationScoreExpr 
+      citationScore: citationScoreExpr,
     })
     .from(datasets)
     .leftJoin(pmcDatasetDetails, eq(pmcDatasetDetails.datasetId, datasets.id))

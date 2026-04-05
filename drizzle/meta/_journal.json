@@ -232,6 +232,13 @@
       "when": 1775375579218,
       "tag": "0033_naive_unicorn",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1775388595548,
+      "tag": "0034_aspiring_mentallo",
+      "breakpoints": true
     }
   ]
 }

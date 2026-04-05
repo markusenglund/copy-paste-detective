@@ -57,6 +57,8 @@ const S3MetadataSchema = z.object({
   is_retracted: z.boolean(),
   license_code: z.string().nullable(),
   pdf_url: z.string().nullish(),
+  text_url: z.string().nullish(),
+  xml_url: z.string().nullish(),
   media_urls: z.array(z.string()).default([]),
 });
 

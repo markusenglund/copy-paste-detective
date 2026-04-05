@@ -133,3 +133,149 @@ export async function getFileSize(url: string): Promise<number | null> {
   const contentLength = response.headers.get("content-length");
   return contentLength ? parseInt(contentLength) : null;
 }
+
+// JATS XML parsing for supplementary material captions
+// Uses preserveOrder mode to correctly handle mixed content (text interleaved
+// with inline elements like <xref>, <italic>, <ext-link>).
+
+type OrderedNode = Record<string, unknown>;
+
+const jatsCaptionParser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  preserveOrder: true,
+  trimValues: false,
+});
+
+function extractOrderedText(nodes: unknown): string {
+  if (!Array.isArray(nodes)) return "";
+  let text = "";
+  for (const node of nodes as OrderedNode[]) {
+    if (typeof node["#text"] === "string") {
+      text += node["#text"];
+    } else if (typeof node["#text"] === "number") {
+      text += String(node["#text"]);
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (key === "#text" || key === ":@") continue;
+      text += extractOrderedText(value);
+    }
+  }
+  return text;
+}
+
+function findChildren(
+  nodes: OrderedNode[],
+  tagName: string,
+): { content: OrderedNode[]; attrs: Record<string, string> }[] {
+  const results: { content: OrderedNode[]; attrs: Record<string, string> }[] =
+    [];
+  for (const node of nodes) {
+    if (tagName in node) {
+      const attrs = (node[":@"] ?? {}) as Record<string, string>;
+      results.push({ content: node[tagName] as OrderedNode[], attrs });
+    }
+  }
+  return results;
+}
+
+function getFilenameFromHref(href: string): string {
+  return href.split("/").pop() ?? href;
+}
+
+export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
+  const captions = new Map<string, string>();
+
+  const parsed = jatsCaptionParser.parse(xml) as OrderedNode[];
+  const articles = findChildren(parsed, "article");
+  if (articles.length === 0) return captions;
+
+  const backs = findChildren(articles[0].content, "back");
+  if (backs.length === 0) return captions;
+
+  const suppMaterials = findChildren(
+    backs[0].content,
+    "supplementary-material",
+  );
+
+  for (const supp of suppMaterials) {
+    const labels = findChildren(supp.content, "label");
+    const suppLabel =
+      labels.length > 0 ? extractOrderedText(labels[0].content).trim() : null;
+
+    const suppCaptions = findChildren(supp.content, "caption");
+    const suppCaption =
+      suppCaptions.length > 0
+        ? extractOrderedText(suppCaptions[0].content).trim()
+        : null;
+
+    // Pattern A: <media xlink:href="..."> inside <supplementary-material>
+    // The meaningful caption is typically on the parent <supplementary-material>,
+    // not on the <media> element (which often just says "Click here...")
+    const mediaElements = findChildren(supp.content, "media");
+    for (const media of mediaElements) {
+      const href = media.attrs["@_xlink:href"];
+      if (!href) continue;
+
+      const filename = getFilenameFromHref(href);
+      const mediaCaptions = findChildren(media.content, "caption");
+      const mediaCaption =
+        mediaCaptions.length > 0
+          ? extractOrderedText(mediaCaptions[0].content).trim()
+          : null;
+
+      // Prefer parent supplementary-material caption, fall back to media caption
+      const caption = suppCaption ?? mediaCaption;
+      if (caption) {
+        const fullCaption =
+          suppLabel && !caption.startsWith(suppLabel)
+            ? `${suppLabel}: ${caption}`
+            : caption;
+        captions.set(filename, fullCaption);
+      }
+    }
+
+    // Pattern B: <supplementary-material xlink:href="..."> (no media wrapper)
+    const directHref = supp.attrs["@_xlink:href"];
+    if (directHref && suppCaption) {
+      const filename = getFilenameFromHref(directHref);
+      if (!captions.has(filename)) {
+        const fullCaption =
+          suppLabel && !suppCaption.startsWith(suppLabel)
+            ? `${suppLabel}: ${suppCaption}`
+            : suppCaption;
+        captions.set(filename, fullCaption);
+      }
+    }
+  }
+
+  return captions;
+}
+
+export async function getSupplementaryCaptions(
+  xmlS3Url: string,
+): Promise<Map<string, string>> {
+  const url = s3UrlToHttps(xmlS3Url);
+
+  let response: Response;
+  try {
+    response = await s3FetchWithRetry(url);
+  } catch (error) {
+    logger.warn(`Failed to fetch XML for caption extraction ${url} - ${error}`);
+    return new Map();
+  }
+
+  if (!response.ok) {
+    logger.warn(
+      `XML fetch returned ${response.status} ${response.statusText} ${url}`,
+    );
+    return new Map();
+  }
+
+  const xml = await response.text();
+  const captions = extractCaptionsFromParsedXml(xml);
+  if (captions.size === 0) {
+    logger.warn(`No supplementary captions found in ${url}`);
+  }
+  return captions;
+}
