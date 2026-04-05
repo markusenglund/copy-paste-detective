@@ -164,12 +164,10 @@ function extractOrderedText(nodes: unknown): string {
   return text;
 }
 
-function findChildren(
-  nodes: OrderedNode[],
-  tagName: string,
-): { content: OrderedNode[]; attrs: Record<string, string> }[] {
-  const results: { content: OrderedNode[]; attrs: Record<string, string> }[] =
-    [];
+type ParsedElement = { content: OrderedNode[]; attrs: Record<string, string> };
+
+function findChildren(nodes: OrderedNode[], tagName: string): ParsedElement[] {
+  const results: ParsedElement[] = [];
   for (const node of nodes) {
     if (tagName in node) {
       const attrs = (node[":@"] ?? {}) as Record<string, string>;
@@ -179,24 +177,52 @@ function findChildren(
   return results;
 }
 
+function findDescendants(
+  nodes: OrderedNode[],
+  tagName: string,
+): ParsedElement[] {
+  const results: ParsedElement[] = [];
+  for (const node of nodes) {
+    if (tagName in node) {
+      const attrs = (node[":@"] ?? {}) as Record<string, string>;
+      results.push({ content: node[tagName] as OrderedNode[], attrs });
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (key === "#text" || key === ":@") continue;
+      if (Array.isArray(value)) {
+        results.push(...findDescendants(value as OrderedNode[], tagName));
+      }
+    }
+  }
+  return results;
+}
+
 function getFilenameFromHref(href: string): string {
   return href.split("/").pop() ?? href;
+}
+
+function buildFullCaption(
+  label: string | null,
+  caption: string | null,
+): string | null {
+  if (!caption && !label) return null;
+  if (!caption) return label;
+  if (!label || caption.startsWith(label)) return caption;
+  return `${label}: ${caption}`;
 }
 
 export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
   const captions = new Map<string, string>();
 
   const parsed = jatsCaptionParser.parse(xml) as OrderedNode[];
-  const articles = findChildren(parsed, "article");
-  if (articles.length === 0) return captions;
 
-  const backs = findChildren(articles[0].content, "back");
-  if (backs.length === 0) return captions;
-
-  const suppMaterials = findChildren(
-    backs[0].content,
-    "supplementary-material",
-  );
+  // Search for supplementary-material elements anywhere in the document tree,
+  // since different publishers nest them in different locations:
+  // - directly under <back> (e.g. PMC2845662)
+  // - under <back> > <app-group> > <app> (e.g. PMC7175788)
+  // - under <body> > <sec> > <fig> > <caption> > <p> (e.g. PMC5927771)
+  // - under <back> > <sec> > <p> (e.g. PMC6185992)
+  const suppMaterials = findDescendants(parsed, "supplementary-material");
 
   for (const supp of suppMaterials) {
     const labels = findChildren(supp.content, "label");
@@ -226,25 +252,21 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
 
       // Prefer parent supplementary-material caption, fall back to media caption
       const caption = suppCaption ?? mediaCaption;
-      if (caption) {
-        const fullCaption =
-          suppLabel && !caption.startsWith(suppLabel)
-            ? `${suppLabel}: ${caption}`
-            : caption;
+      const fullCaption = buildFullCaption(suppLabel, caption);
+      if (fullCaption) {
         captions.set(filename, fullCaption);
       }
     }
 
     // Pattern B: <supplementary-material xlink:href="..."> (no media wrapper)
     const directHref = supp.attrs["@_xlink:href"];
-    if (directHref && suppCaption) {
+    if (directHref) {
       const filename = getFilenameFromHref(directHref);
       if (!captions.has(filename)) {
-        const fullCaption =
-          suppLabel && !suppCaption.startsWith(suppLabel)
-            ? `${suppLabel}: ${suppCaption}`
-            : suppCaption;
-        captions.set(filename, fullCaption);
+        const fullCaption = buildFullCaption(suppLabel, suppCaption);
+        if (fullCaption) {
+          captions.set(filename, fullCaption);
+        }
       }
     }
   }

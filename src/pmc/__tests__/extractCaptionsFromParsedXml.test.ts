@@ -1,8 +1,7 @@
 import { extractCaptionsFromParsedXml } from "../getS3Metadata";
 
-// Pared-down version of PMC2845662.1.xml with three representative supplementary
-// material entries: one plain-text caption, one with inline markup (<xref>,
-// <ext-link>), and one with a single <xref>.
+// Pared-down version of PMC2845662.1.xml — caption on parent <supplementary-material>,
+// "Click here" on <media>. Directly under <back>.
 const PMC2845662_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <article xmlns:xlink="http://www.w3.org/1999/xlink">
   <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
@@ -32,50 +31,154 @@ const PMC2845662_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </back>
 </article>`;
 
+// Pared-down PMC7175788.1.xml — nested in <back>/<app-group>/<app>,
+// label only (no caption), self-closing <media/>.
+const PMC7175788_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns:xlink="http://www.w3.org/1999/xlink">
+  <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
+  <body><p>Body.</p></body>
+  <back>
+    <app-group>
+      <app id="app4">
+        <supplementary-material content-type="local-data" id="app4">
+          <label>Multimedia Appendix 4</label>
+          <media xlink:href="jmir_v22i4e19016_app4.xlsx" xlink:title="XLSX File (Microsoft Excel File), 35 KB" id="d35e1473" position="anchor" orientation="portrait" />
+        </supplementary-material>
+      </app>
+    </app-group>
+  </back>
+</article>`;
+
+// Pared-down PMC5927771.1.xml — nested inside <body>/<sec>/<sec>/<fig>/<caption>/<p>,
+// caption uses <title> instead of <p>, self-closing <media/>.
+const PMC5927771_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns:xlink="http://www.w3.org/1999/xlink">
+  <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
+  <body>
+    <sec>
+      <sec>
+        <fig id="fig1">
+          <caption>
+            <p>
+              <supplementary-material content-type="local-data" id="fig1sdata1">
+                <label>Figure 1\u2014source data 1.</label>
+                <caption><title>Numerical source data for <xref ref-type="fig" rid="fig1">Figure 1B\u20131D, E, I, J and N</xref> and <xref ref-type="fig" rid="fig1s1">Figure 1\u2014figure supplement 1B to D</xref>.</title></caption>
+                <media mime-subtype="xlsx" mimetype="application" xlink:href="elife-32866-fig1-data1.xlsx" />
+              </supplementary-material>
+            </p>
+          </caption>
+        </fig>
+      </sec>
+    </sec>
+  </body>
+  <back>
+    <sec>
+      <supplementary-material content-type="local-data" id="supp1">
+        <label>Supplementary file 1.</label>
+        <caption><title>MS identification of selective Ub and pUb interactors.</title><p>Table depicting GST-4xUb interactors that are selective for S65-phosphorylated (top) or unphosphorylated (bottom) Ub. p97-related data (shaded in yellow) are also depicted in <xref ref-type="fig" rid="fig6s1">Figure 6\u2014figure supplement 1C</xref>.</p></caption>
+        <media mime-subtype="xlsx" mimetype="application" xlink:href="elife-32866-supp1.xlsx" />
+      </supplementary-material>
+    </sec>
+  </back>
+</article>`;
+
+// Pared-down PMC6185992.1.xml — nested in <back>/<sec>/<p>,
+// no label, caption uses <title>.
+const PMC6185992_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns:xlink="http://www.w3.org/1999/xlink">
+  <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
+  <body><p>Body.</p></body>
+  <back>
+    <sec>
+      <p>
+        <supplementary-material content-type="local-data" id="ecomp20">
+          <caption><title>Supplementary appendix2</title></caption>
+          <media xlink:href="mmc2.xlsx" position="float" orientation="portrait" />
+        </supplementary-material>
+      </p>
+    </sec>
+  </back>
+</article>`;
+
 describe("extractCaptionsFromParsedXml", () => {
-  it("extracts plain-text caption from parent supplementary-material (PMC2845662 Table S1)", () => {
-    const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+  describe("PMC2845662 - caption on parent, directly under <back>", () => {
+    it("extracts plain-text caption with label", () => {
+      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
 
-    expect(captions.get("pgen.1000889.s012.xls")).toBe(
-      "Table S1: List of NAD genomic coordinates (hg18 genome build) and features of their detection.(0.03 MB XLS)",
-    );
+      expect(captions.get("pgen.1000889.s012.xls")).toBe(
+        "Table S1: List of NAD genomic coordinates (hg18 genome build) and features of their detection.(0.03 MB XLS)",
+      );
+    });
+
+    it("preserves inline element text in correct order (xref and ext-link)", () => {
+      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+
+      expect(captions.get("pgen.1000889.s014.xls")).toBe(
+        "Table S3: Biological processes and molecular functions associated with NAD-located RefSeq genes. Statistical analysis of feature enrichment compared to the genome was performed using the FatiGO strategy [48] included in the Babelomics suite (www.babelomics.org). Results are summarised in Figure S3 and S4 as graphs.(0.02 MB XLS)",
+      );
+    });
+
+    it("extracts caption with single xref", () => {
+      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+
+      expect(captions.get("pgen.1000889.s018.xls")).toBe(
+        "Table S7: Summary of 3D FISH experiments. BAC locations, allele and cell counts, furthermore nucleolus association frequencies in HeLa and IMR90 cells are shown. The results of transcription inhibition experiments are summarised in the lower part of the table and illustrated in Figure S9.(0.02 MB XLS)",
+      );
+    });
   });
 
-  it("preserves inline element text in correct order (PMC2845662 Table S3 with xref and ext-link)", () => {
-    const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+  describe("PMC7175788 - nested in <app-group>/<app>, label only", () => {
+    it("falls back to label when no caption exists", () => {
+      const captions = extractCaptionsFromParsedXml(PMC7175788_XML);
 
-    expect(captions.get("pgen.1000889.s014.xls")).toBe(
-      "Table S3: Biological processes and molecular functions associated with NAD-located RefSeq genes. Statistical analysis of feature enrichment compared to the genome was performed using the FatiGO strategy [48] included in the Babelomics suite (www.babelomics.org). Results are summarised in Figure S3 and S4 as graphs.(0.02 MB XLS)",
-    );
+      expect(captions.get("jmir_v22i4e19016_app4.xlsx")).toBe(
+        "Multimedia Appendix 4",
+      );
+    });
   });
 
-  it("extracts caption with single xref (PMC2845662 Table S7)", () => {
-    const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+  describe("PMC5927771 - nested in <body>, caption uses <title>", () => {
+    it("extracts caption with <title> from deeply nested supplementary-material in <body>", () => {
+      const captions = extractCaptionsFromParsedXml(PMC5927771_XML);
 
-    expect(captions.get("pgen.1000889.s018.xls")).toBe(
-      "Table S7: Summary of 3D FISH experiments. BAC locations, allele and cell counts, furthermore nucleolus association frequencies in HeLa and IMR90 cells are shown. The results of transcription inhibition experiments are summarised in the lower part of the table and illustrated in Figure S9.(0.02 MB XLS)",
-    );
+      expect(captions.get("elife-32866-fig1-data1.xlsx")).toBe(
+        "Figure 1\u2014source data 1.: Numerical source data for Figure 1B\u20131D, E, I, J and N and Figure 1\u2014figure supplement 1B to D.",
+      );
+    });
+
+    it("extracts caption with both <title> and <p> containing xref", () => {
+      const captions = extractCaptionsFromParsedXml(PMC5927771_XML);
+
+      expect(captions.get("elife-32866-supp1.xlsx")).toBe(
+        "Supplementary file 1.: MS identification of selective Ub and pUb interactors.Table depicting GST-4xUb interactors that are selective for S65-phosphorylated (top) or unphosphorylated (bottom) Ub. p97-related data (shaded in yellow) are also depicted in Figure 6\u2014figure supplement 1C.",
+      );
+    });
   });
 
-  it("returns all three captions from the pared-down XML", () => {
-    const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
-    expect(captions.size).toBe(3);
+  describe("PMC6185992 - nested in <sec>/<p>, no label, caption uses <title>", () => {
+    it("extracts caption from <title> without label", () => {
+      const captions = extractCaptionsFromParsedXml(PMC6185992_XML);
+
+      expect(captions.get("mmc2.xlsx")).toBe("Supplementary appendix2");
+    });
   });
 
-  it("returns empty map for XML without supplementary materials", () => {
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  describe("edge cases", () => {
+    it("returns empty map for XML without supplementary materials", () => {
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <article xmlns:xlink="http://www.w3.org/1999/xlink">
   <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
   <body><p>Body.</p></body>
   <back></back>
 </article>`;
 
-    const captions = extractCaptionsFromParsedXml(xml);
-    expect(captions.size).toBe(0);
-  });
+      const captions = extractCaptionsFromParsedXml(xml);
+      expect(captions.size).toBe(0);
+    });
 
-  it("returns empty map for invalid XML structure", () => {
-    const captions = extractCaptionsFromParsedXml("<not-an-article />");
-    expect(captions.size).toBe(0);
+    it("returns empty map for invalid XML structure", () => {
+      const captions = extractCaptionsFromParsedXml("<not-an-article />");
+      expect(captions.size).toBe(0);
+    });
   });
 });
