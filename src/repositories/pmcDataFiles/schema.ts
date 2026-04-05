@@ -15,7 +15,7 @@ export const pmcDataFiles = pgTable(
     id: serial("id").primaryKey(),
     pmcDatasetId: integer("pmc_dataset_id")
       .notNull()
-      .references(() => pmcDatasets.id),
+      .references(() => pmcDatasets.id, { onDelete: "cascade" }),
     filename: text("filename").notNull(),
     fileType: dataFileTypeEnum("file_type").notNull(),
     s3Url: text("s3_url").notNull().unique(),

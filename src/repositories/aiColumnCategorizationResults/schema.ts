@@ -21,8 +21,13 @@ export const aiColumnCategorizationResults = pgTable(
     includedColumnNames: text("included_column_names").array().notNull(),
     excludedColumnNames: text("excluded_column_names").array().notNull(),
     hash: text("hash").notNull(),
-    datasetId: integer("dataset_id").references(() => datasets.id),
-    datasetFileId: integer("dataset_file_id").references(() => datasetFiles.id),
+    datasetId: integer("dataset_id").references(() => datasets.id, {
+      onDelete: "cascade",
+    }),
+    datasetFileId: integer("dataset_file_id").references(
+      () => datasetFiles.id,
+      { onDelete: "cascade" },
+    ),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

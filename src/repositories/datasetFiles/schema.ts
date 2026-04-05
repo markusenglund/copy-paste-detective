@@ -6,7 +6,7 @@ import {
   bigint,
   index,
 } from "drizzle-orm/pg-core";
-import { downloadStatusEnum } from "../../db/shared/enums";
+import { datasetSourceEnum, downloadStatusEnum } from "../../db/shared/enums";
 import { datasets } from "../datasets/unifiedSchema";
 
 export const datasetFiles = pgTable(
@@ -15,7 +15,8 @@ export const datasetFiles = pgTable(
     id: serial("id").primaryKey(),
     datasetId: integer("dataset_id")
       .notNull()
-      .references(() => datasets.id),
+      .references(() => datasets.id, { onDelete: "cascade" }),
+    source: datasetSourceEnum("source").notNull(),
     filename: text("filename").notNull(),
     fileType: text("file_type").$type<"excel" | "readme" | "pdf">().notNull(),
     size: bigint("size", { mode: "number" }).notNull(),

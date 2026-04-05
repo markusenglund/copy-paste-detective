@@ -5,7 +5,7 @@ export const pmcDatasetDetails = pgTable("pmc_dataset_details", {
   datasetId: integer("dataset_id")
     .notNull()
     .unique()
-    .references(() => datasets.id),
+    .references(() => datasets.id, { onDelete: "cascade" }),
   pmcVersion: integer("pmc_version").notNull(),
   extPmid: text("ext_pmid"),
   authorString: text("author_string"),

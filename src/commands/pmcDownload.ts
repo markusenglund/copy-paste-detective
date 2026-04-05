@@ -150,6 +150,7 @@ program
             const fileStats = await stat(filePath);
             await insertPdfDatasetFile({
               datasetId: dataset.id,
+              source: "pmc",
               filename: pdfFilename,
               size: fileStats.size,
             });

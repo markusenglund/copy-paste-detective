@@ -5,7 +5,7 @@ export const dryadDatasetDetails = pgTable("dryad_dataset_details", {
   datasetId: integer("dataset_id")
     .notNull()
     .unique()
-    .references(() => datasets.id),
+    .references(() => datasets.id, { onDelete: "cascade" }),
   extIdNumeric: integer("ext_id_numeric").notNull().unique(),
   datasetDoi: text("dataset_doi").notNull(),
   usageNotes: text("usage_notes"),

@@ -2,6 +2,7 @@ import { and, eq, inArray, or, isNull, exists, sql, desc } from "drizzle-orm";
 import { db } from "../../db";
 import {
   AnalysisStatus,
+  DatasetSource,
   DownloadStatus,
   DataFileType,
 } from "../../db/shared/enums";
@@ -246,6 +247,7 @@ export async function upsertPmcDataFile(data: {
         .insert(datasetFiles)
         .values({
           datasetId: data.pmcDatasetId,
+          source: "pmc",
           filename: data.filename,
           fileType: data.fileType,
           size: data.size,
@@ -395,6 +397,7 @@ export async function updateDatasetFileDownloadStatus(
 
 export async function insertPdfDatasetFile(data: {
   datasetId: number;
+  source: DatasetSource;
   filename: string;
   size: number;
 }): Promise<number> {
@@ -402,6 +405,7 @@ export async function insertPdfDatasetFile(data: {
     .insert(datasetFiles)
     .values({
       datasetId: data.datasetId,
+      source: data.source,
       filename: data.filename,
       fileType: "pdf",
       size: data.size,

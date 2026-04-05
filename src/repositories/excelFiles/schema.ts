@@ -8,7 +8,7 @@ export const dryadExcelFiles = pgTable(
     id: serial("id").primaryKey(),
     dryadDatasetId: integer("dryad_dataset_id")
       .notNull()
-      .references(() => dryadDatasets.id),
+      .references(() => dryadDatasets.id, { onDelete: "cascade" }),
     extFileId: integer("ext_file_id").notNull().unique(),
     filename: text("filename").notNull(),
     size: integer("size").notNull(),
