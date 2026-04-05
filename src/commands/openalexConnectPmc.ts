@@ -1,11 +1,11 @@
 import { Command } from "@commander-js/extra-typings";
 import pMap from "p-map";
 import {
-  PmcDataset,
+  DatasetRow as PmcDataset,
   getPmcDatasetsWithoutArticles,
-  getPmcDatasetByExtPmcId,
-  updatePmcDatasetArticleId,
-} from "../repositories/pmcDatasets/pmcDatasetsRepository";
+  getPmcDatasetByExtId as getPmcDatasetByExtPmcId,
+  updateDatasetArticleId as updatePmcDatasetArticleId,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { getArticleFromPmcDataset } from "../openalex/getArticleFromPmcDataset";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";

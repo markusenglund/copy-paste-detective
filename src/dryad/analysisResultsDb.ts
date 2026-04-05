@@ -10,7 +10,7 @@ export type AnalysisResults = {
 };
 type AnalysisResultsData = {
   results: {
-    [datasetExtId: number]: {
+    [datasetExtId: string]: {
       [filename: string]: AnalysisResults;
     };
   };

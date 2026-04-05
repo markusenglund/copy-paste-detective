@@ -27,6 +27,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Example: `npm run pmc-download -- --extId PMC7305608` (downloads specific dataset)
   - Example: `npm run pmc-download -- --extId PMC7305608,PMC1234567` (downloads multiple specific datasets)
   - Example: `npm run pmc-download 50` (downloads top 50 by citation score)
+- **Analyze PMC datasets**: `npm run pmc-detect-all [count] [--extId <pmcIds>] [--reset]`
+  - Example: `npm run pmc-detect-all -- --extId PMC7305608` (analyzes specific dataset)
+  - Example: `npm run pmc-detect-all -- --extId PMC7305608,PMC1234567` (analyzes multiple specific datasets)
 - **Seed admin user**: `npm run seed-admin -- --username <username>`
   - Example: `npm run seed-admin -- --username admin` (creates admin user with a temporary password)
 - **Run tests**: `npm test`
@@ -88,6 +91,7 @@ When detection strategies (`repeatedColumnSequences` or `duplicateRows`) find su
 
 ## Instructions
 
+- **Answer questions directly, do not fix**: When the user explicitly asks a question, you MUST ONLY provide the explanation/answer, not try to fix any problem implied by the question.
 - You must never use emojis in console.log statements.
 - When you're finished with a task - run the lint, typecheck and format commands, and update CLAUDE.md if needed.
 - **No `any` types**: All responses from third-party APIs and external data formats (JSON, XML, CSV, etc.) must be validated with zod schemas before accessing any properties. Never use `any`, never cast to a type without validation. If a library returns `any` (e.g., XML parsers), run it through zod immediately.

@@ -7,8 +7,10 @@ import {
   isExcelFile,
   getFileSize,
 } from "./getS3Metadata";
-import { upsertPmcDataset } from "../repositories/pmcDatasets/pmcDatasetsRepository";
-import { upsertPmcDataFile } from "../repositories/pmcDataFiles/pmcDataFilesRepository";
+import {
+  upsertPmcDataset,
+  upsertPmcDataFile,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { logger } from "../utils/logger";
 
 export interface IndexBatchResult {

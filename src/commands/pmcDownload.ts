@@ -1,11 +1,12 @@
 import { Command } from "@commander-js/extra-typings";
 import {
   getPmcDatasetsForDownload,
-  getPmcDatasetWithFiles,
-  updatePmcDatasetDownloadStatus,
-  type PmcDatasetWithFiles,
-} from "../repositories/pmcDatasets/pmcDatasetsRepository";
-import { updatePmcDataFileDownloadStatus } from "../repositories/pmcDataFiles/pmcDataFilesRepository";
+  getPmcDatasetByExtId as getPmcDatasetWithFiles,
+  updateDatasetDownloadStatus as updatePmcDatasetDownloadStatus,
+  type DatasetWithFiles as PmcDatasetWithFiles,
+  updateDatasetFileDownloadStatus as updatePmcDataFileDownloadStatus,
+  getPmcDatasetFileS3Url,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { downloadPmcFile } from "../pmc/downloadPmcFile";
 import { s3UrlToHttps } from "../pmc/getS3Metadata";
 import { parseIntArgument, parseExtPmcIds } from "../utils/command";
@@ -66,9 +67,9 @@ program
 
         for (const dataset of skipped) {
           logger.info(
-            `Skipping dataset ${dataset.extPmcId} - all files exceed ${maxFileSize / 1_000_000}MB`,
+            `Skipping dataset ${dataset.extId} - all files exceed ${maxFileSize / 1_000_000}MB`,
           );
-          await updatePmcDatasetDownloadStatus(dataset.extPmcId, "skipped");
+          await updatePmcDatasetDownloadStatus(dataset.extId, "skipped");
         }
 
         totalDatasetsSkipped = skipped.length;
@@ -79,7 +80,7 @@ program
 
         for (const dataset of downloadable) {
           logger.info(
-            `[${dataset.extPmcId}] ${dataset.citationScore.toFixed(2)} - "${dataset.title}" - ${dataset.pmcPublicationDate}`,
+            `[${dataset.extId}] ${dataset.citationScore.toFixed(2)} - "${dataset.title}" - ${dataset.publicationDate}`,
           );
         }
 
@@ -95,7 +96,7 @@ program
       for (let i = 0; i < datasetsToDownload.length; i++) {
         const dataset = datasetsToDownload[i];
         logger.info(
-          `[${i}] Downloading dataset ${dataset.extPmcId} from ${dataset.pmcPublicationDate} ("${dataset.title}")`,
+          `[${i}] Downloading dataset ${dataset.extId} from ${dataset.publicationDate} ("${dataset.title}")`,
         );
         logger.info(
           `${dataset.dataFiles.length} Excel files found: ${dataset.dataFiles.map((file) => file.filename).join(", ")}`,
@@ -106,11 +107,13 @@ program
         for (const dataFile of dataset.dataFiles) {
           if (dataFile.size <= maxFileSize) {
             try {
-              const url = s3UrlToHttps(dataFile.s3Url);
+              const s3Url = await getPmcDatasetFileS3Url(dataFile.id);
+              if (!s3Url) throw new Error("Missing S3 URL");
+              const url = s3UrlToHttps(s3Url);
               await downloadPmcFile({
                 url,
                 filename: dataFile.filename,
-                pmcid: dataset.extPmcId,
+                pmcid: dataset.extId,
               });
               await updatePmcDataFileDownloadStatus(dataFile.id, "completed");
               totalFilesDownloaded += 1;
@@ -125,10 +128,10 @@ program
         }
 
         if (numFailedDownloads === dataset.dataFiles.length) {
-          await updatePmcDatasetDownloadStatus(dataset.extPmcId, "failed");
+          await updatePmcDatasetDownloadStatus(dataset.extId, "failed");
           totalDatasetsFailed += 1;
         } else {
-          await updatePmcDatasetDownloadStatus(dataset.extPmcId, "completed");
+          await updatePmcDatasetDownloadStatus(dataset.extId, "completed");
           totalDatasetsCompleted += 1;
         }
       }

@@ -1,4 +1,4 @@
-import { PmcDataset } from "../repositories/pmcDatasets/pmcDatasetsRepository";
+import { DatasetRow as PmcDataset } from "../repositories/datasets/unifiedDatasetsRepository";
 import { logger } from "../utils/logger";
 import { getArticleByDoi, getArticleByTitle } from "./searchArticle";
 import { Work, WorkSearchResult } from "./schemas";
