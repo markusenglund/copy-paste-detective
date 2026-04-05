@@ -184,12 +184,16 @@ function findChildren(nodes: OrderedNode[], tagName: string): ParsedElement[] {
 
 type DescendantMatch = ParsedElement & {
   parentArray: OrderedNode[];
+  parentTag: string | null;
+  parentAttrs: Record<string, string>;
   index: number;
 };
 
 function findDescendants(
   nodes: OrderedNode[],
   tagName: string,
+  parentTag: string | null = null,
+  parentAttrs: Record<string, string> = {},
 ): DescendantMatch[] {
   const results: DescendantMatch[] = [];
   for (let i = 0; i < nodes.length; i++) {
@@ -200,13 +204,23 @@ function findDescendants(
         content: node[tagName] as OrderedNode[],
         attrs,
         parentArray: nodes,
+        parentTag,
+        parentAttrs,
         index: i,
       });
     }
     for (const [key, value] of Object.entries(node)) {
       if (key === "#text" || key === ":@") continue;
       if (Array.isArray(value)) {
-        results.push(...findDescendants(value as OrderedNode[], tagName));
+        const nodeAttrs = (node[":@"] ?? {}) as Record<string, string>;
+        results.push(
+          ...findDescendants(
+            value as OrderedNode[],
+            tagName,
+            key,
+            nodeAttrs,
+          ),
+        );
       }
     }
   }
@@ -218,6 +232,15 @@ function getFilenameFromHref(href: string): string {
 }
 
 function getPrecedingSiblingCaption(match: DescendantMatch): string | null {
+  // Only use this strategy when the parent is a <sec sec-type="supplementary-material">,
+  // to avoid grabbing unrelated body text paragraphs
+  if (
+    match.parentTag !== "sec" ||
+    match.parentAttrs["@_sec-type"] !== "supplementary-material"
+  ) {
+    return null;
+  }
+
   // Walk backwards through siblings, skipping whitespace-only #text nodes
   for (let i = match.index - 1; i >= 0; i--) {
     const prev = match.parentArray[i];
