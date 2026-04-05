@@ -35,6 +35,8 @@ function buildHashInput(prompt: string): object {
 
 export type ReviewResultsWithCacheParams = {
   prompt: string;
+  datasetId?: number;
+  datasetFileId?: number;
   dryadDatasetId?: number;
   dryadExcelFileId?: number;
   sheetName: string;
@@ -50,8 +52,8 @@ export async function reviewResultsWithCache(
     .digest("hex");
 
   const canCache =
-    params.dryadDatasetId !== undefined &&
-    params.dryadExcelFileId !== undefined;
+    (params.datasetId != null && params.datasetFileId != null) ||
+    (params.dryadDatasetId != null && params.dryadExcelFileId != null);
 
   if (canCache) {
     const cached = await findReviewResultByHash(hash);
@@ -75,8 +77,10 @@ export async function reviewResultsWithCache(
 
   if (canCache) {
     await insertReviewResult({
-      dryadDatasetId: params.dryadDatasetId!,
-      dryadExcelFileId: params.dryadExcelFileId!,
+      dryadDatasetId: params.dryadDatasetId,
+      dryadExcelFileId: params.dryadExcelFileId,
+      datasetId: params.datasetId,
+      datasetFileId: params.datasetFileId,
       sheetName,
       prompt,
       model: config.model,

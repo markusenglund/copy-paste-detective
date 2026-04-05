@@ -18,8 +18,10 @@ export async function findByHash(
 }
 
 export async function insertResult(data: {
-  dryadDatasetId: number;
-  dryadExcelFileId: number;
+  dryadDatasetId?: number;
+  dryadExcelFileId?: number;
+  datasetId?: number;
+  datasetFileId?: number;
   sheetName: string;
   prompt: string;
   model: string;

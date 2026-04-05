@@ -10,6 +10,7 @@
 
 // Shared enums
 export {
+  datasetSourceEnum,
   downloadStatusEnum,
   analysisStatusEnum,
   dataFileTypeEnum,
@@ -41,3 +42,11 @@ export { users } from "./users/schema";
 export { pmcDatasets } from "./pmcDatasets/schema";
 export { pmcDataFiles } from "./pmcDataFiles/schema";
 export { pmcIndexingState } from "./pmcIndexingState/schema";
+
+// Unified tables
+export { datasets } from "./datasets/unifiedSchema";
+export { dryadDatasetDetails } from "./datasets/dryadDetailsSchema";
+export { pmcDatasetDetails } from "./datasets/pmcDetailsSchema";
+export { datasetFiles } from "./datasetFiles/schema";
+export { dryadDatasetFileDetails } from "./datasetFiles/dryadDetailsSchema";
+export { pmcDatasetFileDetails } from "./datasetFiles/pmcDetailsSchema";

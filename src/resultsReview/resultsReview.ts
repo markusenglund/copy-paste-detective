@@ -108,6 +108,8 @@ export async function reviewSheetResults(
   const result = await reviewResultsWithCache({
     prompt,
     sheetName: sheet.name,
+    datasetId: excelFileData.datasetId,
+    datasetFileId: excelFileData.datasetFileId,
     dryadDatasetId: excelFileData.dryadDatasetId,
     dryadExcelFileId: excelFileData.dryadExcelFileId,
   });

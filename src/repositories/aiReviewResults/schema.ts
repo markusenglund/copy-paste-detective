@@ -12,17 +12,19 @@ import {
 import { sql } from "drizzle-orm";
 import { dryadDatasets } from "../datasets/schema";
 import { dryadExcelFiles } from "../excelFiles/schema";
+import { datasets } from "../datasets/unifiedSchema";
+import { datasetFiles } from "../datasetFiles/schema";
 
 export const aiReviewResults = pgTable(
   "ai_review_results",
   {
     id: serial("id").primaryKey(),
-    dryadDatasetId: integer("dryad_dataset_id")
-      .notNull()
-      .references(() => dryadDatasets.id),
-    dryadExcelFileId: integer("dryad_excel_file_id")
-      .notNull()
-      .references(() => dryadExcelFiles.id),
+    dryadDatasetId: integer("dryad_dataset_id").references(
+      () => dryadDatasets.id,
+    ),
+    dryadExcelFileId: integer("dryad_excel_file_id").references(
+      () => dryadExcelFiles.id,
+    ),
     sheetName: text("sheet_name").notNull(),
     prompt: text("prompt").notNull(),
     model: text("model").notNull(),
@@ -32,6 +34,8 @@ export const aiReviewResults = pgTable(
     }).notNull(),
     hash: text("hash").notNull(),
     isLatestReview: boolean("is_latest_review").notNull().default(false),
+    datasetId: integer("dataset_id").references(() => datasets.id),
+    datasetFileId: integer("dataset_file_id").references(() => datasetFiles.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

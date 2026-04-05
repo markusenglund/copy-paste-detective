@@ -31,8 +31,10 @@ export async function findByHash(
 }
 
 export async function insertResult(data: {
-  dryadDatasetId: number;
-  dryadExcelFileId: number;
+  dryadDatasetId?: number;
+  dryadExcelFileId?: number;
+  datasetId?: number;
+  datasetFileId?: number;
   sheetName: string;
   prompt: string;
   model: string;
@@ -43,17 +45,19 @@ export async function insertResult(data: {
   return await db.transaction(async (tx) => {
     // Step 1: Set is_latest_review = false for existing "latest" review of this sheet
     // This is required before inserting the new one due to the unique constraint
-    await tx
-      .update(aiReviewResults)
-      .set({ isLatestReview: false })
-      .where(
-        and(
-          eq(aiReviewResults.dryadDatasetId, data.dryadDatasetId),
-          eq(aiReviewResults.dryadExcelFileId, data.dryadExcelFileId),
-          eq(aiReviewResults.sheetName, data.sheetName),
-          eq(aiReviewResults.isLatestReview, true),
-        ),
-      );
+    // Use dryadExcelFileId when available (Dryad path), since the unique index is on that column
+    if (data.dryadExcelFileId != null) {
+      await tx
+        .update(aiReviewResults)
+        .set({ isLatestReview: false })
+        .where(
+          and(
+            eq(aiReviewResults.dryadExcelFileId, data.dryadExcelFileId),
+            eq(aiReviewResults.sheetName, data.sheetName),
+            eq(aiReviewResults.isLatestReview, true),
+          ),
+        );
+    }
 
     // Step 2: Insert new review with is_latest_review = true
     // If step 1 didn't run (bug), the unique index will reject this insert
@@ -89,9 +93,10 @@ export async function getLatestReviewsPerSheet(): Promise<
     )
     .orderBy(desc(aiReviewResults.createdAt));
 
-  // Group latest reviews by dryadDatasetId
+  // Group latest reviews by dryadDatasetId (skip reviews without one)
   const reviewsByDatasetId = new Map<number, AiReviewResultRow[]>();
   for (const review of latestReviews) {
+    if (review.dryadDatasetId == null) continue;
     const existing = reviewsByDatasetId.get(review.dryadDatasetId) ?? [];
     existing.push(review);
     reviewsByDatasetId.set(review.dryadDatasetId, existing);

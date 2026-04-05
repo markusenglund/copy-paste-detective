@@ -124,7 +124,6 @@ program
           }
         }
 
-
         if (numFailedDownloads === dataset.dataFiles.length) {
           await updatePmcDatasetDownloadStatus(dataset.extPmcId, "failed");
           totalDatasetsFailed += 1;

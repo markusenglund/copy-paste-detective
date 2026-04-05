@@ -193,8 +193,13 @@ export async function getDatasetDetails(
     const pdfReview = pdfReviewMap.get(aiReview.id);
     return {
       sheetName: aiReview.sheetName,
-      excelFileName: fileIdToName.get(aiReview.dryadExcelFileId) || "Unknown",
-      hasHighlightedVersion: highlightedFileIds.has(aiReview.dryadExcelFileId),
+      excelFileName:
+        (aiReview.dryadExcelFileId != null
+          ? fileIdToName.get(aiReview.dryadExcelFileId)
+          : undefined) || "Unknown",
+      hasHighlightedVersion:
+        aiReview.dryadExcelFileId != null &&
+        highlightedFileIds.has(aiReview.dryadExcelFileId),
       aiReview: {
         prompt: aiReview.prompt,
         response: aiReview.response,

@@ -51,12 +51,13 @@ export async function indexPmcArticleBatch(
         isExcelFile(getFilenameFromS3Url(url)),
       );
 
-      // HEAD request each Excel file for sizes
-      const excelFiles = await pMap(
+      // HEAD request each Excel file for sizes (skip files where HEAD fails)
+      const excelFilesWithNulls = await pMap(
         excelUrls,
         async (s3Url) => {
           const httpsUrl = s3UrlToHttps(s3Url);
           const size = await getFileSize(httpsUrl);
+          if (size === null) return null;
           return {
             filename: getFilenameFromS3Url(s3Url),
             s3Url,
@@ -64,6 +65,9 @@ export async function indexPmcArticleBatch(
           };
         },
         { concurrency: 5 },
+      );
+      const excelFiles = excelFilesWithNulls.filter(
+        (f): f is NonNullable<typeof f> => f !== null,
       );
 
       // Extract journal ISSN from core response

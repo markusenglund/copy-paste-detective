@@ -63,6 +63,7 @@ async function checkIsMetaAnalysis(
     title: dataset.title,
     abstract: dataset.abstract!,
     dataDescription,
+    datasetId: dataset.id,
     dryadDatasetId: dataset.id,
   });
 

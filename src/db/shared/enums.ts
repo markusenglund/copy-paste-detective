@@ -1,5 +1,9 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
+export const datasetSourceEnum = pgEnum("dataset_source", ["dryad", "pmc"]);
+
+export type DatasetSource = (typeof datasetSourceEnum.enumValues)[number];
+
 export const downloadStatusEnum = pgEnum("download_status", [
   "not_started",
   "in_progress",

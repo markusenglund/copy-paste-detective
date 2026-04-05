@@ -16,7 +16,8 @@ export async function findByHash(
 }
 
 export async function insertResult(data: {
-  dryadDatasetId: number;
+  dryadDatasetId?: number;
+  datasetId?: number;
   prompt: string;
   model: string;
   reasoning: string;

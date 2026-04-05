@@ -8,7 +8,10 @@ export interface ExcelFileData {
   abstract?: string;
   dataDescription: string;
   extId?: string;
-  // Database IDs for caching (only available when loaded from Dryad index)
+  // Unified database IDs for AI result caching
+  datasetId?: number;
+  datasetFileId?: number;
+  // Legacy Dryad IDs (kept for backward compat during transition)
   dryadDatasetId?: number;
   dryadExcelFileId?: number;
 }

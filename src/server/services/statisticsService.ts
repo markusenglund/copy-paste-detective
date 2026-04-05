@@ -152,9 +152,9 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       ),
     );
 
-  const suspiciousDatasetIds = suspiciousDatasetIdsResult.map(
-    (r) => r.datasetId,
-  );
+  const suspiciousDatasetIds = suspiciousDatasetIdsResult
+    .map((r) => r.datasetId)
+    .filter((id): id is number => id != null);
   const totalSuspicious = suspiciousDatasetIds.length;
   const totalNotSuspicious = totalAiReviewed - totalSuspicious;
 
