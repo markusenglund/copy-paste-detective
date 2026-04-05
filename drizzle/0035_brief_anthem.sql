@@ -1,0 +1,1 @@
+ALTER TABLE "pmc_dataset_details" ADD COLUMN "full_text" text;

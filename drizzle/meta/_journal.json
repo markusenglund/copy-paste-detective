@@ -239,6 +239,13 @@
       "when": 1775388595548,
       "tag": "0034_aspiring_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1775413908983,
+      "tag": "0035_brief_anthem",
+      "breakpoints": true
     }
   ]
 }

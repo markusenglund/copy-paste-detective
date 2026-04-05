@@ -214,12 +214,7 @@ function findDescendants(
       if (Array.isArray(value)) {
         const nodeAttrs = (node[":@"] ?? {}) as Record<string, string>;
         results.push(
-          ...findDescendants(
-            value as OrderedNode[],
-            tagName,
-            key,
-            nodeAttrs,
-          ),
+          ...findDescendants(value as OrderedNode[], tagName, key, nodeAttrs),
         );
       }
     }
@@ -323,8 +318,7 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
     if (directHref) {
       const filename = getFilenameFromHref(directHref);
       if (!captions.has(filename)) {
-        const caption =
-          suppCaption ?? getPrecedingSiblingCaption(supp);
+        const caption = suppCaption ?? getPrecedingSiblingCaption(supp);
         const fullCaption = buildFullCaption(suppLabel, caption);
         if (fullCaption) {
           captions.set(filename, fullCaption);

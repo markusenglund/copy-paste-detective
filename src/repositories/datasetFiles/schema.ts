@@ -17,7 +17,7 @@ export const datasetFiles = pgTable(
       .notNull()
       .references(() => datasets.id),
     filename: text("filename").notNull(),
-    fileType: text("file_type").$type<"excel" | "readme">().notNull(),
+    fileType: text("file_type").$type<"excel" | "readme" | "pdf">().notNull(),
     size: bigint("size", { mode: "number" }).notNull(),
     downloadStatus: downloadStatusEnum("download_status")
       .notNull()

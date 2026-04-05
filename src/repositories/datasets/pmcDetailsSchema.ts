@@ -14,5 +14,6 @@ export const pmcDatasetDetails = pgTable("pmc_dataset_details", {
   isRetracted: boolean("is_retracted"),
   fullPdfUrl: text("full_pdf_url"),
   textUrl: text("text_url"),
+  fullText: text("full_text"),
   supplementalFileUrls: text("supplemental_file_urls").array(),
 });

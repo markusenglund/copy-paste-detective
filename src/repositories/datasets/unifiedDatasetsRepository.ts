@@ -393,6 +393,34 @@ export async function updateDatasetFileDownloadStatus(
     .where(eq(datasetFiles.id, fileId));
 }
 
+export async function insertPdfDatasetFile(data: {
+  datasetId: number;
+  filename: string;
+  size: number;
+}): Promise<number> {
+  const [newFile] = await db
+    .insert(datasetFiles)
+    .values({
+      datasetId: data.datasetId,
+      filename: data.filename,
+      fileType: "pdf",
+      size: data.size,
+      downloadStatus: "completed",
+    })
+    .returning();
+  return newFile.id;
+}
+
+export async function updatePmcDatasetFullText(
+  datasetId: number,
+  fullText: string,
+): Promise<void> {
+  await db
+    .update(pmcDatasetDetails)
+    .set({ fullText })
+    .where(eq(pmcDatasetDetails.datasetId, datasetId));
+}
+
 export async function getPmcDatasetFileS3Url(
   fileId: number,
 ): Promise<string | undefined> {
