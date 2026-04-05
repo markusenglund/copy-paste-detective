@@ -182,15 +182,26 @@ function findChildren(nodes: OrderedNode[], tagName: string): ParsedElement[] {
   return results;
 }
 
+type DescendantMatch = ParsedElement & {
+  parentArray: OrderedNode[];
+  index: number;
+};
+
 function findDescendants(
   nodes: OrderedNode[],
   tagName: string,
-): ParsedElement[] {
-  const results: ParsedElement[] = [];
-  for (const node of nodes) {
+): DescendantMatch[] {
+  const results: DescendantMatch[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
     if (tagName in node) {
       const attrs = (node[":@"] ?? {}) as Record<string, string>;
-      results.push({ content: node[tagName] as OrderedNode[], attrs });
+      results.push({
+        content: node[tagName] as OrderedNode[],
+        attrs,
+        parentArray: nodes,
+        index: i,
+      });
     }
     for (const [key, value] of Object.entries(node)) {
       if (key === "#text" || key === ":@") continue;
@@ -204,6 +215,25 @@ function findDescendants(
 
 function getFilenameFromHref(href: string): string {
   return href.split("/").pop() ?? href;
+}
+
+function getPrecedingSiblingCaption(match: DescendantMatch): string | null {
+  // Walk backwards through siblings, skipping whitespace-only #text nodes
+  for (let i = match.index - 1; i >= 0; i--) {
+    const prev = match.parentArray[i];
+    if (
+      "#text" in prev &&
+      typeof prev["#text"] === "string" &&
+      prev["#text"].trim() === ""
+    ) {
+      continue;
+    }
+    // Only use preceding <p> elements as captions
+    if (!("p" in prev)) return null;
+    const text = serializeNodes(prev["p"] as OrderedNode[]).trim();
+    return text || null;
+  }
+  return null;
 }
 
 function buildFullCaption(
@@ -255,8 +285,10 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
           ? serializeNodes(mediaCaptions[0].content).trim()
           : null;
 
-      // Prefer parent supplementary-material caption, fall back to media caption
-      const caption = suppCaption ?? mediaCaption;
+      // Prefer parent supplementary-material caption, fall back to media caption,
+      // then preceding sibling <p> (e.g. PMC2848978)
+      const caption =
+        suppCaption ?? mediaCaption ?? getPrecedingSiblingCaption(supp);
       const fullCaption = buildFullCaption(suppLabel, caption);
       if (fullCaption) {
         captions.set(filename, fullCaption);
@@ -268,7 +300,9 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
     if (directHref) {
       const filename = getFilenameFromHref(directHref);
       if (!captions.has(filename)) {
-        const fullCaption = buildFullCaption(suppLabel, suppCaption);
+        const caption =
+          suppCaption ?? getPrecedingSiblingCaption(supp);
+        const fullCaption = buildFullCaption(suppLabel, caption);
         if (fullCaption) {
           captions.set(filename, fullCaption);
         }

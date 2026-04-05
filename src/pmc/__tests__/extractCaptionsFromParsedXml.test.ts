@@ -131,6 +131,27 @@ const PMC7676259_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </back>
 </article>`;
 
+// Pared-down PMC2848978.1.xml — no label or caption on <supplementary-material>
+// or <media>. Description is in a preceding sibling <p> element.
+const PMC2848978_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns:xlink="http://www.w3.org/1999/xlink">
+  <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
+  <body><p>Body.</p></body>
+  <back>
+    <sec sec-type="supplementary-material">
+      <title>Supporting Information</title>
+      <p><bold>Table S3</bold> Experimentally validated target mRNAs of the miR-17-92 cluster.</p>
+      <supplementary-material content-type="local-data" id="SD6">
+        <media xlink:href="ace0009-0291-SD6.xls" mimetype="application" mime-subtype="vnd.ms-excel" />
+      </supplementary-material>
+      <p><bold>Data S1</bold> Supporting materials and methods.</p>
+      <supplementary-material content-type="local-data" id="SD7">
+        <media xlink:href="ace0009-0291-SD7.doc" mimetype="application" mime-subtype="msword" />
+      </supplementary-material>
+    </sec>
+  </back>
+</article>`;
+
 describe("extractCaptionsFromParsedXml", () => {
   describe("PMC2845662 - caption on parent, directly under <back>", () => {
     it("extracts plain-text caption with label", () => {
@@ -210,6 +231,16 @@ describe("extractCaptionsFromParsedXml", () => {
 
       expect(captions.get("41467_2020_19701_MOESM6_ESM.xlsx")).toBe(
         "<p>Source data</p>",
+      );
+    });
+  });
+
+  describe("PMC2848978 - caption in preceding sibling <p>", () => {
+    it("uses preceding sibling <p> when no label or caption exists", () => {
+      const captions = extractCaptionsFromParsedXml(PMC2848978_XML);
+
+      expect(captions.get("ace0009-0291-SD6.xls")).toBe(
+        "<bold>Table S3</bold> Experimentally validated target mRNAs of the miR-17-92 cluster.",
       );
     });
   });
