@@ -147,21 +147,26 @@ const jatsCaptionParser = new XMLParser({
   trimValues: false,
 });
 
-function extractOrderedText(nodes: unknown): string {
+function serializeNodes(nodes: unknown): string {
   if (!Array.isArray(nodes)) return "";
-  let text = "";
+  let html = "";
   for (const node of nodes as OrderedNode[]) {
     if (typeof node["#text"] === "string") {
-      text += node["#text"];
+      html += node["#text"];
     } else if (typeof node["#text"] === "number") {
-      text += String(node["#text"]);
+      html += String(node["#text"]);
     }
     for (const [key, value] of Object.entries(node)) {
       if (key === "#text" || key === ":@") continue;
-      text += extractOrderedText(value);
+      const attrs = (node[":@"] ?? {}) as Record<string, string>;
+      const attrStr = Object.entries(attrs)
+        .map(([k, v]) => ` ${k.replace("@_", "")}="${v}"`)
+        .join("");
+      const inner = serializeNodes(value);
+      html += `<${key}${attrStr}>${inner}</${key}>`;
     }
   }
-  return text;
+  return html;
 }
 
 type ParsedElement = { content: OrderedNode[]; attrs: Record<string, string> };
@@ -227,12 +232,12 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
   for (const supp of suppMaterials) {
     const labels = findChildren(supp.content, "label");
     const suppLabel =
-      labels.length > 0 ? extractOrderedText(labels[0].content).trim() : null;
+      labels.length > 0 ? serializeNodes(labels[0].content).trim() : null;
 
     const suppCaptions = findChildren(supp.content, "caption");
     const suppCaption =
       suppCaptions.length > 0
-        ? extractOrderedText(suppCaptions[0].content).trim()
+        ? serializeNodes(suppCaptions[0].content).trim()
         : null;
 
     // Pattern A: <media xlink:href="..."> inside <supplementary-material>
@@ -247,7 +252,7 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
       const mediaCaptions = findChildren(media.content, "caption");
       const mediaCaption =
         mediaCaptions.length > 0
-          ? extractOrderedText(mediaCaptions[0].content).trim()
+          ? serializeNodes(mediaCaptions[0].content).trim()
           : null;
 
       // Prefer parent supplementary-material caption, fall back to media caption
@@ -284,7 +289,7 @@ export function extractCaptionsFromParsedXml(xml: string): Map<string, string> {
     const mediaCaptions = findChildren(media.content, "caption");
     const mediaCaption =
       mediaCaptions.length > 0
-        ? extractOrderedText(mediaCaptions[0].content).trim()
+        ? serializeNodes(mediaCaptions[0].content).trim()
         : null;
 
     if (mediaCaption) {

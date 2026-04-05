@@ -75,7 +75,7 @@ const PMC5927771_XML = `<?xml version="1.0" encoding="UTF-8"?>
     <sec>
       <supplementary-material content-type="local-data" id="supp1">
         <label>Supplementary file 1.</label>
-        <caption><title>MS identification of selective Ub and pUb interactors.</title><p>Table depicting GST-4xUb interactors that are selective for S65-phosphorylated (top) or unphosphorylated (bottom) Ub. p97-related data (shaded in yellow) are also depicted in <xref ref-type="fig" rid="fig6s1">Figure 6\u2014figure supplement 1C</xref>.</p></caption>
+        <caption><title>MS identification of selective Ub and pUb interactors.</title><p>Table depicting GST-4xUb interactors that are selective for S65-phosphorylated (top) or unphosphorylated (bottom) Ub.</p></caption>
         <media mime-subtype="xlsx" mimetype="application" xlink:href="elife-32866-supp1.xlsx" />
       </supplementary-material>
     </sec>
@@ -100,73 +100,9 @@ const PMC6185992_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </back>
 </article>`;
 
-describe("extractCaptionsFromParsedXml", () => {
-  describe("PMC2845662 - caption on parent, directly under <back>", () => {
-    it("extracts plain-text caption with label", () => {
-      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
-
-      expect(captions.get("pgen.1000889.s012.xls")).toBe(
-        "Table S1: List of NAD genomic coordinates (hg18 genome build) and features of their detection.(0.03 MB XLS)",
-      );
-    });
-
-    it("preserves inline element text in correct order (xref and ext-link)", () => {
-      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
-
-      expect(captions.get("pgen.1000889.s014.xls")).toBe(
-        "Table S3: Biological processes and molecular functions associated with NAD-located RefSeq genes. Statistical analysis of feature enrichment compared to the genome was performed using the FatiGO strategy [48] included in the Babelomics suite (www.babelomics.org). Results are summarised in Figure S3 and S4 as graphs.(0.02 MB XLS)",
-      );
-    });
-
-    it("extracts caption with single xref", () => {
-      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
-
-      expect(captions.get("pgen.1000889.s018.xls")).toBe(
-        "Table S7: Summary of 3D FISH experiments. BAC locations, allele and cell counts, furthermore nucleolus association frequencies in HeLa and IMR90 cells are shown. The results of transcription inhibition experiments are summarised in the lower part of the table and illustrated in Figure S9.(0.02 MB XLS)",
-      );
-    });
-  });
-
-  describe("PMC7175788 - nested in <app-group>/<app>, label only", () => {
-    it("falls back to label when no caption exists", () => {
-      const captions = extractCaptionsFromParsedXml(PMC7175788_XML);
-
-      expect(captions.get("jmir_v22i4e19016_app4.xlsx")).toBe(
-        "Multimedia Appendix 4",
-      );
-    });
-  });
-
-  describe("PMC5927771 - nested in <body>, caption uses <title>", () => {
-    it("extracts caption with <title> from deeply nested supplementary-material in <body>", () => {
-      const captions = extractCaptionsFromParsedXml(PMC5927771_XML);
-
-      expect(captions.get("elife-32866-fig1-data1.xlsx")).toBe(
-        "Figure 1\u2014source data 1.: Numerical source data for Figure 1B\u20131D, E, I, J and N and Figure 1\u2014figure supplement 1B to D.",
-      );
-    });
-
-    it("extracts caption with both <title> and <p> containing xref", () => {
-      const captions = extractCaptionsFromParsedXml(PMC5927771_XML);
-
-      expect(captions.get("elife-32866-supp1.xlsx")).toBe(
-        "Supplementary file 1.: MS identification of selective Ub and pUb interactors.Table depicting GST-4xUb interactors that are selective for S65-phosphorylated (top) or unphosphorylated (bottom) Ub. p97-related data (shaded in yellow) are also depicted in Figure 6\u2014figure supplement 1C.",
-      );
-    });
-  });
-
-  describe("PMC6185992 - nested in <sec>/<p>, no label, caption uses <title>", () => {
-    it("extracts caption from <title> without label", () => {
-      const captions = extractCaptionsFromParsedXml(PMC6185992_XML);
-
-      expect(captions.get("mmc2.xlsx")).toBe("Supplementary appendix2");
-    });
-  });
-
-  describe("PMC7676259 - standalone <media> not wrapped in <supplementary-material>", () => {
-    // Pared-down PMC7676259.1.xml — MOESM5 is inside <supplementary-material>,
-    // but MOESM6 is a bare <media> inside <back>/<app-group>/<app>/<sec>/<p>.
-    const PMC7676259_XML = `<?xml version="1.0" encoding="UTF-8"?>
+// Pared-down PMC7676259.1.xml — MOESM5 is inside <supplementary-material>,
+// but MOESM6 is a bare <media> inside <back>/<app-group>/<app>/<sec>/<p>.
+const PMC7676259_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <article xmlns:xlink="http://www.w3.org/1999/xlink">
   <front><article-meta><title-group><article-title>Test</article-title></title-group></article-meta></front>
   <body>
@@ -195,11 +131,77 @@ describe("extractCaptionsFromParsedXml", () => {
   </back>
 </article>`;
 
+describe("extractCaptionsFromParsedXml", () => {
+  describe("PMC2845662 - caption on parent, directly under <back>", () => {
+    it("extracts plain-text caption with label", () => {
+      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+
+      expect(captions.get("pgen.1000889.s012.xls")).toBe(
+        "Table S1: <p>List of NAD genomic coordinates (hg18 genome build) and features of their detection.</p><p>(0.03 MB XLS)</p>",
+      );
+    });
+
+    it("preserves inline markup in correct order (xref and ext-link)", () => {
+      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+
+      expect(captions.get("pgen.1000889.s014.xls")).toBe(
+        'Table S3: <p>Biological processes and molecular functions associated with NAD-located RefSeq genes. Statistical analysis of feature enrichment compared to the genome was performed using the FatiGO strategy <xref rid="pgen.1000889-AlShahrour1" ref-type="bibr">[48]</xref> included in the Babelomics suite (<ext-link ext-link-type="uri" xlink:href="http://www.babelomics.org">www.babelomics.org</ext-link>). Results are summarised in <xref ref-type="supplementary-material" rid="pgen.1000889.s003">Figure S3</xref> and <xref ref-type="supplementary-material" rid="pgen.1000889.s004">S4</xref> as graphs.</p><p>(0.02 MB XLS)</p>',
+      );
+    });
+
+    it("extracts caption with single xref", () => {
+      const captions = extractCaptionsFromParsedXml(PMC2845662_XML);
+
+      expect(captions.get("pgen.1000889.s018.xls")).toBe(
+        'Table S7: <p>Summary of 3D FISH experiments. BAC locations, allele and cell counts, furthermore nucleolus association frequencies in HeLa and IMR90 cells are shown. The results of transcription inhibition experiments are summarised in the lower part of the table and illustrated in <xref ref-type="supplementary-material" rid="pgen.1000889.s009">Figure S9</xref>.</p><p>(0.02 MB XLS)</p>',
+      );
+    });
+  });
+
+  describe("PMC7175788 - nested in <app-group>/<app>, label only", () => {
+    it("falls back to label when no caption exists", () => {
+      const captions = extractCaptionsFromParsedXml(PMC7175788_XML);
+
+      expect(captions.get("jmir_v22i4e19016_app4.xlsx")).toBe(
+        "Multimedia Appendix 4",
+      );
+    });
+  });
+
+  describe("PMC5927771 - nested in <body>, caption uses <title>", () => {
+    it("extracts caption with <title> from deeply nested supplementary-material in <body>", () => {
+      const captions = extractCaptionsFromParsedXml(PMC5927771_XML);
+
+      expect(captions.get("elife-32866-fig1-data1.xlsx")).toBe(
+        'Figure 1\u2014source data 1.: <title>Numerical source data for <xref ref-type="fig" rid="fig1">Figure 1B\u20131D, E, I, J and N</xref> and <xref ref-type="fig" rid="fig1s1">Figure 1\u2014figure supplement 1B to D</xref>.</title>',
+      );
+    });
+
+    it("extracts caption with both <title> and <p>", () => {
+      const captions = extractCaptionsFromParsedXml(PMC5927771_XML);
+
+      expect(captions.get("elife-32866-supp1.xlsx")).toBe(
+        "Supplementary file 1.: <title>MS identification of selective Ub and pUb interactors.</title><p>Table depicting GST-4xUb interactors that are selective for S65-phosphorylated (top) or unphosphorylated (bottom) Ub.</p>",
+      );
+    });
+  });
+
+  describe("PMC6185992 - nested in <sec>/<p>, no label, caption uses <title>", () => {
+    it("extracts caption from <title> without label", () => {
+      const captions = extractCaptionsFromParsedXml(PMC6185992_XML);
+
+      expect(captions.get("mmc2.xlsx")).toBe(
+        "<title>Supplementary appendix2</title>",
+      );
+    });
+  });
+
+  describe("PMC7676259 - standalone <media> not wrapped in <supplementary-material>", () => {
     it("extracts caption from media inside supplementary-material", () => {
       const captions = extractCaptionsFromParsedXml(PMC7676259_XML);
 
       expect(captions.get("41467_2020_19701_MOESM5_ESM.xlsx")).toBe(
-        "Supplementary Data 1-35",
+        "<p>Supplementary Data 1-35</p>",
       );
     });
 
@@ -207,7 +209,7 @@ describe("extractCaptionsFromParsedXml", () => {
       const captions = extractCaptionsFromParsedXml(PMC7676259_XML);
 
       expect(captions.get("41467_2020_19701_MOESM6_ESM.xlsx")).toBe(
-        "Source data",
+        "<p>Source data</p>",
       );
     });
   });
