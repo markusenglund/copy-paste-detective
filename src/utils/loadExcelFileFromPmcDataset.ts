@@ -1,7 +1,7 @@
 import path from "path";
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
-import { ExcelFileData } from "../types/ExcelFileData";
+import { PmcExcelFileData } from "../types/ExcelFileData";
 import { DatasetWithFiles } from "../repositories/datasets/unifiedDatasetsRepository";
 import {
   maxNumRowsToAnalyze,
@@ -14,7 +14,7 @@ import { storagePaths } from "./paths/storagePaths";
 export function loadExcelFileFromPmcDataset(
   dataset: DatasetWithFiles,
   fileIndex: number = 0,
-): ExcelFileData {
+): PmcExcelFileData {
   if (fileIndex >= dataset.dataFiles.length) {
     throw new Error(
       `Invalid file index: ${fileIndex}. Available files: 0-${dataset.dataFiles.length - 1}`,
@@ -49,15 +49,15 @@ export function loadExcelFileFromPmcDataset(
     }
   });
 
-  const dataDescription = "No data description available.";
-
   return {
+    source: "pmc",
     sheets,
     excelFileName: selectedFile.filename,
     excelFilePath: excelPath,
     articleName: dataset.title,
-    dataDescription,
     abstract: dataset.abstract ?? undefined,
+    fullText: dataset.pmcDetails?.fullText ?? undefined,
+    fileCaption: selectedFile.caption ?? undefined,
     extId: dataset.extId,
     datasetId: dataset.id,
     datasetFileId: selectedFile.id,

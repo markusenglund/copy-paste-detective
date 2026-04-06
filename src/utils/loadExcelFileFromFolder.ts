@@ -3,7 +3,7 @@ import path from "path";
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { MetadataSchema } from "../types/metadata";
-import { ExcelFileData } from "../types/ExcelFileData";
+import { DryadExcelFileData } from "../types/ExcelFileData";
 import {
   maxNumRowsToAnalyze,
   maxSheetsPerExcelFile,
@@ -14,7 +14,7 @@ import { logger } from "./logger";
 export function loadExcelFileFromFolder(
   datasetFolder: string,
   fileIndex: number = 0,
-): ExcelFileData {
+): DryadExcelFileData {
   const metadataPath = path.join(datasetFolder, "metadata.json");
 
   // Read and validate metadata
@@ -54,6 +54,7 @@ export function loadExcelFileFromFolder(
   const readmeContent = readFileSync(readmePath, "utf-8");
 
   return {
+    source: "dryad",
     sheets,
     excelFileName: selectedFile.name,
     excelFilePath: excelPath,

@@ -108,10 +108,22 @@ export async function reviewSheetResults(
   const result = await reviewResultsWithCache({
     prompt,
     sheetName: sheet.name,
-    datasetId: excelFileData.datasetId,
-    datasetFileId: excelFileData.datasetFileId,
-    dryadDatasetId: excelFileData.dryadDatasetId,
-    dryadExcelFileId: excelFileData.dryadExcelFileId,
+    datasetId:
+      excelFileData.source !== "standalone"
+        ? excelFileData.datasetId
+        : undefined,
+    datasetFileId:
+      excelFileData.source !== "standalone"
+        ? excelFileData.datasetFileId
+        : undefined,
+    dryadDatasetId:
+      excelFileData.source === "dryad"
+        ? excelFileData.dryadDatasetId
+        : undefined,
+    dryadExcelFileId:
+      excelFileData.source === "dryad"
+        ? excelFileData.dryadExcelFileId
+        : undefined,
   });
 
   logger.info(`\n📊 Review result for '${sheet.name}':`);
@@ -149,7 +161,7 @@ const createPrompt = (
     createIntroduction() +
     createBasicInfoSection(excelFileData, sheet) +
     createAbstractSection(excelFileData) +
-    createDataDescriptionSection(excelFileData) +
+    createContextSection(excelFileData) +
     createSpecialColumnsSection(categorizedColumns) +
     createDataSection(sheet) +
     createDuplicateRowsSection(
@@ -195,18 +207,46 @@ ${excelFileData.abstract}
 `;
 }
 
-function createDataDescriptionSection(excelFileData: ExcelFileData): string {
-  const truncatedDataDescription =
-    excelFileData.dataDescription.length > maxPromptDataDescriptionChars
-      ? `${excelFileData.dataDescription.slice(0, maxPromptDataDescriptionChars)}... (content truncated due to exceeding character limit)`
-      : excelFileData.dataDescription;
-  return `
+function createContextSection(excelFileData: ExcelFileData): string {
+  // Dryad path: author-provided data description
+  if (excelFileData.source === "dryad" && excelFileData.dataDescription) {
+    const truncatedDataDescription =
+      excelFileData.dataDescription.length > maxPromptDataDescriptionChars
+        ? `${excelFileData.dataDescription.slice(0, maxPromptDataDescriptionChars)}... (content truncated due to exceeding character limit)`
+        : excelFileData.dataDescription;
+    return `
 # Description of the data
 
 The following description of the dataset was provided by the authors. Be aware that some of it might refer to completely different spreadsheets than the one you're reviewing.
 
 ${wrapInCodeBlock(truncatedDataDescription)}
 `;
+  }
+
+  // PMC path: file caption + full text of the paper
+  if (excelFileData.source === "pmc") {
+    const parts: string[] = [];
+    if (excelFileData.fileCaption) {
+      parts.push(
+        `The following caption was provided for this data file: "${excelFileData.fileCaption}"`,
+      );
+    }
+    if (excelFileData.fullText) {
+      parts.push(
+        `The following is the full text of the paper. Use it to understand what the data represents and whether the flagged duplications make sense in context.\n\n${wrapInCodeBlock(excelFileData.fullText)}`,
+      );
+    }
+    if (parts.length > 0) {
+      return `
+# Context from the paper
+
+${parts.join("\n\n")}
+`;
+    }
+  }
+
+  // No context available (standalone or missing data)
+  return "";
 }
 
 function getColumnName(column: CategorizedColumn): string {

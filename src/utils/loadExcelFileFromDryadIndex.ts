@@ -2,7 +2,7 @@ import path from "path";
 
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
-import { ExcelFileData } from "../types/ExcelFileData";
+import { DryadExcelFileData } from "../types/ExcelFileData";
 import { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import {
   maxNumRowsToAnalyze,
@@ -16,7 +16,7 @@ import { storagePaths } from "./paths/storagePaths";
 export function loadExcelFileFromDryadIndex(
   dataset: DryadDatasetWithFiles,
   fileIndex: number = 0,
-): ExcelFileData {
+): DryadExcelFileData {
   // Validate file index range
   if (fileIndex >= dataset.excelFiles.length) {
     throw new Error(
@@ -62,13 +62,13 @@ export function loadExcelFileFromDryadIndex(
     dataDescription = dataset.usageNotes;
   }
   if (!dataDescription) {
-    logger.error(
+    logger.warn(
       `Dataset ${dataset.extId} has no README or usage notes available, continuing without it.`,
     );
-    dataDescription = "No data description available.";
   }
 
   return {
+    source: "dryad",
     sheets,
     excelFileName: selectedFile.filename,
     excelFilePath: excelPath,

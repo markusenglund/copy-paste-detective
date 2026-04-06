@@ -1,7 +1,7 @@
 import path from "path";
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
-import { ExcelFileData } from "../types/ExcelFileData";
+import { StandaloneExcelFileData } from "../types/ExcelFileData";
 import {
   maxNumRowsToAnalyze,
   maxSheetsPerExcelFile,
@@ -13,7 +13,9 @@ import { logger } from "./logger";
  * Load an Excel file without requiring metadata.json or README.md
  * Useful for quick analysis of standalone Excel files
  */
-export function loadExcelFileWithoutMetadata(filePath: string): ExcelFileData {
+export function loadExcelFileWithoutMetadata(
+  filePath: string,
+): StandaloneExcelFileData {
   const workbook = xlsx.readFile(filePath, {
     sheetRows: maxNumRowsToAnalyze,
     cellNF: true,
@@ -42,11 +44,10 @@ export function loadExcelFileWithoutMetadata(filePath: string): ExcelFileData {
   const articleName = path.basename(filePath, path.extname(filePath));
 
   return {
+    source: "standalone",
     sheets,
     excelFileName: fileName,
     excelFilePath: filePath,
     articleName,
-    dataDescription: "", // No description available
-    abstract: undefined, // No abstract available
   };
 }

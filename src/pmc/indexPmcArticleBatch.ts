@@ -100,6 +100,7 @@ export async function indexPmcArticleBatch(
           ? s3UrlToHttps(s3Metadata.pdf_url)
           : null,
         textUrl: s3Metadata.text_url ? s3UrlToHttps(s3Metadata.text_url) : null,
+        xmlUrl: s3Metadata.xml_url ? s3UrlToHttps(s3Metadata.xml_url) : null,
         supplementalFileUrls:
           s3Metadata.media_urls.length > 0 ? s3Metadata.media_urls : null,
         isMetaAnalysis: null,

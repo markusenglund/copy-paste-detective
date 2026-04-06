@@ -253,6 +253,13 @@
       "when": 1775415416873,
       "tag": "0036_jittery_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1775479387313,
+      "tag": "0037_hot_madripoor",
+      "breakpoints": true
     }
   ]
 }

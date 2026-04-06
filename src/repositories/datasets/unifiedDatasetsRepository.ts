@@ -16,11 +16,32 @@ import { logger } from "../../utils/logger";
 
 export type DatasetRow = typeof datasets.$inferSelect;
 export type DatasetFileRow = typeof datasetFiles.$inferSelect;
+export type DatasetFileWithCaption = DatasetFileRow & {
+  caption?: string | null;
+};
 
 export type DatasetWithFiles = DatasetRow & {
-  dataFiles: DatasetFileRow[];
+  dataFiles: DatasetFileWithCaption[];
   pmcDetails?: typeof pmcDatasetDetails.$inferSelect | null;
 };
+
+async function mergeCaptions(
+  files: DatasetFileRow[],
+): Promise<DatasetFileWithCaption[]> {
+  if (files.length === 0) return [];
+  const fileIds = files.map((f) => f.id);
+  const captionRows = await db
+    .select({
+      datasetFileId: pmcDatasetFileDetails.datasetFileId,
+      caption: pmcDatasetFileDetails.caption,
+    })
+    .from(pmcDatasetFileDetails)
+    .where(inArray(pmcDatasetFileDetails.datasetFileId, fileIds));
+  const captionByFileId = new Map(
+    captionRows.map((r) => [r.datasetFileId, r.caption]),
+  );
+  return files.map((f) => ({ ...f, caption: captionByFileId.get(f.id) }));
+}
 
 export async function getDownloadedNotAnalyzedPmcDatasetsWithFiles(): Promise<
   DatasetWithFiles[]
@@ -54,7 +75,11 @@ export async function getDownloadedNotAnalyzedPmcDatasetsWithFiles(): Promise<
       ),
     );
 
-  const dataFilesByDatasetId = Map.groupBy(allDataFiles, (f) => f.datasetId);
+  const allDataFilesWithCaptions = await mergeCaptions(allDataFiles);
+  const dataFilesByDatasetId = Map.groupBy(
+    allDataFilesWithCaptions,
+    (f) => f.datasetId,
+  );
 
   return matchedDatasets.map((d) => ({
     ...d.dataset,
@@ -82,10 +107,12 @@ export async function getPmcDatasetByExtId(
     .from(datasetFiles)
     .where(eq(datasetFiles.datasetId, match.dataset.id));
 
+  const dataFilesWithCaptions = await mergeCaptions(dataFilesRows);
+
   return {
     ...match.dataset,
     pmcDetails: match.pmcDetails,
-    dataFiles: dataFilesRows,
+    dataFiles: dataFilesWithCaptions,
   };
 }
 
@@ -143,6 +170,7 @@ export async function upsertPmcDataset(data: {
   isRetracted: boolean | null;
   fullPdfUrl: string | null;
   textUrl: string | null;
+  xmlUrl: string | null;
   supplementalFileUrls: string[] | null;
   isMetaAnalysis: boolean | null;
 }): Promise<{ dataset: DatasetRow; isNew: boolean }> {
@@ -186,6 +214,7 @@ export async function upsertPmcDataset(data: {
         isRetracted: data.isRetracted,
         fullPdfUrl: data.fullPdfUrl,
         textUrl: data.textUrl,
+        xmlUrl: data.xmlUrl,
         supplementalFileUrls: data.supplementalFileUrls,
       })
       .onConflictDoUpdate({
@@ -199,6 +228,7 @@ export async function upsertPmcDataset(data: {
           isRetracted: data.isRetracted,
           fullPdfUrl: data.fullPdfUrl,
           textUrl: data.textUrl,
+          xmlUrl: data.xmlUrl,
           supplementalFileUrls: data.supplementalFileUrls,
         },
       });

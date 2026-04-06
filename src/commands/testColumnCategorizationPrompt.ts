@@ -320,7 +320,7 @@ program
         const actualCategorization = await screenColumnsWithCache({
           paperName: excelFileData.articleName,
           excelFileName: excelFileData.excelFileName,
-          readmeContent: excelFileData.dataDescription,
+          readmeContent: excelFileData.dataDescription ?? "",
           columnNames: sheet.columnNames,
           columnData: sampleData,
           sheetName: sheet.name,

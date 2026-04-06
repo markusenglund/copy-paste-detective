@@ -1,17 +1,36 @@
 import { Sheet } from "../entities/Sheet";
 
-export interface ExcelFileData {
+interface BaseExcelFileData {
   sheets: Sheet[];
   excelFileName: string;
-  excelFilePath?: string; // Full path to the Excel file on disk
+  excelFilePath?: string;
   articleName: string;
   abstract?: string;
-  dataDescription: string;
   extId?: string;
-  // Unified database IDs for AI result caching
+}
+
+export interface DryadExcelFileData extends BaseExcelFileData {
+  source: "dryad";
+  dataDescription?: string;
   datasetId?: number;
   datasetFileId?: number;
-  // Legacy Dryad IDs (kept for backward compat during transition)
   dryadDatasetId?: number;
   dryadExcelFileId?: number;
 }
+
+export interface PmcExcelFileData extends BaseExcelFileData {
+  source: "pmc";
+  fullText?: string;
+  fileCaption?: string;
+  datasetId: number;
+  datasetFileId: number;
+}
+
+export interface StandaloneExcelFileData extends BaseExcelFileData {
+  source: "standalone";
+}
+
+export type ExcelFileData =
+  | DryadExcelFileData
+  | PmcExcelFileData
+  | StandaloneExcelFileData;

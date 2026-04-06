@@ -12,7 +12,7 @@ import {
 } from "../utils/squareRoot";
 import { detectNaturalLogarithm, LogarithmMatch } from "../utils/logarithm";
 import { EnhancedCell } from "../entities/EnhancedCell";
-import { ExcelFileData } from "../types/ExcelFileData";
+import { ExcelFileData, DryadExcelFileData } from "../types/ExcelFileData";
 import { screenColumnsWithCache } from "../ai/useCases/screenColumns";
 import { logger } from "../utils/logger";
 
@@ -42,8 +42,10 @@ export async function categorizeColumns(
 ): Promise<CategorizedColumn[]> {
   const calculatedColumnProfiles = getCalculatedColumnsProfiles(sheet);
 
-  if (options?.excludeAiProfile) {
-    if (options.includedColumns) {
+  // Skip AI column screening for PMC/standalone (no data description available)
+  // and when explicitly excluded via options
+  if (options?.excludeAiProfile || excelFileData.source !== "dryad") {
+    if (options?.includedColumns) {
       const sheetColumnNames = sheet.getColumns().map((c) => c.name);
       const unmatchedColumns = options.includedColumns.filter(
         (name) => !sheetColumnNames.includes(name),
@@ -58,12 +60,14 @@ export async function categorizeColumns(
     const categorizedColumns = sheet.getColumns().map((column, index) => ({
       ...column,
       ...calculatedColumnProfiles[index],
-      isIncludedInAnalysis: options.includedColumns
+      isIncludedInAnalysis: options?.includedColumns
         ? options.includedColumns.includes(column.name)
         : true,
     }));
     return categorizedColumns;
   }
+
+  // Dryad path: use AI to screen columns
   logger.info(
     `[${sheet.name}] Getting AI column profiles for ${sheet.getColumns().length} columns`,
   );
@@ -80,7 +84,7 @@ export async function categorizeColumns(
 
 async function getAiColumnProfiles(
   sheet: Sheet,
-  excelFileData: ExcelFileData,
+  excelFileData: DryadExcelFileData,
 ): Promise<AiColumnProfile[]> {
   const columnNames = sheet.columnNames;
   const sampleData = sheet.enhancedMatrix
@@ -90,7 +94,7 @@ async function getAiColumnProfiles(
   const screenColumnsResult = await screenColumnsWithCache({
     paperName: excelFileData.articleName,
     excelFileName: excelFileData.excelFileName,
-    readmeContent: excelFileData.dataDescription,
+    readmeContent: excelFileData.dataDescription ?? "",
     columnNames,
     columnData: sampleData,
     sheetName: sheet.name,

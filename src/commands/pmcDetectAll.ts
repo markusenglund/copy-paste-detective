@@ -39,9 +39,7 @@ async function checkIsMetaAnalysis(
   const result = await classifyMetaAnalysisWithCache({
     title: dataset.title,
     abstract: dataset.abstract,
-    dataDescription: "No data description available.",
     datasetId: dataset.id,
-    dryadDatasetId: dataset.id, // Fallback for backward compat in the AI caching logic if needed
   });
 
   return result.isMetaAnalysis;

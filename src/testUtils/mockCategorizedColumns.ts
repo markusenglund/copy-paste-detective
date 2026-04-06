@@ -10,10 +10,10 @@ export async function mockCategorizedColumns(
   includedColumnNames: Set<string>,
 ): Promise<CategorizedColumn[]> {
   const mockExcelFileData: ExcelFileData = {
+    source: "standalone",
     sheets: [sheet],
     excelFileName: "mockedFile.xlsx",
     articleName: "Mocked Article",
-    dataDescription: "This is a mocked Excel file data for testing purposes.",
   };
 
   const categorizedColumns = (
