@@ -37,8 +37,6 @@ export type ReviewResultsWithCacheParams = {
   prompt: string;
   datasetId?: number;
   datasetFileId?: number;
-  dryadDatasetId?: number;
-  dryadExcelFileId?: number;
   sheetName: string;
 };
 
@@ -51,9 +49,7 @@ export async function reviewResultsWithCache(
     .update(JSON.stringify(hashInput))
     .digest("hex");
 
-  const canCache =
-    (params.datasetId != null && params.datasetFileId != null) ||
-    (params.dryadDatasetId != null && params.dryadExcelFileId != null);
+  const canCache = params.datasetId != null && params.datasetFileId != null;
 
   if (canCache) {
     const cached = await findReviewResultByHash(hash);
@@ -77,8 +73,6 @@ export async function reviewResultsWithCache(
 
   if (canCache) {
     await insertReviewResult({
-      dryadDatasetId: params.dryadDatasetId,
-      dryadExcelFileId: params.dryadExcelFileId,
       datasetId: params.datasetId,
       datasetFileId: params.datasetFileId,
       sheetName,

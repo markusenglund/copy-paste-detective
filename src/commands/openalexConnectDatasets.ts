@@ -1,10 +1,11 @@
 import { Command } from "@commander-js/extra-typings";
 import pMap from "p-map";
 import {
-  DryadDataset,
-  getDatasetsWithoutArticles,
-  getDatasetByExtId,
-} from "../repositories/datasets/datasetsRepository";
+  getDryadDatasetsWithoutArticles,
+  getDryadDatasetByExtId,
+  updateDatasetArticleId,
+  type DryadDatasetWithFiles,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { getArticleFromDryadDataset } from "../openalex/getArticleFromDryadDataset";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
@@ -35,7 +36,7 @@ import { bulkUpsertFunders } from "../repositories/funders/fundersRepository";
 import { uniqBy } from "lodash-es";
 
 type OpenAlexArticleWithDataset = {
-  dataset: DryadDataset;
+  dataset: DryadDatasetWithFiles;
   openalexArticle: Work | WorkSearchResult;
 };
 
@@ -54,10 +55,10 @@ program
   )
   .action(async (options) => {
     try {
-      let datasets: DryadDataset[];
+      let datasets: DryadDatasetWithFiles[];
 
       if (options.extId) {
-        const dataset = await getDatasetByExtId(options.extId);
+        const dataset = await getDryadDatasetByExtId(options.extId);
         if (!dataset) {
           logger.error(`Dataset with extId ${options.extId} not found`);
           return;
@@ -71,7 +72,7 @@ program
         datasets = [dataset];
         logger.info(`Processing dataset with extId ${options.extId}...`);
       } else {
-        datasets = await getDatasetsWithoutArticles();
+        datasets = await getDryadDatasetsWithoutArticles();
         if (options.limit) {
           datasets = datasets.slice(0, options.limit);
         }
@@ -122,6 +123,17 @@ program
 
         const insertedArticles = await bulkUpsertArticles(articles);
         logger.info(`Upserted ${insertedArticles.length} articles`);
+
+        // Link datasets to their articles via the unified datasets.articleId
+        const articleByOpenalexId = new Map(
+          insertedArticles.map((a) => [a.extOpenalexId, a]),
+        );
+        for (const { dataset, openalexArticle } of articlesWithDatasets) {
+          const insertedArticle = articleByOpenalexId.get(openalexArticle.id);
+          if (insertedArticle) {
+            await updateDatasetArticleId(dataset.id, insertedArticle.id);
+          }
+        }
 
         const { articleAuthors, articleFunders } =
           extractJunctionTablesDataFromOpenalexArticles({
@@ -241,7 +253,7 @@ async function extractArticlesFromOpenAlexArticles(
   articlesWithDatasets: OpenAlexArticleWithDataset[],
 ): Promise<ArticleInsert[]> {
   const journalByIssn = await getJournalsByIssnMap();
-  const articles = articlesWithDatasets.map(({ dataset, openalexArticle }) => {
+  const articles = articlesWithDatasets.map(({ openalexArticle }) => {
     let journal: Journal | undefined;
     const potentialIssns: string[] = [];
     if (openalexArticle.primary_location?.source?.issn) {
@@ -264,7 +276,7 @@ async function extractArticlesFromOpenAlexArticles(
     }
 
     const { article } = convertOpenalexArticle(openalexArticle, journal?.id);
-    return { ...article, dryadDatasetId: dataset.id };
+    return article;
   });
   const uniqueArticles = uniqBy(articles, "doi");
   return uniqueArticles;
@@ -320,7 +332,7 @@ function extractArticleMetadataFromOpenAlexArticles(
 }
 
 async function getArticlesFromDryadDatasets(
-  datasets: DryadDataset[],
+  datasets: DryadDatasetWithFiles[],
 ): Promise<OpenAlexArticleWithDataset[]> {
   const results = await pMap(
     datasets,

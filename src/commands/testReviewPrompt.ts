@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import pMap from "p-map";
-import { getDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
+import { getDryadDatasetByExtId } from "../repositories/datasets/unifiedDatasetsRepository";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
 import { analyzeExcelFile } from "../detection/analyzeExcelFile";
@@ -723,7 +723,7 @@ async function processTestCase(
 
   try {
     // Load dataset
-    const dataset = await getDatasetWithFiles(extId);
+    const dataset = await getDryadDatasetByExtId(extId);
     if (!dataset) {
       return {
         testCase,
@@ -737,9 +737,8 @@ async function processTestCase(
     }
 
     // Find Excel file index by matching filename
-    const fileIndex = dataset.excelFiles.findIndex(
-      (f) => f.filename === filename,
-    );
+    const excelFiles = dataset.dataFiles.filter((f) => f.fileType === "excel");
+    const fileIndex = excelFiles.findIndex((f) => f.filename === filename);
     if (fileIndex === -1) {
       return {
         testCase,

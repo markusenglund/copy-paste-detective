@@ -7,15 +7,13 @@ interface BaseExcelFileData {
   articleName: string;
   abstract?: string;
   extId?: string;
+  dataDescription?: string;
 }
 
 export interface DryadExcelFileData extends BaseExcelFileData {
   source: "dryad";
-  dataDescription?: string;
-  datasetId?: number;
-  datasetFileId?: number;
-  dryadDatasetId?: number;
-  dryadExcelFileId?: number;
+  datasetId: number;
+  datasetFileId: number;
 }
 
 export interface PmcExcelFileData extends BaseExcelFileData {

@@ -116,14 +116,6 @@ export async function reviewSheetResults(
       excelFileData.source !== "standalone"
         ? excelFileData.datasetFileId
         : undefined,
-    dryadDatasetId:
-      excelFileData.source === "dryad"
-        ? excelFileData.dryadDatasetId
-        : undefined,
-    dryadExcelFileId:
-      excelFileData.source === "dryad"
-        ? excelFileData.dryadExcelFileId
-        : undefined,
   });
 
   logger.info(`\n📊 Review result for '${sheet.name}':`);
@@ -208,8 +200,8 @@ ${excelFileData.abstract}
 }
 
 function createContextSection(excelFileData: ExcelFileData): string {
-  // Dryad path: author-provided data description
-  if (excelFileData.source === "dryad" && excelFileData.dataDescription) {
+  // Dryad/standalone path: author-provided data description
+  if (excelFileData.dataDescription) {
     const truncatedDataDescription =
       excelFileData.dataDescription.length > maxPromptDataDescriptionChars
         ? `${excelFileData.dataDescription.slice(0, maxPromptDataDescriptionChars)}... (content truncated due to exceeding character limit)`

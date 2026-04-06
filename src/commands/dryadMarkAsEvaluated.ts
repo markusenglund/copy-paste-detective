@@ -1,6 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
-import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
+import { getDryadDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/unifiedDatasetsRepository";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
 
@@ -14,11 +14,13 @@ program
   .action(async () => {
     try {
       // Get all completed (downloaded) datasets
-      const completedDatasets = await getDatasetsByDownloadStatusWithFiles(
+      const completedDatasets = await getDryadDatasetsByDownloadStatusWithFiles(
         "completed",
         10000,
       );
-      const completedExtIds = new Set(completedDatasets.map((d) => d.extId));
+      const completedExtIds = new Set(
+        completedDatasets.map((d) => d.dryadDetails.extIdNumeric),
+      );
 
       // Get all analyzed dataset IDs from analysisResultsDb
       const analyzedExtIds = Object.keys(analysisResultsDb.data.results)

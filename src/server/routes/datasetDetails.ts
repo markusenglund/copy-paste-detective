@@ -10,7 +10,9 @@ import {
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import { db } from "../../db";
-import { dryadDatasets, dryadExcelFiles } from "../../repositories";
+import { datasets } from "../../repositories/datasets/unifiedSchema";
+import { dryadDatasetDetails } from "../../repositories/datasets/dryadDetailsSchema";
+import { datasetFiles } from "../../repositories/datasetFiles/schema";
 import { eq, and } from "drizzle-orm";
 import { storagePaths } from "../../utils/paths/storagePaths";
 
@@ -87,7 +89,7 @@ export async function datasetDetailsRoutes(
 
       try {
         const review = await upsertHumanReview({
-          dryadDatasetId: datasetId,
+          datasetId,
           userId,
           verdict: verdict as "true_positive" | "false_positive" | "ambiguous",
           impactScore,
@@ -135,18 +137,22 @@ export async function datasetDetailsRoutes(
         // Query database to get extId and verify file belongs to this dataset
         const result = await db
           .select({
-            extId: dryadDatasets.extId,
-            fileExists: dryadExcelFiles.id,
+            extId: dryadDatasetDetails.extIdNumeric,
+            fileExists: datasetFiles.id,
           })
-          .from(dryadDatasets)
+          .from(datasets)
           .innerJoin(
-            dryadExcelFiles,
+            dryadDatasetDetails,
+            eq(dryadDatasetDetails.datasetId, datasets.id),
+          )
+          .innerJoin(
+            datasetFiles,
             and(
-              eq(dryadExcelFiles.dryadDatasetId, dryadDatasets.id),
-              eq(dryadExcelFiles.filename, filename),
+              eq(datasetFiles.datasetId, datasets.id),
+              eq(datasetFiles.filename, filename),
             ),
           )
-          .where(eq(dryadDatasets.id, datasetId))
+          .where(eq(datasets.id, datasetId))
           .limit(1);
 
         if (result.length === 0) {
@@ -207,18 +213,22 @@ export async function datasetDetailsRoutes(
         // Query database to get extId and verify file belongs to this dataset
         const result = await db
           .select({
-            extId: dryadDatasets.extId,
-            fileExists: dryadExcelFiles.id,
+            extId: dryadDatasetDetails.extIdNumeric,
+            fileExists: datasetFiles.id,
           })
-          .from(dryadDatasets)
+          .from(datasets)
           .innerJoin(
-            dryadExcelFiles,
+            dryadDatasetDetails,
+            eq(dryadDatasetDetails.datasetId, datasets.id),
+          )
+          .innerJoin(
+            datasetFiles,
             and(
-              eq(dryadExcelFiles.dryadDatasetId, dryadDatasets.id),
-              eq(dryadExcelFiles.filename, filename),
+              eq(datasetFiles.datasetId, datasets.id),
+              eq(datasetFiles.filename, filename),
             ),
           )
-          .where(eq(dryadDatasets.id, datasetId))
+          .where(eq(datasets.id, datasetId))
           .limit(1);
 
         if (result.length === 0) {

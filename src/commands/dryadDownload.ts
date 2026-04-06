@@ -1,12 +1,12 @@
 import { Command } from "@commander-js/extra-typings";
 import {
-  getDatasetsForDownload,
-  getDatasetWithFiles,
-  updateDatasetDownloadStatus,
+  getDryadDatasetsForDownload,
+  getDryadDatasetByExtId,
+  updateDryadDatasetDownloadStatus,
+  updateDatasetFileDownloadStatus,
   type DryadDatasetWithFiles,
-} from "../repositories/datasets/datasetsRepository";
-import { updateExcelFileDownloadStatus } from "../repositories/excelFiles/excelFilesRepository";
-import { updateReadmeFileDownloadStatus } from "../repositories/readmeFiles/readmeFilesRepository";
+  type DatasetFileWithDryadDetails,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { downloadFile } from "../dryad/downloadFile";
 import { parseIntArgument, parseExtIds } from "../utils/command";
 import { logger } from "../utils/logger";
@@ -34,7 +34,7 @@ program
       if (options.extId) {
         const datasets: DryadDatasetWithFiles[] = [];
         for (const extId of options.extId) {
-          const dataset = await getDatasetWithFiles(extId);
+          const dataset = await getDryadDatasetByExtId(extId);
           if (!dataset) {
             logger.error(`Dataset with extId ${extId} not found.`);
             process.exit(1);
@@ -44,8 +44,13 @@ program
         datasetsToDownload = datasets;
       } else {
         logger.info("Fetching datasets for download...");
-        const datasets = await getDatasetsForDownload(count);
+        const datasets = await getDryadDatasetsForDownload(count);
         logger.info(`Fetched ${datasets.length} candidate datasets`);
+
+        const excelFilesOf = (
+          d: DryadDatasetWithFiles,
+        ): DatasetFileWithDryadDetails[] =>
+          d.dataFiles.filter((f) => f.fileType === "excel");
 
         // Separate datasets by whether they have downloadable files
         const downloadable: (DryadDatasetWithFiles & {
@@ -55,7 +60,7 @@ program
           [];
 
         for (const dataset of datasets) {
-          const hasDownloadableFile = dataset.excelFiles.some(
+          const hasDownloadableFile = excelFilesOf(dataset).some(
             (file) => file.size <= maxFileSize,
           );
           if (hasDownloadableFile) {
@@ -67,10 +72,11 @@ program
 
         // Mark skipped datasets (all files too large)
         for (const dataset of skipped) {
+          const numericExtId = dataset.dryadDetails.extIdNumeric;
           logger.info(
-            `Skipping dataset ${dataset.extId} - all files exceed ${maxFileSize / 1_000_000}MB`,
+            `Skipping dataset ${numericExtId} - all files exceed ${maxFileSize / 1_000_000}MB`,
           );
-          await updateDatasetDownloadStatus(dataset.extId, "skipped");
+          await updateDryadDatasetDownloadStatus(numericExtId, "skipped");
         }
 
         logger.info(
@@ -78,8 +84,9 @@ program
         );
 
         for (const dataset of downloadable) {
+          const numericExtId = dataset.dryadDetails.extIdNumeric;
           logger.info(
-            `[${dataset.extId}] ${dataset.citationScore.toFixed(2)} - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+            `[${numericExtId}] ${dataset.citationScore.toFixed(2)} - "${dataset.title}" - ${dataset.publicationDate}`,
           );
         }
 
@@ -89,54 +96,60 @@ program
       // Single download loop for all cases
       for (let i = 0; i < datasetsToDownload.length; i++) {
         const dataset = datasetsToDownload[i];
-        logger.info(
-          `[${i}] Downloading dataset ${dataset.extId} from ${dataset.dryadPublicationDate} ("${dataset.title}")`,
+        const numericExtId = dataset.dryadDetails.extIdNumeric;
+        const excelFiles = dataset.dataFiles.filter(
+          (f) => f.fileType === "excel",
+        );
+        const readmeFile = dataset.dataFiles.find(
+          (f) => f.fileType === "readme",
         );
         logger.info(
-          `${dataset.excelFiles.length} Excel files found:\n ${dataset.excelFiles.map((file) => file.filename).join("\n")}`,
+          `[${i}] Downloading dataset ${numericExtId} from ${dataset.publicationDate} ("${dataset.title}")`,
+        );
+        logger.info(
+          `${excelFiles.length} Excel files found:\n ${excelFiles.map((file) => file.filename).join("\n")}`,
         );
 
         let numFailedDownloads = 0;
 
-        for (const excelFile of dataset.excelFiles) {
-          if (excelFile.size < maxFileSize) {
+        for (const excelFile of excelFiles) {
+          if (excelFile.size <= maxFileSize) {
+            const extFileId = excelFile.dryadFileDetails?.extFileId;
+            if (!extFileId) continue;
             try {
               await downloadFile({
-                fileId: excelFile.extFileId,
+                fileId: extFileId,
                 filename: excelFile.filename,
-                datasetId: dataset.extId,
+                datasetId: numericExtId,
               });
-              await updateExcelFileDownloadStatus(excelFile.id, "completed");
+              await updateDatasetFileDownloadStatus(excelFile.id, "completed");
             } catch (err) {
               logger.error(err);
-              await updateExcelFileDownloadStatus(excelFile.id, "failed");
+              await updateDatasetFileDownloadStatus(excelFile.id, "failed");
               numFailedDownloads += 1;
             }
           }
         }
-        if (dataset.readmeFile) {
-          try {
-            await downloadFile({
-              fileId: dataset.readmeFile.extFileId,
-              filename: dataset.readmeFile.filename,
-              datasetId: dataset.extId,
-            });
-            await updateReadmeFileDownloadStatus(
-              dataset.readmeFile.id,
-              "completed",
-            );
-          } catch (err) {
-            logger.error(err);
-            await updateReadmeFileDownloadStatus(
-              dataset.readmeFile.id,
-              "failed",
-            );
+        if (readmeFile) {
+          const extFileId = readmeFile.dryadFileDetails?.extFileId;
+          if (extFileId) {
+            try {
+              await downloadFile({
+                fileId: extFileId,
+                filename: readmeFile.filename,
+                datasetId: numericExtId,
+              });
+              await updateDatasetFileDownloadStatus(readmeFile.id, "completed");
+            } catch (err) {
+              logger.error(err);
+              await updateDatasetFileDownloadStatus(readmeFile.id, "failed");
+            }
           }
         }
-        if (numFailedDownloads === dataset.excelFiles.length) {
-          await updateDatasetDownloadStatus(dataset.extId, "failed");
+        if (numFailedDownloads === excelFiles.length) {
+          await updateDryadDatasetDownloadStatus(numericExtId, "failed");
         } else {
-          await updateDatasetDownloadStatus(dataset.extId, "completed");
+          await updateDryadDatasetDownloadStatus(numericExtId, "completed");
         }
       }
     } finally {

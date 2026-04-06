@@ -1,8 +1,10 @@
 import path from "path";
 import { Command } from "@commander-js/extra-typings";
 import pMap from "p-map";
-import { getDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
-import type { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
+import {
+  getDryadDatasetByExtId,
+  type DryadDatasetWithFiles,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { classifyMetaAnalysisWithCache } from "../ai/useCases/classifyMetaAnalysis";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
@@ -131,23 +133,26 @@ const nonMetaAnalyses: TestCase[] = [
 function getDataDescription(
   dataset: DryadDatasetWithFiles,
 ): string | undefined {
-  if (dataset.readmeFile) {
-    const datasetFolder = storagePaths.dryadDataset(dataset.extId);
-    const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
+  const readmeFile = dataset.dataFiles.find((f) => f.fileType === "readme");
+  if (readmeFile) {
+    const datasetFolder = storagePaths.dryadDataset(
+      dataset.dryadDetails.extIdNumeric,
+    );
+    const readmePath = path.join(datasetFolder, readmeFile.filename);
     try {
       return readTextFile(readmePath);
     } catch {
       // Fall through to usageNotes
     }
   }
-  return dataset.usageNotes ?? undefined;
+  return dataset.dryadDetails.usageNotes ?? undefined;
 }
 
 async function processTestCase(testCase: TestCase): Promise<TestResult> {
   const { extId } = testCase;
 
   try {
-    const dataset = await getDatasetWithFiles(extId);
+    const dataset = await getDryadDatasetByExtId(extId);
     if (!dataset) {
       return {
         testCase,
@@ -163,7 +168,7 @@ async function processTestCase(testCase: TestCase): Promise<TestResult> {
       title: dataset.title,
       abstract: dataset.abstract!,
       dataDescription,
-      dryadDatasetId: dataset.id,
+      datasetId: dataset.id,
     });
 
     const passed = result.isMetaAnalysis === testCase.isMetaAnalysis;

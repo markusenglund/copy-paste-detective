@@ -27,7 +27,9 @@ import {
   AI_REVIEW_MIN_DATE,
   PDF_REVIEW_MIN_DATE,
 } from "../aiReviewResults/aiReviewResultsRepository";
-import { dryadDatasets, datasetTags, tags } from "../datasets/schema";
+import { datasets } from "../datasets/unifiedSchema";
+import { dryadDatasetDetails } from "../datasets/dryadDetailsSchema";
+import { datasetTags, tags } from "../datasets/schema";
 import { pdfFiles } from "../pdfFiles/schema";
 import { humanReviews } from "../humanReview/schema";
 import { journals } from "../journals/schema";
@@ -125,7 +127,7 @@ export async function getArticlesForPdfDownload(
 ): Promise<Article[]> {
   const hasSuspiciousReview = sql<boolean>`EXISTS (
     SELECT 1 FROM ai_review_results
-    WHERE ai_review_results.dryad_dataset_id = articles.dryad_dataset_id
+    WHERE ai_review_results.dataset_id = ${datasets.id}
     AND ai_review_results.is_latest_review = true
     AND ai_review_results.true_positive_probability > 0.5
     AND ai_review_results.created_at > ${AI_REVIEW_MIN_DATE}
@@ -154,11 +156,15 @@ export async function getArticlesForPdfDownload(
         updatedTimestamp: articles.updatedTimestamp,
       })
       .from(articles)
-      .innerJoin(dryadDatasets, eq(articles.dryadDatasetId, dryadDatasets.id))
+      .innerJoin(datasets, eq(datasets.articleId, articles.id))
+      .innerJoin(
+        dryadDatasetDetails,
+        eq(dryadDatasetDetails.datasetId, datasets.id),
+      )
       .where(
         and(
-          isNotNull(articles.dryadDatasetId),
-          eq(dryadDatasets.extId, extId),
+          eq(datasets.source, "dryad"),
+          eq(dryadDatasetDetails.extIdNumeric, extId),
           hasSuspiciousReview,
         ),
       );
@@ -185,11 +191,12 @@ export async function getArticlesForPdfDownload(
       updatedTimestamp: articles.updatedTimestamp,
     })
     .from(articles)
+    .innerJoin(datasets, eq(datasets.articleId, articles.id))
     .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
     .where(
       and(
         isNull(pdfFiles.id),
-        isNotNull(articles.dryadDatasetId),
+        eq(datasets.source, "dryad"),
         hasSuspiciousReview,
       ),
     )
@@ -226,8 +233,8 @@ export interface DashboardArticle {
   countryCode: string | null;
   pdfFilename: string | null;
   pdfFileSize: number | null;
-  dryadDatasetId: number | null;
-  dryadExtId: number | null;
+  datasetId: number | null;
+  extId: number | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
   humanReviewUpdatedAt: string | null;
@@ -240,7 +247,7 @@ export async function getDashboardArticles(
 ): Promise<DashboardArticle[]> {
   const maxScoresSubquery = db
     .select({
-      dryadDatasetId: aiReviewResults.dryadDatasetId,
+      datasetId: aiReviewResults.datasetId,
       maxTruePositiveProbability:
         sql<number>`MAX(${aiReviewResults.truePositiveProbability})`.as(
           "max_true_positive_probability",
@@ -263,7 +270,7 @@ export async function getDashboardArticles(
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
       ),
     )
-    .groupBy(aiReviewResults.dryadDatasetId)
+    .groupBy(aiReviewResults.datasetId)
     .as("max_scores");
 
   const citationScoreExpr =
@@ -342,14 +349,14 @@ export async function getDashboardArticles(
     } else if (filter.key === FILTER_KEYS.TAG) {
       if (filter.selectedTagIds.length > 0) {
         filterConditions.push(
-          sql`${articles.dryadDatasetId} IN (SELECT ${datasetTags.datasetId} FROM ${datasetTags} WHERE ${inArray(datasetTags.tagId, filter.selectedTagIds)})`,
+          sql`${datasets.id} IN (SELECT ${datasetTags.datasetId} FROM ${datasetTags} WHERE ${inArray(datasetTags.tagId, filter.selectedTagIds)})`,
         );
       }
     } else if (filter.key === FILTER_KEYS.META_ANALYSIS) {
       if (filter.option === "exclude") {
-        filterConditions.push(sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`);
+        filterConditions.push(sql`${datasets.isMetaAnalysis} IS NOT TRUE`);
       } else if (filter.option === "only") {
-        filterConditions.push(eq(dryadDatasets.isMetaAnalysis, true));
+        filterConditions.push(eq(datasets.isMetaAnalysis, true));
       }
     }
   }
@@ -375,8 +382,8 @@ export async function getDashboardArticles(
       countryCode: institutions.countryCode,
       pdfFilename: pdfFiles.filename,
       pdfFileSize: pdfFiles.size,
-      dryadDatasetId: articles.dryadDatasetId,
-      dryadExtId: dryadDatasets.extId,
+      datasetId: datasets.id,
+      extId: dryadDatasetDetails.extIdNumeric,
       humanReviewVerdict: humanReviews.verdict,
       humanReviewImpactScore: humanReviews.impactScore,
       humanReviewUpdatedAt: sql<string>`${humanReviews.updatedAt}::text`.as(
@@ -384,7 +391,7 @@ export async function getDashboardArticles(
       ),
       tags: sql<
         Array<{ id: string; name: string; color: string }>
-      >`(SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name, 'color', t.color)), '[]'::json) FROM ${datasetTags} dt JOIN ${tags} t ON t.id = dt.tag_id WHERE dt.dataset_id = ${dryadDatasets.id})`.as(
+      >`(SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name, 'color', t.color)), '[]'::json) FROM ${datasetTags} dt JOIN ${tags} t ON t.id = dt.tag_id WHERE dt.dataset_id = ${datasets.id})`.as(
         "tags",
       ),
     })
@@ -399,18 +406,19 @@ export async function getDashboardArticles(
     )
     .leftJoin(institutions, eq(articleAuthors.institutionId, institutions.id))
     .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
-    .leftJoin(dryadDatasets, eq(articles.dryadDatasetId, dryadDatasets.id))
+    .innerJoin(datasets, eq(datasets.articleId, articles.id))
+    .leftJoin(
+      dryadDatasetDetails,
+      eq(dryadDatasetDetails.datasetId, datasets.id),
+    )
     .leftJoin(
       humanReviews,
       and(
-        eq(humanReviews.dryadDatasetId, articles.dryadDatasetId),
+        eq(humanReviews.dryadDatasetId, datasets.id),
         eq(humanReviews.isLatestReview, true),
       ),
     )
-    .innerJoin(
-      maxScoresSubquery,
-      eq(maxScoresSubquery.dryadDatasetId, articles.dryadDatasetId),
-    );
+    .innerJoin(maxScoresSubquery, eq(maxScoresSubquery.datasetId, datasets.id));
 
   if (whereClause) {
     query = query.where(whereClause) as typeof query;

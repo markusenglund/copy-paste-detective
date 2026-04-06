@@ -1,5 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
-import { getDatasetByExtId } from "../repositories/datasets/datasetsRepository";
+import { getDryadDatasetByExtId } from "../repositories/datasets/unifiedDatasetsRepository";
 import { getDatasetDetails } from "../server/services/datasetDetailsService";
 import { parseIntArgument } from "../utils/command";
 import { logger } from "../utils/logger";
@@ -22,7 +22,7 @@ program
   .action(async (extId) => {
     try {
       logger.info(`Looking up dataset with extId ${extId}...`);
-      const dataset = await getDatasetByExtId(extId);
+      const dataset = await getDryadDatasetByExtId(extId);
       if (!dataset) {
         logger.error(`Dataset with extId ${extId} not found`);
         return;

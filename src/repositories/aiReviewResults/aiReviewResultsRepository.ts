@@ -1,14 +1,15 @@
 import { and, desc, eq, gt, sql, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
-import { dryadDatasets } from "../datasets/schema";
-import type { DryadDataset } from "../datasets/datasetsRepository";
+import { datasets } from "../datasets/unifiedSchema";
+import { dryadDatasetDetails } from "../datasets/dryadDetailsSchema";
+import type { DatasetRow } from "../datasets/unifiedDatasetsRepository";
 import { articles } from "../articles/schema";
 import type { Article } from "../articles/schema";
 import { pdfFiles } from "../pdfFiles/schema";
 import type { PdfFile } from "../pdfFiles/schema";
-import { dryadExcelFiles } from "../excelFiles/schema";
-import type { DryadExcelFileRow } from "../excelFiles/excelFilesRepository";
+import { datasetFiles } from "../datasetFiles/schema";
+import type { DatasetFileRow } from "../datasets/unifiedDatasetsRepository";
 
 // Hardcoded date threshold that reviews must been created after to be considered not obsolete.
 export const AI_REVIEW_MIN_DATE = new Date("2026-01-27T00:00:00Z");
@@ -31,8 +32,6 @@ export async function findByHash(
 }
 
 export async function insertResult(data: {
-  dryadDatasetId?: number;
-  dryadExcelFileId?: number;
   datasetId?: number;
   datasetFileId?: number;
   sheetName: string;
@@ -45,14 +44,13 @@ export async function insertResult(data: {
   return await db.transaction(async (tx) => {
     // Step 1: Set is_latest_review = false for existing "latest" review of this sheet
     // This is required before inserting the new one due to the unique constraint
-    // Use dryadExcelFileId when available (Dryad path), since the unique index is on that column
-    if (data.dryadExcelFileId != null) {
+    if (data.datasetFileId != null) {
       await tx
         .update(aiReviewResults)
         .set({ isLatestReview: false })
         .where(
           and(
-            eq(aiReviewResults.dryadExcelFileId, data.dryadExcelFileId),
+            eq(aiReviewResults.dryadExcelFileId, data.datasetFileId),
             eq(aiReviewResults.sheetName, data.sheetName),
             eq(aiReviewResults.isLatestReview, true),
           ),
@@ -75,8 +73,8 @@ export async function insertResult(data: {
 
 /**
  * Get the latest AI review for each unique sheet, grouped by dataset ID.
- * A unique sheet is identified by (dryadExcelFileId, sheetName).
- * Returns a Map where keys are dryadDatasetId and values are arrays of the latest reviews for each sheet.
+ * A unique sheet is identified by (datasetFileId, sheetName).
+ * Returns a Map where keys are datasetId and values are arrays of the latest reviews for each sheet.
  */
 export async function getLatestReviewsPerSheet(): Promise<
   Map<number, AiReviewResultRow[]>
@@ -93,20 +91,21 @@ export async function getLatestReviewsPerSheet(): Promise<
     )
     .orderBy(desc(aiReviewResults.createdAt));
 
-  // Group latest reviews by dryadDatasetId (skip reviews without one)
+  // Group latest reviews by datasetId (skip reviews without one)
   const reviewsByDatasetId = new Map<number, AiReviewResultRow[]>();
   for (const review of latestReviews) {
-    if (review.dryadDatasetId == null) continue;
-    const existing = reviewsByDatasetId.get(review.dryadDatasetId) ?? [];
+    const id = review.datasetId ?? review.dryadDatasetId;
+    if (id == null) continue;
+    const existing = reviewsByDatasetId.get(id) ?? [];
     existing.push(review);
-    reviewsByDatasetId.set(review.dryadDatasetId, existing);
+    reviewsByDatasetId.set(id, existing);
   }
 
   return reviewsByDatasetId;
 }
 
 /**
- * Get high-suspicion AI reviews with all associated data (articles, PDFs, datasets, excel files).
+ * Get high-suspicion AI reviews with all associated data (articles, PDFs, datasets, files).
  * Filters for truePositiveProbability > threshold and pdfDownloadStatus = 'completed'.
  * Optionally filters by dataset extId.
  * Orders by truePositiveProbability DESC.
@@ -120,8 +119,8 @@ export async function getHighSuspicionReviewsWithArticles(
     aiReview: AiReviewResultRow;
     article: Article;
     pdfFile: PdfFile;
-    dataset: DryadDataset;
-    excelFile: DryadExcelFileRow;
+    dataset: DatasetRow;
+    datasetFile: DatasetFileRow;
   }>
 > {
   const whereConditions = [
@@ -131,7 +130,7 @@ export async function getHighSuspicionReviewsWithArticles(
   ];
 
   if (extId !== undefined) {
-    whereConditions.push(eq(dryadDatasets.extId, extId));
+    whereConditions.push(eq(dryadDatasetDetails.extIdNumeric, extId));
   }
 
   const results = await db
@@ -139,20 +138,18 @@ export async function getHighSuspicionReviewsWithArticles(
       aiReview: aiReviewResults,
       article: articles,
       pdfFile: pdfFiles,
-      dataset: dryadDatasets,
-      excelFile: dryadExcelFiles,
+      dataset: datasets,
+      datasetFile: datasetFiles,
     })
     .from(aiReviewResults)
+    .innerJoin(datasets, eq(aiReviewResults.datasetId, datasets.id))
     .innerJoin(
-      dryadDatasets,
-      eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
+      dryadDatasetDetails,
+      eq(dryadDatasetDetails.datasetId, datasets.id),
     )
-    .innerJoin(articles, eq(dryadDatasets.id, articles.dryadDatasetId))
+    .innerJoin(articles, eq(datasets.articleId, articles.id))
     .innerJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
-    .innerJoin(
-      dryadExcelFiles,
-      eq(aiReviewResults.dryadExcelFileId, dryadExcelFiles.id),
-    )
+    .innerJoin(datasetFiles, eq(aiReviewResults.datasetFileId, datasetFiles.id))
     .where(and(...whereConditions))
     .orderBy(desc(aiReviewResults.truePositiveProbability))
     .limit(limit);
@@ -161,12 +158,12 @@ export async function getHighSuspicionReviewsWithArticles(
 }
 
 export type DatasetWithReviews = {
-  dataset: DryadDataset;
+  dataset: DatasetRow;
   article: Article;
   pdfFile: PdfFile;
   reviews: Array<{
     aiReview: AiReviewResultRow;
-    excelFile: DryadExcelFileRow;
+    datasetFile: DatasetFileRow;
   }>;
 };
 
@@ -176,7 +173,7 @@ export type DatasetWithReviews = {
  * This function:
  * 1. Finds datasets that don't have a recent (non-obsolete) PDF review
  * 2. Have at least one high-suspicion review created after the date threshold
- * 3. For each dataset, returns only the latest review for each unique (excelFileId, sheetName) combo
+ * 3. For each dataset, returns only the latest review for each unique (datasetFileId, sheetName) combo
  * 4. Includes article and PDF data (only articles with completed PDF downloads)
  *
  * When extId is provided, only returns that specific dataset (ignoring limit).
@@ -190,11 +187,15 @@ export async function getDatasetsForPdfReview(
   let datasetIds: number[];
 
   if (extId !== undefined) {
-    // When extId specified, just get that specific dataset
+    // When extId specified, just get that specific dataset via dryadDatasetDetails
     const dataset = await db
-      .select({ id: dryadDatasets.id })
-      .from(dryadDatasets)
-      .where(eq(dryadDatasets.extId, extId))
+      .select({ id: datasets.id })
+      .from(datasets)
+      .innerJoin(
+        dryadDatasetDetails,
+        eq(dryadDatasetDetails.datasetId, datasets.id),
+      )
+      .where(eq(dryadDatasetDetails.extIdNumeric, extId))
       .limit(1);
 
     datasetIds = dataset.map((d) => d.id);
@@ -207,20 +208,20 @@ export async function getDatasetsForPdfReview(
         pdfr.ai_review_result_id = arr.id
         AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
       )
-      WHERE arr.dryad_dataset_id = dryad_datasets.id
+      WHERE arr.dataset_id = ${datasets.id}
         AND arr.is_latest_review = true
         AND arr.true_positive_probability > ${suspicionThreshold}
         AND arr.created_at > ${AI_REVIEW_MIN_DATE}
         AND pdfr.id IS NULL
     )`;
 
-    const datasets = await db
-      .select({ id: dryadDatasets.id })
-      .from(dryadDatasets)
+    const matchedDatasets = await db
+      .select({ id: datasets.id })
+      .from(datasets)
       .where(hasLatestReviewWithoutPdfReview)
       .limit(limit);
 
-    datasetIds = datasets.map((d) => d.id);
+    datasetIds = matchedDatasets.map((d) => d.id);
   }
 
   if (datasetIds.length === 0) {
@@ -233,23 +234,17 @@ export async function getDatasetsForPdfReview(
       aiReview: aiReviewResults,
       article: articles,
       pdfFile: pdfFiles,
-      dataset: dryadDatasets,
-      excelFile: dryadExcelFiles,
+      dataset: datasets,
+      datasetFile: datasetFiles,
     })
     .from(aiReviewResults)
-    .innerJoin(
-      dryadDatasets,
-      eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
-    )
-    .innerJoin(articles, eq(dryadDatasets.id, articles.dryadDatasetId))
+    .innerJoin(datasets, eq(aiReviewResults.datasetId, datasets.id))
+    .innerJoin(articles, eq(datasets.articleId, articles.id))
     .innerJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
-    .innerJoin(
-      dryadExcelFiles,
-      eq(aiReviewResults.dryadExcelFileId, dryadExcelFiles.id),
-    )
+    .innerJoin(datasetFiles, eq(aiReviewResults.datasetFileId, datasetFiles.id))
     .where(
       and(
-        inArray(aiReviewResults.dryadDatasetId, datasetIds),
+        inArray(aiReviewResults.datasetId, datasetIds),
         eq(aiReviewResults.isLatestReview, true),
         gt(aiReviewResults.truePositiveProbability, suspicionThreshold),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
@@ -263,35 +258,35 @@ export async function getDatasetsForPdfReview(
     number,
     Array<{
       aiReview: AiReviewResultRow;
-      excelFile: DryadExcelFileRow;
+      datasetFile: DatasetFileRow;
     }>
   >();
   const datasetInfoById = new Map<
     number,
-    { dataset: DryadDataset; article: Article; pdfFile: PdfFile }
+    { dataset: DatasetRow; article: Article; pdfFile: PdfFile }
   >();
 
   for (const row of reviews) {
-    const datasetId = row.dataset.id;
-    datasetInfoById.set(datasetId, {
+    const dsId = row.dataset.id;
+    datasetInfoById.set(dsId, {
       dataset: row.dataset,
       article: row.article,
       pdfFile: row.pdfFile,
     });
 
-    const existing = reviewsByDatasetId.get(datasetId) ?? [];
+    const existing = reviewsByDatasetId.get(dsId) ?? [];
     existing.push({
       aiReview: row.aiReview,
-      excelFile: row.excelFile,
+      datasetFile: row.datasetFile,
     });
-    reviewsByDatasetId.set(datasetId, existing);
+    reviewsByDatasetId.set(dsId, existing);
   }
 
   // Build result array, preserving dataset order from the original query
   const result: DatasetWithReviews[] = [];
-  for (const datasetId of datasetIds) {
-    const info = datasetInfoById.get(datasetId);
-    const datasetReviews = reviewsByDatasetId.get(datasetId);
+  for (const dsId of datasetIds) {
+    const info = datasetInfoById.get(dsId);
+    const datasetReviews = reviewsByDatasetId.get(dsId);
 
     // Only include datasets that have reviews (after all the joins)
     if (info && datasetReviews && datasetReviews.length > 0) {

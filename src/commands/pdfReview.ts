@@ -2,7 +2,7 @@ import { Command } from "@commander-js/extra-typings";
 import pMap from "p-map";
 import { parseIntArgument } from "../utils/command";
 import { getDatasetsForPdfReview } from "../repositories/aiReviewResults/aiReviewResultsRepository";
-import { updateDatasetAnalysisStatus } from "../repositories/datasets/datasetsRepository";
+import { updateDatasetAnalysisStatus } from "../repositories/datasets/unifiedDatasetsRepository";
 import { loadPdfFile } from "../utils/loadPdfForGemini";
 import { createPdfReviewPrompt } from "../pdfReview/createPdfReviewPrompt";
 import { reviewPdfWithCache } from "../ai/useCases/reviewPdf";
@@ -59,7 +59,7 @@ program
         datasetsWithReviews,
         async ({ dataset, article, pdfFile, reviews }) => {
           logger.info(
-            `Processing dataset extId=${dataset.extId}: ${dataset.title} (${reviews.length} reviews)`,
+            `Processing dataset id=${dataset.id} extId=${dataset.extId}: ${dataset.title} (${reviews.length} reviews)`,
           );
 
           // Load PDF file once per dataset
@@ -72,7 +72,7 @@ program
             `Loaded PDF: ${article.id}/${pdfFile.filename} (${pdfFile.size} bytes)`,
           );
 
-          for (const { aiReview, excelFile } of reviews) {
+          for (const { aiReview, datasetFile: excelFile } of reviews) {
             try {
               logger.info(
                 `Processing review for ${excelFile.filename} / ${aiReview.sheetName}`,
@@ -117,10 +117,7 @@ program
           }
 
           // Mark dataset as pdf_reviewed_by_ai after processing all its reviews
-          await updateDatasetAnalysisStatus(
-            dataset.extId,
-            "pdf_reviewed_by_ai",
-          );
+          await updateDatasetAnalysisStatus(dataset.id, "pdf_reviewed_by_ai");
           datasetsProcessed++;
           logger.info(`Dataset ${dataset.extId} marked as pdf_reviewed_by_ai`);
         },

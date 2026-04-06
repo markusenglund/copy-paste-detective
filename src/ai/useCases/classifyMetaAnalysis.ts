@@ -59,8 +59,7 @@ export type ClassifyMetaAnalysisWithCacheParams = {
   title: string;
   abstract: string;
   dataDescription?: string;
-  datasetId?: number;
-  dryadDatasetId?: number;
+  datasetId: number;
 };
 
 export async function classifyMetaAnalysisWithCache(
@@ -73,13 +72,13 @@ export async function classifyMetaAnalysisWithCache(
     .update(JSON.stringify(hashInput))
     .digest("hex");
 
-  const canCache = params.datasetId != null || params.dryadDatasetId != null;
+  const canCache = params.datasetId != null;
 
   if (canCache) {
     const cached = await findMetaAnalysisByHash(hash);
     if (cached) {
       logger.info(
-        `Found cached meta-analysis result for dataset ${params.dryadDatasetId}`,
+        `Found cached meta-analysis result for dataset ${params.datasetId}`,
       );
       return {
         reasoning: cached.reasoning,
@@ -99,7 +98,6 @@ export async function classifyMetaAnalysisWithCache(
 
   if (canCache) {
     await insertMetaAnalysisResult({
-      dryadDatasetId: params.dryadDatasetId,
       datasetId: params.datasetId,
       prompt,
       model: config.model,

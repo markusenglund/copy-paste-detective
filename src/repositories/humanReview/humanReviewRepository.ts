@@ -6,7 +6,7 @@ import { users } from "../users/schema";
 export type HumanReviewRow = typeof humanReviews.$inferSelect;
 
 export async function upsertHumanReview(data: {
-  dryadDatasetId: number;
+  datasetId: number;
   userId: number;
   verdict: "true_positive" | "false_positive" | "ambiguous";
   impactScore: number;
@@ -16,12 +16,12 @@ export async function upsertHumanReview(data: {
     await tx
       .update(humanReviews)
       .set({ isLatestReview: false })
-      .where(eq(humanReviews.dryadDatasetId, data.dryadDatasetId));
+      .where(eq(humanReviews.dryadDatasetId, data.datasetId));
 
     const [result] = await tx
       .insert(humanReviews)
       .values({
-        dryadDatasetId: data.dryadDatasetId,
+        dryadDatasetId: data.datasetId,
         userId: data.userId,
         isLatestReview: true,
         verdict: data.verdict,
@@ -55,7 +55,7 @@ export interface HumanReviewWithUser {
 }
 
 export async function getReviewsForDataset(
-  dryadDatasetId: number,
+  datasetId: number,
 ): Promise<HumanReviewWithUser[]> {
   return db
     .select({
@@ -69,6 +69,6 @@ export async function getReviewsForDataset(
     })
     .from(humanReviews)
     .innerJoin(users, eq(users.id, humanReviews.userId))
-    .where(eq(humanReviews.dryadDatasetId, dryadDatasetId))
+    .where(eq(humanReviews.dryadDatasetId, datasetId))
     .orderBy(desc(humanReviews.updatedAt));
 }

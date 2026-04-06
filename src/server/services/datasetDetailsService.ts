@@ -1,5 +1,6 @@
 import { db } from "../../db";
-import { dryadDatasets } from "../../repositories/datasets/schema";
+import { datasets } from "../../repositories/datasets/unifiedSchema";
+import { dryadDatasetDetails } from "../../repositories/datasets/dryadDetailsSchema";
 import {
   articles,
   articleAuthors,
@@ -11,7 +12,7 @@ import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema";
 import { authors } from "../../repositories/authors/schema";
 import { institutions } from "../../repositories/institutions/schema";
-import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
+import { datasetFiles } from "../../repositories/datasetFiles/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import { eq, sql, and, gt } from "drizzle-orm";
 import { getReviewsForDataset } from "../../repositories/humanReview/humanReviewRepository";
@@ -31,7 +32,7 @@ export async function getDatasetDetails(
     .from(aiReviewResults)
     .where(
       and(
-        eq(aiReviewResults.dryadDatasetId, datasetId),
+        eq(aiReviewResults.datasetId, datasetId),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
       ),
     );
@@ -45,7 +46,7 @@ export async function getDatasetDetails(
     .select({
       id: aiReviewResults.id,
       sheetName: aiReviewResults.sheetName,
-      dryadExcelFileId: aiReviewResults.dryadExcelFileId,
+      datasetFileId: aiReviewResults.datasetFileId,
       prompt: aiReviewResults.prompt,
       response: aiReviewResults.response,
       model: aiReviewResults.model,
@@ -55,7 +56,7 @@ export async function getDatasetDetails(
     .from(aiReviewResults)
     .where(
       and(
-        eq(aiReviewResults.dryadDatasetId, datasetId),
+        eq(aiReviewResults.datasetId, datasetId),
         eq(aiReviewResults.isLatestReview, true),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
       ),
@@ -93,11 +94,11 @@ export async function getDatasetDetails(
   // Get dataset and article information
   const datasetInfo = await db
     .select({
-      datasetId: dryadDatasets.id,
-      extId: dryadDatasets.extId,
-      datasetDoi: dryadDatasets.datasetDoi,
-      datasetTitle: dryadDatasets.title,
-      abstract: dryadDatasets.abstract,
+      datasetId: datasets.id,
+      extId: dryadDatasetDetails.extIdNumeric,
+      datasetDoi: datasets.doi,
+      datasetTitle: datasets.title,
+      abstract: datasets.abstract,
       articleId: articles.id,
       articleTitle: articles.title,
       articleDoi: articles.doi,
@@ -112,11 +113,15 @@ export async function getDatasetDetails(
       pdfFilename: pdfFiles.filename,
       pdfFileSize: pdfFiles.size,
     })
-    .from(dryadDatasets)
-    .leftJoin(articles, eq(dryadDatasets.id, articles.dryadDatasetId))
+    .from(datasets)
+    .leftJoin(
+      dryadDatasetDetails,
+      eq(dryadDatasetDetails.datasetId, datasets.id),
+    )
+    .leftJoin(articles, eq(datasets.articleId, articles.id))
     .leftJoin(journals, eq(articles.journalId, journals.id))
     .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
-    .where(eq(dryadDatasets.id, datasetId))
+    .where(eq(datasets.id, datasetId))
     .limit(1);
 
   if (!datasetInfo[0]) {
@@ -158,29 +163,36 @@ export async function getDatasetDetails(
         .where(eq(articleFunders.articleId, info.articleId))
     : [];
 
-  // Get Excel file names
+  // Get Excel file names from dataset_files
   const excelFiles = await db
     .select({
-      id: dryadExcelFiles.id,
-      fileName: dryadExcelFiles.filename,
+      id: datasetFiles.id,
+      fileName: datasetFiles.filename,
     })
-    .from(dryadExcelFiles)
-    .where(eq(dryadExcelFiles.dryadDatasetId, datasetId));
+    .from(datasetFiles)
+    .where(
+      and(
+        eq(datasetFiles.datasetId, datasetId),
+        eq(datasetFiles.fileType, "excel"),
+      ),
+    );
 
   const fileIdToName = new Map(excelFiles.map((f) => [f.id, f.fileName]));
 
   // Check which files have highlighted versions
   const highlightedFileIds = new Set<number>();
-  for (const file of excelFiles) {
-    const highlightedFilename = file.fileName.endsWith(".xls")
-      ? file.fileName.replace(".xls", ".xlsx")
-      : file.fileName;
-    const highlightedPath = join(
-      storagePaths.highlightedDataset(info.extId),
-      highlightedFilename,
-    );
-    if (existsSync(highlightedPath)) {
-      highlightedFileIds.add(file.id);
+  if (info.extId != null) {
+    for (const file of excelFiles) {
+      const highlightedFilename = file.fileName.endsWith(".xls")
+        ? file.fileName.replace(".xls", ".xlsx")
+        : file.fileName;
+      const highlightedPath = join(
+        storagePaths.highlightedDataset(info.extId),
+        highlightedFilename,
+      );
+      if (existsSync(highlightedPath)) {
+        highlightedFileIds.add(file.id);
+      }
     }
   }
 
@@ -194,12 +206,12 @@ export async function getDatasetDetails(
     return {
       sheetName: aiReview.sheetName,
       excelFileName:
-        (aiReview.dryadExcelFileId != null
-          ? fileIdToName.get(aiReview.dryadExcelFileId)
+        (aiReview.datasetFileId != null
+          ? fileIdToName.get(aiReview.datasetFileId)
           : undefined) || "Unknown",
       hasHighlightedVersion:
-        aiReview.dryadExcelFileId != null &&
-        highlightedFileIds.has(aiReview.dryadExcelFileId),
+        aiReview.datasetFileId != null &&
+        highlightedFileIds.has(aiReview.datasetFileId),
       aiReview: {
         prompt: aiReview.prompt,
         response: aiReview.response,
@@ -222,8 +234,8 @@ export async function getDatasetDetails(
   return {
     dataset: {
       id: info.datasetId,
-      extId: info.extId,
-      doi: info.datasetDoi,
+      extId: info.extId ?? 0,
+      doi: info.datasetDoi ?? "",
       title: info.datasetTitle,
       abstract: info.abstract,
     },

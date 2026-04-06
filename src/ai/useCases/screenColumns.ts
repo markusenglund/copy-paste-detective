@@ -150,8 +150,6 @@ Based on all the information provided, categorize the column headers. Start with
 export type ScreenColumnsWithCacheParams = PromptTemplateParams & {
   datasetId?: number;
   datasetFileId?: number;
-  dryadDatasetId?: number;
-  dryadExcelFileId?: number;
   sheetName: string;
 };
 
@@ -164,9 +162,7 @@ export async function screenColumnsWithCache(
     .update(JSON.stringify(hashInput))
     .digest("hex");
 
-  const canCache =
-    (params.datasetId != null && params.datasetFileId != null) ||
-    (params.dryadDatasetId != null && params.dryadExcelFileId != null);
+  const canCache = params.datasetId != null && params.datasetFileId != null;
 
   if (canCache) {
     const cached = await findColumnCategorizationByHash(hash);
@@ -206,8 +202,6 @@ export async function screenColumnsWithCache(
 
   if (canCache) {
     await insertColumnCategorizationResult({
-      dryadDatasetId: params.dryadDatasetId,
-      dryadExcelFileId: params.dryadExcelFileId,
       datasetId: params.datasetId,
       datasetFileId: params.datasetFileId,
       sheetName: params.sheetName,

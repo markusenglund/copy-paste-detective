@@ -1,4 +1,4 @@
-import { DryadDataset } from "../repositories/datasets/datasetsRepository";
+import { DryadDatasetWithFiles } from "../repositories/datasets/unifiedDatasetsRepository";
 import { logger } from "../utils/logger";
 import {
   getArticleByAbstract,
@@ -8,17 +8,18 @@ import {
 import { Work, WorkSearchResult } from "./schemas";
 
 export async function getArticleFromDryadDataset(
-  dataset: DryadDataset,
+  dataset: DryadDatasetWithFiles,
 ): Promise<Work | WorkSearchResult | undefined> {
   let article: Work | WorkSearchResult | undefined;
-  if (dataset.primaryArticleUrl) {
-    logger.debug(`Getting article by DOI: '${dataset.primaryArticleUrl}'`);
-    article = await getArticleByDoi(dataset.primaryArticleUrl);
+  const primaryArticleUrl = dataset.dryadDetails.primaryArticleUrl;
+  if (primaryArticleUrl) {
+    logger.debug(`Getting article by DOI: '${primaryArticleUrl}'`);
+    article = await getArticleByDoi(primaryArticleUrl);
     if (article) {
       return article;
     }
     logger.warn(
-      `No article found by DOI: '${dataset.primaryArticleUrl}'. Most likely the DOI is wrong, so moving on to other methods...`,
+      `No article found by DOI: '${primaryArticleUrl}'. Most likely the DOI is wrong, so moving on to other methods...`,
     );
   }
 

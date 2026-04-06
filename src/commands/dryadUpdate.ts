@@ -1,12 +1,11 @@
 import { Command } from "@commander-js/extra-typings";
 import {
-  getDatasetByExtId,
-  upsertDataset,
-  updateDatasetDownloadStatus,
-  getDatasetsNotUpdatedSince,
-} from "../repositories/datasets/datasetsRepository";
-import { upsertExcelFile } from "../repositories/excelFiles/excelFilesRepository";
-import { upsertReadmeFile } from "../repositories/readmeFiles/readmeFilesRepository";
+  getDryadDatasetByExtId,
+  upsertDryadDataset,
+  upsertDryadDataFile,
+  updateDryadDatasetDownloadStatus,
+  getDryadDatasetsNotUpdatedSince,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { getDataset } from "../dryad/getDataset";
 import { listFiles } from "../dryad/listFiles";
 import { Dataset, ForbiddenDataset } from "../dryad/schemas";
@@ -39,7 +38,7 @@ program
       // Get datasets to update
       let datasets;
       if (options.extId) {
-        const dataset = await getDatasetByExtId(options.extId);
+        const dataset = await getDryadDatasetByExtId(options.extId);
         if (!dataset) {
           logger.error(
             `Dataset with extId ${options.extId} not found in database`,
@@ -48,7 +47,9 @@ program
         }
         datasets = [dataset];
       } else {
-        datasets = await getDatasetsNotUpdatedSince(new Date("2026-01-01"));
+        datasets = await getDryadDatasetsNotUpdatedSince(
+          new Date("2026-01-01"),
+        );
       }
 
       const datasetsToProcess = options.limit
@@ -67,17 +68,18 @@ program
       await pMap(
         datasetsToProcess,
         async (existingDataset) => {
+          const extIdNumeric = existingDataset.dryadDetails.extIdNumeric;
           try {
             // Fetch from API
-            const apiDataset = await getDataset(existingDataset.extId);
+            const apiDataset = await getDataset(extIdNumeric);
 
             if (isForbiddenDataset(apiDataset)) {
               // Forbidden - mark status
-              await updateDatasetDownloadStatus(
-                existingDataset.extId,
+              await updateDryadDatasetDownloadStatus(
+                extIdNumeric,
                 "api_forbidden",
               );
-              logger.warn(`Dataset ${existingDataset.extId} is forbidden`);
+              logger.warn(`Dataset ${extIdNumeric} is forbidden`);
               forbidden++;
               return;
             }
@@ -102,7 +104,7 @@ program
               regularArticleUrls?.length === 1 ? regularArticleUrls[0] : null;
 
             // Upsert dataset metadata (always)
-            const { dataset, isNew } = await upsertDataset({
+            const { dataset, isNew } = await upsertDryadDataset({
               extId: apiDataset.id,
               datasetDoi: apiDataset.identifier,
               originalFileSize: apiDataset.storageSize ?? null,
@@ -124,7 +126,7 @@ program
             // Only fetch files if lastModifiedDate changed
             if (
               apiDataset.lastModificationDate !==
-              existingDataset.dryadLastModifiedDate
+              existingDataset.dryadDetails.dryadLastModifiedDate
             ) {
               const filesResponse = await listFiles({
                 version: latestVersionId,
@@ -142,12 +144,13 @@ program
 
                 // Upsert excel files
                 for (const file of extDryadExcelFiles) {
-                  await upsertExcelFile({
-                    dryadDatasetId: dataset.id,
+                  await upsertDryadDataFile({
+                    datasetId: dataset.id,
                     extFileId: Number(
                       file._links["stash:download"]!.href.split("/").at(-2),
                     ),
                     filename: file.path,
+                    fileType: "excel",
                     size: file.size,
                   });
                 }
@@ -157,14 +160,15 @@ program
                   /readme\.(txt|md)/i.test(file.path),
                 );
                 if (extDryadReadmeFile?._links["stash:download"]) {
-                  await upsertReadmeFile({
-                    dryadDatasetId: dataset.id,
+                  await upsertDryadDataFile({
+                    datasetId: dataset.id,
                     extFileId: Number(
                       extDryadReadmeFile._links["stash:download"].href
                         .split("/")
                         .at(-2),
                     ),
                     filename: extDryadReadmeFile.path,
+                    fileType: "readme",
                     size: extDryadReadmeFile.size,
                   });
                 }
@@ -172,33 +176,31 @@ program
             }
 
             if (
-              !existingDataset.primaryArticleUrl &&
-              dataset.primaryArticleUrl
+              !existingDataset.dryadDetails.primaryArticleUrl &&
+              dataset.doi
             ) {
               newPrimaryArticleUrl++;
             }
 
             if (isNew) {
               logger.error(
-                `Dataset was unexpectedly inserted instead of updated:${dataset.extId}: ${dataset.title}`,
+                `Dataset was unexpectedly inserted instead of updated:${extIdNumeric}: ${dataset.title}`,
               );
             } else {
-              logger.info(`Updated dataset ${dataset.extId}: ${dataset.title}`);
+              logger.info(`Updated dataset ${extIdNumeric}: ${dataset.title}`);
             }
 
             // Check if anything actually changed by comparing dates
             if (
               apiDataset.lastModificationDate !==
-              existingDataset.dryadLastModifiedDate
+              existingDataset.dryadDetails.dryadLastModifiedDate
             ) {
               updatedDryadModificationDate++;
             } else {
               unchangedDryadModificationDate++;
             }
           } catch (error) {
-            logger.error(
-              `Error updating dataset ${existingDataset.extId}: ${error}`,
-            );
+            logger.error(`Error updating dataset ${extIdNumeric}: ${error}`);
             errors++;
           }
         },

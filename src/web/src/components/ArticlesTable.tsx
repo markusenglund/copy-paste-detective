@@ -229,12 +229,12 @@ export function ArticlesTable({
           {articles.map((article) => (
             <tr key={article.id} className="hover:bg-gray-50">
               <td className="px-4 py-3 text-sm text-gray-600">
-                {article.dryadExtId ?? "-"}
+                {article.extId ?? "-"}
               </td>
               <td className="px-4 py-3 text-sm">
-                {article.dryadDatasetId ? (
+                {article.datasetId ? (
                   <Link
-                    to={`/dataset/${article.dryadDatasetId}`}
+                    to={`/dataset/${article.datasetId}`}
                     className="text-blue-600 hover:text-blue-800 hover:underline line-clamp-3 block"
                     title={article.title}
                   >

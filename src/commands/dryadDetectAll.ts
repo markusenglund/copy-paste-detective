@@ -2,12 +2,13 @@ import { Command } from "@commander-js/extra-typings";
 import pMap from "p-map";
 import Mutex from "p-mutex";
 import {
-  getDownloadedNotAnalyzedDatasetsWithFiles,
-  getDatasetWithFiles,
-  updateDatasetAnalysisStatus,
-  updateDatasetIsMetaAnalysis,
-  resetAnalysisStatusesExceptFailed,
-} from "../repositories/datasets/datasetsRepository";
+  getDownloadedNotAnalyzedDryadDatasetsWithFiles,
+  getDryadDatasetByExtId,
+  updateDryadDatasetAnalysisStatus,
+  updateDryadDatasetIsMetaAnalysis,
+  resetDryadAnalysisStatusesExceptFailed,
+  type DryadDatasetWithFiles,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { classifyMetaAnalysisWithCache } from "../ai/useCases/classifyMetaAnalysis";
 import { db as analysisResultsDb } from "../dryad/analysisResultsDb";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
@@ -21,7 +22,6 @@ import {
 } from "../repositories/journals/journalsRepository";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
-import type { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
 import { readTextFile } from "../utils/readTextFile";
@@ -33,16 +33,19 @@ const metaAnalysisPattern = /meta[- ]?analysis|systematic review/i;
 function getDataDescription(
   dataset: DryadDatasetWithFiles,
 ): string | undefined {
-  if (dataset.readmeFile) {
-    const datasetFolder = storagePaths.dryadDataset(dataset.extId);
-    const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
+  const readmeFile = dataset.dataFiles.find((f) => f.fileType === "readme");
+  if (readmeFile) {
+    const datasetFolder = storagePaths.dryadDataset(
+      dataset.dryadDetails.extIdNumeric,
+    );
+    const readmePath = path.join(datasetFolder, readmeFile.filename);
     try {
       return readTextFile(readmePath);
     } catch {
       // Fall through to usageNotes
     }
   }
-  return dataset.usageNotes ?? undefined;
+  return dataset.dryadDetails.usageNotes ?? undefined;
 }
 
 async function checkIsMetaAnalysis(
@@ -64,7 +67,6 @@ async function checkIsMetaAnalysis(
     abstract: dataset.abstract!,
     dataDescription,
     datasetId: dataset.id,
-    dryadDatasetId: dataset.id,
   });
 
   return result.isMetaAnalysis;
@@ -92,7 +94,7 @@ program
       logger.info(
         "Reset option detected - resetting all non-failed analysis statuses to 'not_analyzed'...",
       );
-      const resetCount = await resetAnalysisStatusesExceptFailed();
+      const resetCount = await resetDryadAnalysisStatusesExceptFailed();
       logger.info(
         `Reset ${resetCount} dataset(s) from completed analysis states back to 'not_analyzed'`,
       );
@@ -105,7 +107,7 @@ program
     if (options.extId) {
       const datasets: DryadDatasetWithFiles[] = [];
       for (const extId of options.extId) {
-        const dataset = await getDatasetWithFiles(extId);
+        const dataset = await getDryadDatasetByExtId(extId);
         if (!dataset) {
           logger.error(`Dataset with extId ${extId} not found.`);
           process.exit(1);
@@ -116,11 +118,11 @@ program
     } else {
       // Get datasets that have been downloaded but not yet analyzed
       downloadedDatasets = (
-        await getDownloadedNotAnalyzedDatasetsWithFiles()
+        await getDownloadedNotAnalyzedDryadDatasetsWithFiles()
       ).toSorted((a, b) => {
         return (
-          new Date(b.dryadPublicationDate).getTime() -
-          new Date(a.dryadPublicationDate).getTime()
+          new Date(b.publicationDate).getTime() -
+          new Date(a.publicationDate).getTime()
         );
       });
     }
@@ -135,11 +137,12 @@ program
 
     // For each dataset, log the journal name, journal score and title
     for (const dataset of downloadedDatasets.slice(0, numDatasetsToAnalyze)) {
+      const numericExtId = dataset.dryadDetails.extIdNumeric;
       const journal = dataset.journalIssn
         ? journalByIssn.get(formatIssn(dataset.journalIssn))
         : null;
       logger.info(
-        `[${dataset.extId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.dryadPublicationDate}`,
+        `[${numericExtId}] ${journal?.title} (${journal?.sjrScore}) - "${dataset.title}" - ${dataset.publicationDate}`,
       );
     }
 
@@ -156,26 +159,30 @@ program
     await pMap(
       downloadedDatasets.slice(0, numDatasetsToAnalyze),
       async (dataset, i) => {
+        const numericExtId = dataset.dryadDetails.extIdNumeric;
+        const excelFiles = dataset.dataFiles.filter(
+          (f) => f.fileType === "excel",
+        );
         logger.info(
-          `[${i}] Analyzing dataset ${dataset.extId} from ${dataset.dryadPublicationDate} with ${dataset.excelFiles.length} Excel files ("${dataset.title}")`,
+          `[${i}] Analyzing dataset ${numericExtId} from ${dataset.publicationDate} with ${excelFiles.length} Excel files ("${dataset.title}")`,
         );
 
         // Check if this is a meta-analysis and skip if so
         try {
           const isMetaAnalysis = await checkIsMetaAnalysis(dataset);
           if (isMetaAnalysis) {
-            await updateDatasetIsMetaAnalysis(dataset.extId, true);
+            await updateDryadDatasetIsMetaAnalysis(numericExtId, true);
             statusCounts.meta_analysis++;
             logger.info(
-              `[${i}] Dataset ${dataset.extId} classified as meta-analysis - skipping.`,
+              `[${i}] Dataset ${numericExtId} classified as meta-analysis - skipping.`,
             );
             return;
           } else {
-            await updateDatasetIsMetaAnalysis(dataset.extId, false);
+            await updateDryadDatasetIsMetaAnalysis(numericExtId, false);
           }
         } catch (error) {
           logger.error(
-            `[${i}] Error checking meta-analysis for dataset ${dataset.extId}: ${error}`,
+            `[${i}] Error checking meta-analysis for dataset ${numericExtId}: ${error}`,
           );
           // Continue with analysis if meta-analysis check fails
         }
@@ -185,10 +192,10 @@ program
 
         for (
           let j = 0;
-          j < Math.min(dataset.excelFiles.length, maxExcelFilesPerDataset);
+          j < Math.min(excelFiles.length, maxExcelFilesPerDataset);
           j++
         ) {
-          const excelFile = dataset.excelFiles[j];
+          const excelFile = excelFiles[j];
           if (excelFile.downloadStatus !== "completed") {
             logger.info(
               `[${i}] Skipping file ${j} (${excelFile.filename}) - not downloaded`,
@@ -205,18 +212,18 @@ program
         try {
           // Analyze all files in the dataset together
           logger.debug(
-            `[i=${i}] Analyzing dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`,
+            `[i=${i}] Analyzing dataset extId=${numericExtId} with ${excelFilesData.length} Excel files`,
           );
           const allStrategies = Object.values(StrategyName);
           const { analyses, wasFlaggedForReview, aiReviewCompleted } =
             await analyzeDataset(excelFilesData, allStrategies);
           logger.debug(
-            `[i=${i}] Analyzed dataset extId=${dataset.extId} with ${excelFilesData.length} Excel files`,
+            `[i=${i}] Analyzed dataset extId=${numericExtId} with ${excelFilesData.length} Excel files`,
           );
           // Save results from each analysis to JSON (backward compatibility)
           // Protect JSON file writes with mutex
           await dbMutex.withLock(async () => {
-            analysisResultsDb.data.results[dataset.extId] = {};
+            analysisResultsDb.data.results[numericExtId] = {};
             for (const analysis of analyses) {
               const duplicateRows =
                 analysis.results[StrategyName.DuplicateRows]?.duplicateRows ||
@@ -237,54 +244,57 @@ program
                 columnSequencesEntropyScores,
                 analysisVersion: "2025.07.04",
               };
-              analysisResultsDb.data.results[dataset.extId][
+              analysisResultsDb.data.results[numericExtId][
                 analysis.excelFileName
               ] = analysisResults;
               logger.info(
-                `[i=${i}] Finished analyzing excel file '${analysis.excelFileName}' belonging to ${dataset.extId}.`,
+                `[i=${i}] Finished analyzing excel file '${analysis.excelFileName}' belonging to ${numericExtId}.`,
               );
             }
 
             await analysisResultsDb.write();
           });
           logger.debug(
-            `[${i}] Saved analysis results for dataset extId=${dataset.extId}`,
+            `[${i}] Saved analysis results for dataset extId=${numericExtId}`,
           );
 
           // Update analysis status based on the result (SQL updates are safe without mutex)
           if (!wasFlaggedForReview) {
-            await updateDatasetAnalysisStatus(
-              dataset.extId,
+            await updateDryadDatasetAnalysisStatus(
+              numericExtId,
               "not_flagged_for_review",
             );
             statusCounts.not_flagged_for_review++;
             logger.info(
-              `[${i}] Dataset ${dataset.extId} analyzed - no suspicious findings requiring AI review.`,
+              `[${i}] Dataset ${numericExtId} analyzed - no suspicious findings requiring AI review.`,
             );
           } else if (aiReviewCompleted) {
-            await updateDatasetAnalysisStatus(dataset.extId, "reviewed_by_ai");
+            await updateDryadDatasetAnalysisStatus(
+              numericExtId,
+              "reviewed_by_ai",
+            );
             statusCounts.reviewed_by_ai++;
             logger.info(
-              `[${i}] Dataset ${dataset.extId} analyzed and AI review completed.`,
+              `[${i}] Dataset ${numericExtId} analyzed and AI review completed.`,
             );
           } else {
             // Was flagged but AI review didn't complete (shouldn't happen normally)
-            await updateDatasetAnalysisStatus(
-              dataset.extId,
+            await updateDryadDatasetAnalysisStatus(
+              numericExtId,
               "flagged_for_review",
             );
             statusCounts.flagged_for_review++;
             logger.info(
-              `[${i}] Dataset ${dataset.extId} flagged for AI review but review incomplete.`,
+              `[${i}] Dataset ${numericExtId} flagged for AI review but review incomplete.`,
             );
           }
         } catch (error) {
           logger.error(
-            `[i=${i}] Error analyzing dataset extId=${dataset.extId}: ${error}`,
+            `[i=${i}] Error analyzing dataset extId=${numericExtId}: ${error}`,
           );
-          await updateDatasetAnalysisStatus(dataset.extId, "failed");
+          await updateDryadDatasetAnalysisStatus(numericExtId, "failed");
           statusCounts.failed++;
-          logger.info(`[i=${i}] Dataset ${dataset.extId} marked as failed.`);
+          logger.info(`[i=${i}] Dataset ${numericExtId} marked as failed.`);
         }
       },
       { concurrency: 5 },

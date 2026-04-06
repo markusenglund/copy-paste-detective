@@ -1,5 +1,5 @@
 import { Command } from "@commander-js/extra-typings";
-import { getAllExtIds } from "../repositories/datasets/datasetsRepository";
+import { getAllDryadExtIds } from "../repositories/datasets/unifiedDatasetsRepository";
 import {
   getLastPageIndexed,
   setLastPageIndexed,
@@ -18,7 +18,7 @@ program
   .version("0.1.0")
   .action(async () => {
     try {
-      const alreadyIndexedDatasetIds = await getAllExtIds();
+      const alreadyIndexedDatasetIds = await getAllDryadExtIds();
       const lastPageIndexed = await getLastPageIndexed();
 
       // Check how many pages we have left to index

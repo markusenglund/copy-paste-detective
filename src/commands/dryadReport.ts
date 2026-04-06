@@ -4,7 +4,7 @@ import {
   AiReviewResultRow,
   getLatestReviewsPerSheet,
 } from "../repositories/aiReviewResults/aiReviewResultsRepository";
-import { getDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/datasetsRepository";
+import { getDryadDatasetsByDownloadStatusWithFiles } from "../repositories/datasets/unifiedDatasetsRepository";
 import {
   getJournalsByIssnMap,
   formatIssn,
@@ -21,16 +21,22 @@ program
   .action(async () => {
     try {
       // Get all completed (downloaded) datasets
-      const completedDatasets = await getDatasetsByDownloadStatusWithFiles(
+      const completedDatasets = await getDryadDatasetsByDownloadStatusWithFiles(
         "completed",
         10000,
       );
       const datasetByExtId = new Map(
-        completedDatasets.map((dataset) => [dataset.extId, dataset]),
+        completedDatasets.map((dataset) => [
+          dataset.dryadDetails.extIdNumeric,
+          dataset,
+        ]),
       );
       // Map internal dataset ID to extId for AI review lookups
       const extIdByInternalId = new Map(
-        completedDatasets.map((dataset) => [dataset.id, dataset.extId]),
+        completedDatasets.map((dataset) => [
+          dataset.id,
+          dataset.dryadDetails.extIdNumeric,
+        ]),
       );
 
       const journalByIssn = await getJournalsByIssnMap();

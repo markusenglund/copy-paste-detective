@@ -1,6 +1,6 @@
 import { db } from "../../db";
-import { dryadDatasets } from "../../repositories/datasets/schema";
-import { dryadExcelFiles } from "../../repositories/excelFiles/schema";
+import { datasets } from "../../repositories/datasets/unifiedSchema";
+import { datasetFiles } from "../../repositories/datasetFiles/schema";
 import { articles } from "../../repositories/articles/schema";
 import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
@@ -19,8 +19,14 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   // 1. Get basic counts in parallel
   const [totalDatasetsResult, totalExcelFilesResult, totalArticlesResult] =
     await Promise.all([
-      db.select({ count: sql<number>`count(*)::int` }).from(dryadDatasets),
-      db.select({ count: sql<number>`count(*)::int` }).from(dryadExcelFiles),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(datasets)
+        .where(eq(datasets.source, "dryad")),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(datasetFiles)
+        .where(eq(datasetFiles.source, "dryad")),
       db.select({ count: sql<number>`count(*)::int` }).from(articles),
     ]);
 
@@ -31,12 +37,13 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   // 2. Get download status breakdown (split completed by meta-analysis status)
   const downloadBreakdownResults = await db
     .select({
-      status: dryadDatasets.downloadStatus,
-      isMetaAnalysis: dryadDatasets.isMetaAnalysis,
+      status: datasets.downloadStatus,
+      isMetaAnalysis: datasets.isMetaAnalysis,
       count: sql<number>`count(*)::int`,
     })
-    .from(dryadDatasets)
-    .groupBy(dryadDatasets.downloadStatus, dryadDatasets.isMetaAnalysis);
+    .from(datasets)
+    .where(eq(datasets.source, "dryad"))
+    .groupBy(datasets.downloadStatus, datasets.isMetaAnalysis);
 
   let completedNonMeta = 0;
   let completedMeta = 0;
@@ -79,17 +86,18 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   // 3. Get analysis status breakdown (only from downloaded datasets)
   const analysisBreakdownResults = await db
     .select({
-      status: dryadDatasets.analysisStatus,
+      status: datasets.analysisStatus,
       count: sql<number>`count(*)::int`,
     })
-    .from(dryadDatasets)
+    .from(datasets)
     .where(
       and(
-        eq(dryadDatasets.downloadStatus, "completed"),
-        sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`,
+        eq(datasets.source, "dryad"),
+        eq(datasets.downloadStatus, "completed"),
+        sql`${datasets.isMetaAnalysis} IS NOT TRUE`,
       ),
     )
-    .groupBy(dryadDatasets.analysisStatus);
+    .groupBy(datasets.analysisStatus);
 
   const analysisStatusMap = new Map(
     analysisBreakdownResults.map((r) => [r.status, r.count]),
@@ -117,16 +125,14 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   // 4. Step 3: AI Review Status (excluding meta-analysis datasets)
   // Find all datasets with at least one non-obsolete ai_review_result
   const allReviewedDatasetsResult = await db
-    .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
+    .selectDistinct({ datasetId: aiReviewResults.datasetId })
     .from(aiReviewResults)
-    .innerJoin(
-      dryadDatasets,
-      eq(dryadDatasets.id, aiReviewResults.dryadDatasetId),
-    )
+    .innerJoin(datasets, eq(datasets.id, aiReviewResults.datasetId))
     .where(
       and(
+        eq(datasets.source, "dryad"),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-        sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`,
+        sql`${datasets.isMetaAnalysis} IS NOT TRUE`,
       ),
     );
 
@@ -137,18 +143,16 @@ export async function getStatistics(): Promise<StatisticsResponse> {
 
   // Find datasets with suspicious reviews (>50%) - only considering latest review per sheet
   const suspiciousDatasetIdsResult = await db
-    .selectDistinct({ datasetId: aiReviewResults.dryadDatasetId })
+    .selectDistinct({ datasetId: aiReviewResults.datasetId })
     .from(aiReviewResults)
-    .innerJoin(
-      dryadDatasets,
-      eq(dryadDatasets.id, aiReviewResults.dryadDatasetId),
-    )
+    .innerJoin(datasets, eq(datasets.id, aiReviewResults.datasetId))
     .where(
       and(
+        eq(datasets.source, "dryad"),
         eq(aiReviewResults.isLatestReview, true),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
         gt(aiReviewResults.truePositiveProbability, SUSPICION_THRESHOLD),
-        sql`${dryadDatasets.isMetaAnalysis} IS NOT TRUE`,
+        sql`${datasets.isMetaAnalysis} IS NOT TRUE`,
       ),
     );
 
@@ -181,13 +185,12 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   if (totalSuspicious > 0) {
     // Count suspicious datasets with NO article at all
     const withoutArticleResult = await db
-      .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
-      .from(dryadDatasets)
-      .leftJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
+      .select({ count: sql<number>`count(distinct ${datasets.id})::int` })
+      .from(datasets)
       .where(
         and(
-          inArray(dryadDatasets.id, suspiciousDatasetIds),
-          sql`${articles.id} IS NULL`,
+          inArray(datasets.id, suspiciousDatasetIds),
+          sql`${datasets.articleId} IS NULL`,
         ),
       );
 
@@ -195,13 +198,13 @@ export async function getStatistics(): Promise<StatisticsResponse> {
 
     // Count suspicious datasets with article but no PDF
     const withArticleNoPdfResult = await db
-      .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
-      .from(dryadDatasets)
-      .innerJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
+      .select({ count: sql<number>`count(distinct ${datasets.id})::int` })
+      .from(datasets)
+      .innerJoin(articles, eq(datasets.articleId, articles.id))
       .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
       .where(
         and(
-          inArray(dryadDatasets.id, suspiciousDatasetIds),
+          inArray(datasets.id, suspiciousDatasetIds),
           sql`${pdfFiles.id} IS NULL`,
         ),
       );
@@ -210,13 +213,13 @@ export async function getStatistics(): Promise<StatisticsResponse> {
 
     // Count suspicious datasets with PDF but at least one latest review without PDF review
     const withPdfNoReviewResult = await db
-      .select({ count: sql<number>`count(distinct ${dryadDatasets.id})::int` })
-      .from(dryadDatasets)
-      .innerJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
+      .select({ count: sql<number>`count(distinct ${datasets.id})::int` })
+      .from(datasets)
+      .innerJoin(articles, eq(datasets.articleId, articles.id))
       .innerJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
       .where(
         and(
-          inArray(dryadDatasets.id, suspiciousDatasetIds),
+          inArray(datasets.id, suspiciousDatasetIds),
           // At least one latest review for this dataset has no PDF review
           sql`EXISTS (
             SELECT 1
@@ -225,7 +228,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
               pdfr.ai_review_result_id = arr.id
               AND pdfr.created_at >= ${PDF_REVIEW_MIN_DATE}
             )
-            WHERE arr.dryad_dataset_id = dryad_datasets.id
+            WHERE arr.dataset_id = ${datasets.id}
               AND arr.is_latest_review = true
               AND arr.true_positive_probability > ${SUSPICION_THRESHOLD}
               AND arr.created_at > ${AI_REVIEW_MIN_DATE}
@@ -241,22 +244,19 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     // For each dataset, take the MAXIMUM impact score across all its latest reviews
     const impactBreakdownResult = await db
       .select({
-        datasetId: dryadDatasets.id,
+        datasetId: datasets.id,
         maxImpact: sql<number>`MAX(${aiPdfReviewResults.impactScore})::int`,
       })
-      .from(dryadDatasets)
-      .innerJoin(articles, eq(articles.dryadDatasetId, dryadDatasets.id))
-      .innerJoin(
-        aiReviewResults,
-        eq(aiReviewResults.dryadDatasetId, dryadDatasets.id),
-      )
+      .from(datasets)
+      .innerJoin(articles, eq(datasets.articleId, articles.id))
+      .innerJoin(aiReviewResults, eq(aiReviewResults.datasetId, datasets.id))
       .innerJoin(
         aiPdfReviewResults,
         eq(aiPdfReviewResults.aiReviewResultId, aiReviewResults.id),
       )
       .where(
         and(
-          inArray(dryadDatasets.id, suspiciousDatasetIds),
+          inArray(datasets.id, suspiciousDatasetIds),
           inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
           eq(aiReviewResults.isLatestReview, true),
           gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
@@ -270,7 +270,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
               pdfr2.ai_review_result_id = arr2.id
               AND pdfr2.created_at >= ${PDF_REVIEW_MIN_DATE}
             )
-            WHERE arr2.dryad_dataset_id = ${dryadDatasets.id}
+            WHERE arr2.dataset_id = ${datasets.id}
               AND arr2.is_latest_review = true
               AND arr2.true_positive_probability > ${SUSPICION_THRESHOLD}
               AND arr2.created_at > ${AI_REVIEW_MIN_DATE}
@@ -278,7 +278,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
           )`,
         ),
       )
-      .groupBy(dryadDatasets.id);
+      .groupBy(datasets.id);
 
     // Split by impact score
     const highImpactDatasets = impactBreakdownResult.filter(

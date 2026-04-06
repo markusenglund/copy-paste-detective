@@ -3,7 +3,7 @@ import path from "path";
 import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { DryadExcelFileData } from "../types/ExcelFileData";
-import { DryadDatasetWithFiles } from "../repositories/datasets/datasetsRepository";
+import { DryadDatasetWithFiles } from "../repositories/datasets/unifiedDatasetsRepository";
 import {
   maxNumRowsToAnalyze,
   maxSheetsPerExcelFile,
@@ -17,14 +17,17 @@ export function loadExcelFileFromDryadIndex(
   dataset: DryadDatasetWithFiles,
   fileIndex: number = 0,
 ): DryadExcelFileData {
+  const excelFiles = dataset.dataFiles.filter((f) => f.fileType === "excel");
   // Validate file index range
-  if (fileIndex >= dataset.excelFiles.length) {
+  if (fileIndex >= excelFiles.length) {
     throw new Error(
-      `Invalid file index: ${fileIndex}. Available files: 0-${dataset.excelFiles.length - 1}`,
+      `Invalid file index: ${fileIndex}. Available files: 0-${excelFiles.length - 1}`,
     );
   }
-  const datasetFolder = storagePaths.dryadDataset(dataset.extId);
-  const selectedFile = dataset.excelFiles[fileIndex];
+  const datasetFolder = storagePaths.dryadDataset(
+    dataset.dryadDetails.extIdNumeric,
+  );
+  const selectedFile = excelFiles[fileIndex];
   const excelPath = path.join(datasetFolder, selectedFile.filename);
   const workbook = xlsx.readFile(excelPath, {
     sheetRows: maxNumRowsToAnalyze,
@@ -48,22 +51,23 @@ export function loadExcelFileFromDryadIndex(
     }
   });
   let dataDescription: string | undefined;
-  if (dataset.readmeFile) {
-    const readmePath = path.join(datasetFolder, dataset.readmeFile.filename);
+  const readmeFile = dataset.dataFiles.find((f) => f.fileType === "readme");
+  if (readmeFile) {
+    const readmePath = path.join(datasetFolder, readmeFile.filename);
     try {
       dataDescription = readTextFile(readmePath);
     } catch (err) {
       logger.error(
-        `Failed to read README file for dataset ${dataset.extId}: ${err.message}`,
+        `Failed to read README file for dataset ${dataset.dryadDetails.extIdNumeric}: ${err.message}`,
       );
     }
   }
-  if (!dataDescription && dataset.usageNotes) {
-    dataDescription = dataset.usageNotes;
+  if (!dataDescription && dataset.dryadDetails.usageNotes) {
+    dataDescription = dataset.dryadDetails.usageNotes;
   }
   if (!dataDescription) {
     logger.warn(
-      `Dataset ${dataset.extId} has no README or usage notes available, continuing without it.`,
+      `Dataset ${dataset.dryadDetails.extIdNumeric} has no README or usage notes available, continuing without it.`,
     );
   }
 
@@ -75,10 +79,8 @@ export function loadExcelFileFromDryadIndex(
     articleName: dataset.title,
     dataDescription,
     abstract: dataset.abstract ?? undefined,
-    extId: String(dataset.extId),
+    extId: String(dataset.dryadDetails.extIdNumeric),
     datasetId: dataset.id,
     datasetFileId: selectedFile.id,
-    dryadDatasetId: dataset.id,
-    dryadExcelFileId: selectedFile.id,
   };
 }
