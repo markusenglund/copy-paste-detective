@@ -6,14 +6,10 @@ import {
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { dryadDatasets } from "../datasets/schema";
 import { datasets } from "../datasets/unifiedSchema";
 
 export const aiMetaAnalysisResults = pgTable("ai_meta_analysis_results", {
   id: serial("id").primaryKey(),
-  dryadDatasetId: integer("dryad_dataset_id").references(
-    () => dryadDatasets.id,
-  ),
   datasetId: integer("dataset_id").references(() => datasets.id, {
     onDelete: "cascade",
   }),

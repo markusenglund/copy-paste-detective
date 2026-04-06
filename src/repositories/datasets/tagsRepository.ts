@@ -1,6 +1,6 @@
 import { eq, and, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { tags, datasetTags } from "./schema";
+import { tags, datasetTags } from "./tagsSchema";
 
 export type TagRow = typeof tags.$inferSelect;
 

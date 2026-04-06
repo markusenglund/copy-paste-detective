@@ -260,6 +260,13 @@
       "when": 1775479387313,
       "tag": "0037_hot_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1775500821900,
+      "tag": "0038_fresh_hiroim",
+      "breakpoints": true
     }
   ]
 }

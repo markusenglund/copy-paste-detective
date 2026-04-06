@@ -10,7 +10,6 @@ import {
   timestamp,
   unique,
 } from "drizzle-orm/pg-core";
-import { dryadDatasets } from "../datasets/schema";
 import { journals } from "../journals/schema";
 import { authors } from "../authors/schema";
 import { funders } from "../funders/schema";
@@ -37,9 +36,6 @@ export const articles = pgTable(
     field: text("field"),
     subfield: text("subfield"),
     topic: text("topic"),
-    dryadDatasetId: integer("dryad_dataset_id").references(
-      () => dryadDatasets.id,
-    ),
     journalId: integer("journal_id").references(() => journals.id),
     createdTimestamp: timestamp("created_timestamp").notNull().defaultNow(),
     updatedTimestamp: timestamp("updated_timestamp").notNull().defaultNow(),
@@ -50,7 +46,6 @@ export const articles = pgTable(
     index("idx_articles_citation_percentile").on(
       table.citationNormalizedPercentile,
     ),
-    index("idx_articles_dryad_dataset_id").on(table.dryadDatasetId),
     index("idx_articles_journal_id").on(table.journalId),
     index("idx_articles_field").on(table.field),
   ],

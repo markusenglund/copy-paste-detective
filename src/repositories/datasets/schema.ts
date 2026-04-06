@@ -10,6 +10,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { analysisStatusEnum, downloadStatusEnum } from "../../db/shared/enums";
+import { datasets } from "./unifiedSchema";
 
 export const dryadDatasets = pgTable("dryad_datasets", {
   id: serial("id").primaryKey(),
@@ -47,7 +48,7 @@ export const datasetTags = pgTable(
     id: serial("id").primaryKey(),
     datasetId: integer("dataset_id")
       .notNull()
-      .references(() => dryadDatasets.id),
+      .references(() => datasets.id),
     tagId: text("tag_id")
       .notNull()
       .references(() => tags.id),

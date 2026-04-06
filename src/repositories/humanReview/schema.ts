@@ -10,7 +10,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { dryadDatasets } from "../datasets/schema";
+import { datasets } from "../datasets/unifiedSchema";
 import { users } from "../users/schema";
 
 export const verdictEnum = pgEnum("verdict", [
@@ -23,9 +23,9 @@ export const humanReviews = pgTable(
   "human_reviews",
   {
     id: serial("id").primaryKey(),
-    dryadDatasetId: integer("dryad_dataset_id")
+    datasetId: integer("dataset_id")
       .notNull()
-      .references(() => dryadDatasets.id),
+      .references(() => datasets.id),
     userId: integer("user_id")
       .notNull()
       .references(() => users.id),
@@ -37,13 +37,10 @@ export const humanReviews = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    index("idx_human_reviews_dryad_dataset_id").on(table.dryadDatasetId),
-    index("idx_human_reviews_latest_dataset")
-      .on(table.dryadDatasetId)
+    index("idx_human_reviews_dataset_id").on(table.datasetId),
+    index("idx_human_reviews_latest_dataset_unified")
+      .on(table.datasetId)
       .where(sql`${table.isLatestReview} = true`),
-    unique("uq_human_reviews_dataset_user").on(
-      table.dryadDatasetId,
-      table.userId,
-    ),
+    unique("uq_human_reviews_dataset_user").on(table.datasetId, table.userId),
   ],
 );

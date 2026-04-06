@@ -29,7 +29,7 @@ import {
 } from "../aiReviewResults/aiReviewResultsRepository";
 import { datasets } from "../datasets/unifiedSchema";
 import { dryadDatasetDetails } from "../datasets/dryadDetailsSchema";
-import { datasetTags, tags } from "../datasets/schema";
+import { datasetTags, tags } from "../datasets/tagsSchema";
 import { pdfFiles } from "../pdfFiles/schema";
 import { humanReviews } from "../humanReview/schema";
 import { journals } from "../journals/schema";
@@ -150,7 +150,7 @@ export async function getArticlesForPdfDownload(
         field: articles.field,
         subfield: articles.subfield,
         topic: articles.topic,
-        dryadDatasetId: articles.dryadDatasetId,
+
         journalId: articles.journalId,
         createdTimestamp: articles.createdTimestamp,
         updatedTimestamp: articles.updatedTimestamp,
@@ -185,7 +185,6 @@ export async function getArticlesForPdfDownload(
       field: articles.field,
       subfield: articles.subfield,
       topic: articles.topic,
-      dryadDatasetId: articles.dryadDatasetId,
       journalId: articles.journalId,
       createdTimestamp: articles.createdTimestamp,
       updatedTimestamp: articles.updatedTimestamp,
@@ -414,7 +413,7 @@ export async function getDashboardArticles(
     .leftJoin(
       humanReviews,
       and(
-        eq(humanReviews.dryadDatasetId, datasets.id),
+        eq(humanReviews.datasetId, datasets.id),
         eq(humanReviews.isLatestReview, true),
       ),
     )

@@ -301,7 +301,7 @@ export async function getStatistics(): Promise<StatisticsResponse> {
         .from(humanReviews)
         .where(
           and(
-            inArray(humanReviews.dryadDatasetId, highImpactDatasetIds),
+            inArray(humanReviews.datasetId, highImpactDatasetIds),
             eq(humanReviews.isLatestReview, true),
           ),
         );

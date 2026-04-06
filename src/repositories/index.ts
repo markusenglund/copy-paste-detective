@@ -22,7 +22,8 @@ export { aiColumnCategorizationResults } from "./aiColumnCategorizationResults/s
 export { aiReviewResults } from "./aiReviewResults/schema";
 export { aiMetaAnalysisResults } from "./aiMetaAnalysisResults/schema";
 export { aiPdfReviewResults } from "./aiPdfReviewResults/schema";
-export { dryadDatasets, tags, datasetTags } from "./datasets/schema";
+export { tags, datasetTags } from "./datasets/tagsSchema";
+export { dryadDatasets } from "./datasets/schema";
 export { dryadExcelFiles } from "./excelFiles/schema";
 export { dryadReadmeFiles } from "./readmeFiles/schema";
 export { dryadIndexingState } from "./indexingState/schema";

@@ -10,8 +10,6 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { dryadDatasets } from "../datasets/schema";
-import { dryadExcelFiles } from "../excelFiles/schema";
 import { datasets } from "../datasets/unifiedSchema";
 import { datasetFiles } from "../datasetFiles/schema";
 
@@ -19,12 +17,6 @@ export const aiReviewResults = pgTable(
   "ai_review_results",
   {
     id: serial("id").primaryKey(),
-    dryadDatasetId: integer("dryad_dataset_id").references(
-      () => dryadDatasets.id,
-    ),
-    dryadExcelFileId: integer("dryad_excel_file_id").references(
-      () => dryadExcelFiles.id,
-    ),
     sheetName: text("sheet_name").notNull(),
     prompt: text("prompt").notNull(),
     model: text("model").notNull(),
@@ -46,8 +38,10 @@ export const aiReviewResults = pgTable(
   },
   (table) => ({
     // THE CRITICAL UNIQUE CONSTRAINT - prevents multiple latest reviews per sheet
-    latestPerSheetIdx: uniqueIndex("ai_review_results_latest_per_sheet_idx")
-      .on(table.dryadExcelFileId, table.sheetName)
+    latestPerSheetIdx: uniqueIndex(
+      "ai_review_results_latest_per_sheet_unified_idx",
+    )
+      .on(table.datasetFileId, table.sheetName)
       .where(sql`${table.isLatestReview} = true`),
 
     // Regular index for fast filtering
@@ -55,8 +49,8 @@ export const aiReviewResults = pgTable(
       .on(table.isLatestReview)
       .where(sql`${table.isLatestReview} = true`),
 
-    latestByDatasetIdx: index("idx_ai_review_results_latest_dataset")
-      .on(table.dryadDatasetId)
+    latestByDatasetIdx: index("idx_ai_review_results_latest_dataset_unified")
+      .on(table.datasetId)
       .where(sql`${table.isLatestReview} = true`),
   }),
 );

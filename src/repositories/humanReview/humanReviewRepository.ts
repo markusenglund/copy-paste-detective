@@ -16,12 +16,12 @@ export async function upsertHumanReview(data: {
     await tx
       .update(humanReviews)
       .set({ isLatestReview: false })
-      .where(eq(humanReviews.dryadDatasetId, data.datasetId));
+      .where(eq(humanReviews.datasetId, data.datasetId));
 
     const [result] = await tx
       .insert(humanReviews)
       .values({
-        dryadDatasetId: data.datasetId,
+        datasetId: data.datasetId,
         userId: data.userId,
         isLatestReview: true,
         verdict: data.verdict,
@@ -29,7 +29,7 @@ export async function upsertHumanReview(data: {
         notes: data.notes,
       })
       .onConflictDoUpdate({
-        target: [humanReviews.dryadDatasetId, humanReviews.userId],
+        target: [humanReviews.datasetId, humanReviews.userId],
         set: {
           verdict: data.verdict,
           impactScore: data.impactScore,
@@ -69,6 +69,6 @@ export async function getReviewsForDataset(
     })
     .from(humanReviews)
     .innerJoin(users, eq(users.id, humanReviews.userId))
-    .where(eq(humanReviews.dryadDatasetId, datasetId))
+    .where(eq(humanReviews.datasetId, datasetId))
     .orderBy(desc(humanReviews.updatedAt));
 }

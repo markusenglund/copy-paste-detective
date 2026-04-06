@@ -50,7 +50,7 @@ export async function insertResult(data: {
         .set({ isLatestReview: false })
         .where(
           and(
-            eq(aiReviewResults.dryadExcelFileId, data.datasetFileId),
+            eq(aiReviewResults.datasetFileId, data.datasetFileId),
             eq(aiReviewResults.sheetName, data.sheetName),
             eq(aiReviewResults.isLatestReview, true),
           ),
@@ -94,7 +94,7 @@ export async function getLatestReviewsPerSheet(): Promise<
   // Group latest reviews by datasetId (skip reviews without one)
   const reviewsByDatasetId = new Map<number, AiReviewResultRow[]>();
   for (const review of latestReviews) {
-    const id = review.datasetId ?? review.dryadDatasetId;
+    const id = review.datasetId;
     if (id == null) continue;
     const existing = reviewsByDatasetId.get(id) ?? [];
     existing.push(review);
