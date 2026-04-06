@@ -39,8 +39,6 @@ export { institutions } from "./institutions/schema";
 export { pdfFiles } from "./pdfFiles/schema";
 export { verdictEnum, humanReviews } from "./humanReview/schema";
 export { users } from "./users/schema";
-export { pmcDatasets } from "./pmcDatasets/schema";
-export { pmcDataFiles } from "./pmcDataFiles/schema";
 export { pmcIndexingState } from "./pmcIndexingState/schema";
 
 // Unified tables

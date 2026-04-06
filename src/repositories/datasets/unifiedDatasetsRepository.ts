@@ -435,3 +435,11 @@ export async function getPmcDatasetFileS3Url(
     .limit(1);
   return detail?.s3Url;
 }
+
+export async function getAllExtPmcIds(): Promise<Set<string>> {
+  const result = await db
+    .select({ extId: datasets.extId })
+    .from(datasets)
+    .where(eq(datasets.source, "pmc"));
+  return new Set(result.map((r) => r.extId));
+}

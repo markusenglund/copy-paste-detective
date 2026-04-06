@@ -1,7 +1,7 @@
 import { Command } from "@commander-js/extra-typings";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
-import { getAllExtPmcIds } from "../repositories/pmcDatasets/pmcDatasetsRepository";
+import { getAllExtPmcIds } from "../repositories/datasets/unifiedDatasetsRepository";
 import {
   getLastCursorMark,
   setLastCursorMark,
