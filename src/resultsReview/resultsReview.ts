@@ -148,11 +148,14 @@ const createPrompt = (
     categorizedColumns,
     numOccurrencesByNumericValue,
   } = promptInput;
+  const shouldIncludeAbstractSection =
+    !!excelFileData.abstract &&
+    !(excelFileData.source === "pmc" && !!excelFileData.fullText);
 
   return (
     createIntroduction() +
     createBasicInfoSection(excelFileData, sheet) +
-    createAbstractSection(excelFileData) +
+    (shouldIncludeAbstractSection ? createAbstractSection(excelFileData) : "") +
     createContextSection(excelFileData) +
     createSpecialColumnsSection(categorizedColumns) +
     createDataSection(sheet) +
@@ -220,7 +223,7 @@ ${wrapInCodeBlock(truncatedDataDescription)}
     const parts: string[] = [];
     if (excelFileData.fileCaption) {
       parts.push(
-        `The following caption was provided for this data file: "${excelFileData.fileCaption}"`,
+        `The following caption was provided for this data file:\n\n${wrapInCodeBlock(excelFileData.fileCaption)}`,
       );
     }
     if (excelFileData.fullText) {
