@@ -184,6 +184,7 @@ export async function upsertPmcDataset(data: {
   fullPdfUrl: string | null;
   textUrl: string | null;
   xmlUrl: string | null;
+  fullText2: string | null;
   supplementalFileUrls: string[] | null;
   isMetaAnalysis: boolean | null;
 }): Promise<{ dataset: DatasetRow; isNew: boolean }> {
@@ -228,6 +229,7 @@ export async function upsertPmcDataset(data: {
         fullPdfUrl: data.fullPdfUrl,
         textUrl: data.textUrl,
         xmlUrl: data.xmlUrl,
+        fullText2: data.fullText2,
         supplementalFileUrls: data.supplementalFileUrls,
       })
       .onConflictDoUpdate({
@@ -242,6 +244,7 @@ export async function upsertPmcDataset(data: {
           fullPdfUrl: data.fullPdfUrl,
           textUrl: data.textUrl,
           xmlUrl: data.xmlUrl,
+          fullText2: data.fullText2,
           supplementalFileUrls: data.supplementalFileUrls,
         },
       });
@@ -465,6 +468,16 @@ export async function updatePmcDatasetFullText(
   await db
     .update(pmcDatasetDetails)
     .set({ fullText })
+    .where(eq(pmcDatasetDetails.datasetId, datasetId));
+}
+
+export async function updatePmcDatasetFullText2(
+  datasetId: number,
+  fullText2: string,
+): Promise<void> {
+  await db
+    .update(pmcDatasetDetails)
+    .set({ fullText2 })
     .where(eq(pmcDatasetDetails.datasetId, datasetId));
 }
 

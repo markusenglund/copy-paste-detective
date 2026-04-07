@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { s3Fetch } from "./pmcFetch";
+import { extractTokenEfficientTextFromJatsXml } from "./extractTokenEfficientTextFromJatsXml";
 import {
   S3Metadata,
   S3MetadataSchema,
@@ -377,4 +378,40 @@ export async function getSupplementaryCaptions(
     logger.warn(`No supplementary captions found in ${url}`);
   }
   return captions;
+}
+
+export type PmcXmlDerivedContent = {
+  captions: Map<string, string>;
+  fullText2: string | null;
+};
+
+export async function getPmcXmlDerivedContent(
+  xmlS3Url: string,
+): Promise<PmcXmlDerivedContent> {
+  const url = s3UrlToHttps(xmlS3Url);
+
+  let response: Response;
+  try {
+    response = await s3FetchWithRetry(url);
+  } catch (error) {
+    logger.warn(`Failed to fetch XML for derived content ${url} - ${error}`);
+    return { captions: new Map(), fullText2: null };
+  }
+
+  if (!response.ok) {
+    logger.warn(
+      `XML fetch returned ${response.status} ${response.statusText} ${url}`,
+    );
+    return { captions: new Map(), fullText2: null };
+  }
+
+  const xml = await response.text();
+  const captions = extractCaptionsFromParsedXml(xml);
+  const fullText2 = extractTokenEfficientTextFromJatsXml(xml);
+
+  if (captions.size === 0) {
+    logger.warn(`No supplementary captions found in ${url}`);
+  }
+
+  return { captions, fullText2 };
 }

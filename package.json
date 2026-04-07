@@ -92,10 +92,13 @@
     "fast-xml-parser": "^5.5.10",
     "fastify": "^5.7.1",
     "iconv-lite": "^0.7.1",
+    "jats-convert": "^1.1.0",
+    "jats-xml": "^1.1.0",
     "jschardet": "^3.1.4",
     "lodash-es": "^4.17.21",
     "lowdb": "^7.0.1",
     "markdown-table": "^3.0.4",
+    "myst-to-md": "^1.0.16",
     "openai": "^4.0.0",
     "p-map": "^7.0.3",
     "p-mutex": "^0.1.0",
@@ -112,6 +115,7 @@
     "remark-gfm": "^4.0.1",
     "striptags": "^3.2.0",
     "undici": "^6.21.2",
+    "unist-util-remove": "^4.0.0",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   }

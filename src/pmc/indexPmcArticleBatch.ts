@@ -6,7 +6,7 @@ import {
   getFilenameFromS3Url,
   isExcelFile,
   getFileSize,
-  getSupplementaryCaptions,
+  getPmcXmlDerivedContent,
 } from "./getS3Metadata";
 import {
   upsertPmcDataset,
@@ -73,10 +73,15 @@ export async function indexPmcArticleBatch(
         (f): f is NonNullable<typeof f> => f !== null,
       );
 
-      // Fetch supplementary captions from XML (best-effort)
+      // Fetch derived content from XML once (best-effort)
       let captions = new Map<string, string>();
-      if (s3Metadata.xml_url && excelFiles.length > 0) {
-        captions = await getSupplementaryCaptions(s3Metadata.xml_url);
+      let fullText2: string | null = null;
+      if (s3Metadata.xml_url) {
+        const derivedContent = await getPmcXmlDerivedContent(
+          s3Metadata.xml_url,
+        );
+        captions = derivedContent.captions;
+        fullText2 = derivedContent.fullText2;
       }
 
       // Extract journal ISSN from core response
@@ -101,6 +106,7 @@ export async function indexPmcArticleBatch(
           : null,
         textUrl: s3Metadata.text_url ? s3UrlToHttps(s3Metadata.text_url) : null,
         xmlUrl: s3Metadata.xml_url ? s3UrlToHttps(s3Metadata.xml_url) : null,
+        fullText2,
         supplementalFileUrls:
           s3Metadata.media_urls.length > 0 ? s3Metadata.media_urls : null,
         isMetaAnalysis: null,

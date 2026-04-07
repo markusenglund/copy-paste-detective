@@ -267,6 +267,13 @@
       "when": 1775500821900,
       "tag": "0038_fresh_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1775568240753,
+      "tag": "0039_soft_speed",
+      "breakpoints": true
     }
   ]
 }
