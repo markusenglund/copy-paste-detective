@@ -274,6 +274,13 @@
       "when": 1775568240753,
       "tag": "0039_soft_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1775571783610,
+      "tag": "0040_sharp_jigsaw",
+      "breakpoints": true
     }
   ]
 }

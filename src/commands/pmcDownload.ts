@@ -9,11 +9,9 @@ import {
   updateDatasetFileDownloadStatus as updatePmcDataFileDownloadStatus,
   getPmcDatasetFileS3Url,
   insertPdfDatasetFile,
-  updatePmcDatasetFullText,
 } from "../repositories/datasets/unifiedDatasetsRepository";
 import { downloadPmcFile } from "../pmc/downloadPmcFile";
 import { s3UrlToHttps } from "../pmc/getS3Metadata";
-import { s3Fetch } from "../pmc/pmcFetch";
 import { parseIntArgument, parseExtPmcIds } from "../utils/command";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
@@ -99,8 +97,6 @@ program
       let totalSizeDownloaded = 0;
       let totalPdfsDownloaded = 0;
       let totalPdfsFailed = 0;
-      let totalFullTextsDownloaded = 0;
-      let totalFullTextsFailed = 0;
 
       for (let i = 0; i < datasetsToDownload.length; i++) {
         const dataset = datasetsToDownload[i];
@@ -162,28 +158,6 @@ program
           }
         }
 
-        // Download full text
-        const textUrl = dataset.pmcDetails?.textUrl;
-        if (textUrl) {
-          try {
-            const response = await s3Fetch(textUrl);
-            if (!response.ok) {
-              throw new Error(
-                `Failed to fetch full text: ${response.status} ${response.statusText}`,
-              );
-            }
-            const fullText = await response.text();
-            await updatePmcDatasetFullText(dataset.id, fullText);
-            totalFullTextsDownloaded += 1;
-            logger.info(`Downloaded full text for ${dataset.extId}`);
-          } catch (err) {
-            logger.error(
-              `Failed to download full text for ${dataset.extId}: ${err}`,
-            );
-            totalFullTextsFailed += 1;
-          }
-        }
-
         if (numFailedDownloads === dataset.dataFiles.length) {
           await updatePmcDatasetDownloadStatus(dataset.extId, "failed");
           totalDatasetsFailed += 1;
@@ -194,7 +168,7 @@ program
       }
 
       logger.info(
-        `\nSummary: ${totalDatasetsCompleted} datasets completed, ${totalDatasetsFailed} failed, ${totalDatasetsSkipped} skipped (all files > ${maxFileSize / 1_000_000}MB). ${totalFilesDownloaded} Excel files downloaded (${(totalSizeDownloaded / 1_000_000).toFixed(2)} MB), ${totalFilesFailed} failed. ${totalPdfsDownloaded} PDFs downloaded, ${totalPdfsFailed} failed. ${totalFullTextsDownloaded} full texts downloaded, ${totalFullTextsFailed} failed.`,
+        `\nSummary: ${totalDatasetsCompleted} datasets completed, ${totalDatasetsFailed} failed, ${totalDatasetsSkipped} skipped (all files > ${maxFileSize / 1_000_000}MB). ${totalFilesDownloaded} Excel files downloaded (${(totalSizeDownloaded / 1_000_000).toFixed(2)} MB), ${totalFilesFailed} failed. ${totalPdfsDownloaded} PDFs downloaded, ${totalPdfsFailed} failed.`,
       );
     } finally {
       await closeDb();

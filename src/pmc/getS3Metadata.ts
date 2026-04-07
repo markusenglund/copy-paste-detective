@@ -382,7 +382,7 @@ export async function getSupplementaryCaptions(
 
 export type PmcXmlDerivedContent = {
   captions: Map<string, string>;
-  fullText2: string | null;
+  fullText: string | null;
 };
 
 export async function getPmcXmlDerivedContent(
@@ -395,23 +395,23 @@ export async function getPmcXmlDerivedContent(
     response = await s3FetchWithRetry(url);
   } catch (error) {
     logger.warn(`Failed to fetch XML for derived content ${url} - ${error}`);
-    return { captions: new Map(), fullText2: null };
+    return { captions: new Map(), fullText: null };
   }
 
   if (!response.ok) {
     logger.warn(
       `XML fetch returned ${response.status} ${response.statusText} ${url}`,
     );
-    return { captions: new Map(), fullText2: null };
+    return { captions: new Map(), fullText: null };
   }
 
   const xml = await response.text();
   const captions = extractCaptionsFromParsedXml(xml);
-  const fullText2 = extractTokenEfficientTextFromJatsXml(xml);
+  const fullText = extractTokenEfficientTextFromJatsXml(xml);
 
   if (captions.size === 0) {
     logger.warn(`No supplementary captions found in ${url}`);
   }
 
-  return { captions, fullText2 };
+  return { captions, fullText };
 }

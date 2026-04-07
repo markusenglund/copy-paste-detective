@@ -47,12 +47,11 @@ export function extractTokenEfficientTextFromJatsXml(
     .use(mystToMd)
     .stringify(markdownTree as never);
 
-
   const markdown =
     typeof output === "object" &&
-      output !== null &&
-      "result" in output &&
-      typeof output.result === "string"
+    output !== null &&
+    "result" in output &&
+    typeof output.result === "string"
       ? output.result
       : String(output);
 

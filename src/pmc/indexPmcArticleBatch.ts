@@ -75,13 +75,13 @@ export async function indexPmcArticleBatch(
 
       // Fetch derived content from XML once (best-effort)
       let captions = new Map<string, string>();
-      let fullText2: string | null = null;
+      let fullText: string | null = null;
       if (s3Metadata.xml_url) {
         const derivedContent = await getPmcXmlDerivedContent(
           s3Metadata.xml_url,
         );
         captions = derivedContent.captions;
-        fullText2 = derivedContent.fullText2;
+        fullText = derivedContent.fullText;
       }
 
       // Extract journal ISSN from core response
@@ -106,7 +106,7 @@ export async function indexPmcArticleBatch(
           : null,
         textUrl: s3Metadata.text_url ? s3UrlToHttps(s3Metadata.text_url) : null,
         xmlUrl: s3Metadata.xml_url ? s3UrlToHttps(s3Metadata.xml_url) : null,
-        fullText2,
+        fullText,
         supplementalFileUrls:
           s3Metadata.media_urls.length > 0 ? s3Metadata.media_urls : null,
         isMetaAnalysis: null,

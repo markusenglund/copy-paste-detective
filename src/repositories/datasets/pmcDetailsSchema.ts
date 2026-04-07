@@ -16,6 +16,5 @@ export const pmcDatasetDetails = pgTable("pmc_dataset_details", {
   textUrl: text("text_url"),
   xmlUrl: text("xml_url"),
   fullText: text("full_text"),
-  fullText2: text("full_text_2"),
   supplementalFileUrls: text("supplemental_file_urls").array(),
 });
