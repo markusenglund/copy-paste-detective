@@ -26,24 +26,29 @@ export async function getArticleByTitle(
   });
 
   const url = `${apiUrlBase}/works?${searchQueryParams.toString()}`;
-  logger.debug(`Request to '${url}'`);
+  const safeParams = new URLSearchParams(searchQueryParams);
+  safeParams.delete("api_key");
+  const safeUrl = `${apiUrlBase}/works?${safeParams.toString()}`;
+  logger.debug(`Request to '${safeUrl}'`);
   const response = await fetch(url);
   if (!response.ok) {
     const responseText = await response.text();
     if (response.status === 500) {
       logger.error(
-        `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
+        `Failed to search article at '${safeUrl}' - ${response.status} ${response.statusText} - ${responseText}`,
       );
       return undefined;
     }
     throw new Error(
-      `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
+      `Failed to search article at '${safeUrl}' - ${response.status} ${response.statusText} - ${responseText}`,
     );
   }
   const data = await response.json();
   const zodResult = WorkSearchResultsSchema.safeParse(data);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url} - ${zodResult.error}`);
+    throw new Error(
+      `Zod validation failed for ${safeUrl} - ${zodResult.error}`,
+    );
   }
   const validated = zodResult.data;
   return validated.results[0];
@@ -64,24 +69,29 @@ export async function getArticleByAbstract(
     api_key: config.openAlexApiKey,
   });
   const url = `${apiUrlBase}/works?${searchQueryParams.toString()}`;
-  logger.debug(`Request to '${url}'`);
+  const safeParams = new URLSearchParams(searchQueryParams);
+  safeParams.delete("api_key");
+  const safeUrl = `${apiUrlBase}/works?${safeParams.toString()}`;
+  logger.debug(`Request to '${safeUrl}'`);
   const response = await fetch(url);
   if (!response.ok) {
     const responseText = await response.text();
     if (response.status === 500) {
       logger.error(
-        `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
+        `Failed to search article at '${safeUrl}' - ${response.status} ${response.statusText} - ${responseText}`,
       );
       return undefined;
     }
     throw new Error(
-      `Failed to search article at '${url}' - ${response.status} ${response.statusText} - ${responseText}`,
+      `Failed to search article at '${safeUrl}' - ${response.status} ${response.statusText} - ${responseText}`,
     );
   }
   const data = await response.json();
   const zodResult = WorkSearchResultsSchema.safeParse(data);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url} - ${zodResult.error}`);
+    throw new Error(
+      `Zod validation failed for ${safeUrl} - ${zodResult.error}`,
+    );
   }
   const validated = zodResult.data;
   return validated.results[0];
@@ -93,7 +103,8 @@ export async function getArticleByDoi(doi: string): Promise<Work | undefined> {
     api_key: config.openAlexApiKey,
   });
   const url = `${apiUrlBase}/works/${doi}?${searchQueryParams.toString()}`;
-  logger.debug(`Request to '${url}'`);
+  const safeUrl = `${apiUrlBase}/works/${doi}`;
+  logger.debug(`Request to '${safeUrl}'`);
   const response = await fetch(url);
   if (!response.ok) {
     if (response.status === 404) {
@@ -102,18 +113,20 @@ export async function getArticleByDoi(doi: string): Promise<Work | undefined> {
     const responseText = await response.text();
     if (response.status === 500) {
       logger.error(
-        `Failed to get article by DOI '${doi}' at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
+        `Failed to get article by DOI '${doi}' at '${safeUrl}': ${response.status} ${response.statusText} - ${responseText}`,
       );
       return undefined;
     }
     throw new Error(
-      `Failed to get article by DOI '${doi}' at '${url}': ${response.status} ${response.statusText} - ${responseText}`,
+      `Failed to get article by DOI '${doi}' at '${safeUrl}': ${response.status} ${response.statusText} - ${responseText}`,
     );
   }
   const data = await response.json();
   const zodResult = WorkSchema.safeParse(data);
   if (!zodResult.success) {
-    throw new Error(`Zod validation failed for ${url} - ${zodResult.error}`);
+    throw new Error(
+      `Zod validation failed for ${safeUrl} - ${zodResult.error}`,
+    );
   }
   const validated = zodResult.data;
   return validated;
