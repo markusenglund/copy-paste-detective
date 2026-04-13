@@ -19,14 +19,8 @@ export async function getStatistics(): Promise<StatisticsResponse> {
   // 1. Get basic counts in parallel
   const [totalDatasetsResult, totalExcelFilesResult, totalArticlesResult] =
     await Promise.all([
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(datasets)
-        .where(eq(datasets.source, "dryad")),
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(datasetFiles)
-        .where(eq(datasetFiles.source, "dryad")),
+      db.select({ count: sql<number>`count(*)::int` }).from(datasets),
+      db.select({ count: sql<number>`count(*)::int` }).from(datasetFiles),
       db.select({ count: sql<number>`count(*)::int` }).from(articles),
     ]);
 
@@ -42,7 +36,6 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       count: sql<number>`count(*)::int`,
     })
     .from(datasets)
-    .where(eq(datasets.source, "dryad"))
     .groupBy(datasets.downloadStatus, datasets.isMetaAnalysis);
 
   let completedNonMeta = 0;
@@ -92,7 +85,6 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     .from(datasets)
     .where(
       and(
-        eq(datasets.source, "dryad"),
         eq(datasets.downloadStatus, "completed"),
         sql`${datasets.isMetaAnalysis} IS NOT TRUE`,
       ),
