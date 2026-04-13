@@ -16,9 +16,10 @@ export interface ArticleForUpload {
   pdfFilename: string | null;
   pdfFileSize: number | null;
   datasetId: number | null;
-  extId: number | null;
+  extId: string | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
   humanReviewUpdatedAt: string | null;
+  source: "dryad" | "pmc" | null;
   tags: Array<{ id: string; name: string; color: string }>;
 }

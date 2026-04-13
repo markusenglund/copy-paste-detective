@@ -26,6 +26,8 @@ import {
   TagFilter,
   MetaAnalysisFilter,
   MetaAnalysisOption,
+  SourceFilter,
+  SourceOption,
 } from "../../shared/filterTypes";
 
 export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
@@ -169,6 +171,20 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
           option,
         };
         filters.push(metaAnalysisFilter);
+      }
+
+      const sourceParam = queryParams[`filter_${FILTER_KEYS.SOURCE}`];
+      if (sourceParam !== undefined) {
+        const validOptions: SourceOption[] = ["all", "dryad", "pmc"];
+        const option = validOptions.includes(sourceParam as SourceOption)
+          ? (sourceParam as SourceOption)
+          : "all";
+
+        const sourceFilter: SourceFilter = {
+          key: FILTER_KEYS.SOURCE,
+          option,
+        };
+        filters.push(sourceFilter);
       }
 
       const filterParams: FilterParams = { filters };

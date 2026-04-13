@@ -233,10 +233,11 @@ export interface DashboardArticle {
   pdfFilename: string | null;
   pdfFileSize: number | null;
   datasetId: number | null;
-  extId: number | null;
+  extId: string | null;
   humanReviewVerdict: "true_positive" | "false_positive" | "ambiguous" | null;
   humanReviewImpactScore: number | null;
   humanReviewUpdatedAt: string | null;
+  source: "dryad" | "pmc" | null;
   tags: Array<{ id: string; name: string; color: string }>;
 }
 
@@ -357,6 +358,12 @@ export async function getDashboardArticles(
       } else if (filter.option === "only") {
         filterConditions.push(eq(datasets.isMetaAnalysis, true));
       }
+    } else if (filter.key === FILTER_KEYS.SOURCE) {
+      if (filter.option === "dryad") {
+        filterConditions.push(eq(datasets.source, "dryad"));
+      } else if (filter.option === "pmc") {
+        filterConditions.push(eq(datasets.source, "pmc"));
+      }
     }
   }
 
@@ -382,7 +389,7 @@ export async function getDashboardArticles(
       pdfFilename: pdfFiles.filename,
       pdfFileSize: pdfFiles.size,
       datasetId: datasets.id,
-      extId: dryadDatasetDetails.extIdNumeric,
+      extId: datasets.extId,
       humanReviewVerdict: humanReviews.verdict,
       humanReviewImpactScore: humanReviews.impactScore,
       humanReviewUpdatedAt: sql<string>`${humanReviews.updatedAt}::text`.as(
@@ -393,6 +400,7 @@ export async function getDashboardArticles(
       >`(SELECT COALESCE(json_agg(json_build_object('id', t.id, 'name', t.name, 'color', t.color)), '[]'::json) FROM ${datasetTags} dt JOIN ${tags} t ON t.id = dt.tag_id WHERE dt.dataset_id = ${datasets.id})`.as(
         "tags",
       ),
+      source: datasets.source,
     })
     .from(articles)
     .leftJoin(journals, eq(articles.journalId, journals.id))
@@ -406,10 +414,6 @@ export async function getDashboardArticles(
     .leftJoin(institutions, eq(articleAuthors.institutionId, institutions.id))
     .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
     .innerJoin(datasets, eq(datasets.articleId, articles.id))
-    .leftJoin(
-      dryadDatasetDetails,
-      eq(dryadDatasetDetails.datasetId, datasets.id),
-    )
     .leftJoin(
       humanReviews,
       and(

@@ -7,11 +7,14 @@ export const FILTER_KEYS = {
   REVIEW_STATUS: "reviewStatus",
   TAG: "tag",
   META_ANALYSIS: "metaAnalysis",
+  SOURCE: "source",
 } as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS];
 
 export type PdfAvailabilityOption = "all" | "available" | "not-available";
+
+export type SourceOption = "all" | "dryad" | "pmc";
 
 export type ReviewStatusOption =
   | "all"
@@ -64,6 +67,11 @@ export interface MetaAnalysisFilter {
   option: MetaAnalysisOption;
 }
 
+export interface SourceFilter {
+  key: typeof FILTER_KEYS.SOURCE;
+  option: SourceOption;
+}
+
 export type FilterConfig =
   | HighProbabilityFilter
   | PdfAvailabilityFilter
@@ -72,7 +80,8 @@ export type FilterConfig =
   | FieldFilter
   | ReviewStatusFilter
   | TagFilter
-  | MetaAnalysisFilter;
+  | MetaAnalysisFilter
+  | SourceFilter;
 
 export interface FilterParams {
   filters: FilterConfig[];
@@ -113,6 +122,10 @@ export const DEFAULT_FILTERS: FilterParams = {
       key: FILTER_KEYS.META_ANALYSIS,
       option: "exclude",
     },
+    {
+      key: FILTER_KEYS.SOURCE,
+      option: "all",
+    },
   ],
 };
 
@@ -149,6 +162,8 @@ export function serializeFilters(
         params[`filter_${filter.key}`] = filter.selectedTagIds.join(",");
       }
     } else if (filter.key === FILTER_KEYS.META_ANALYSIS) {
+      params[`filter_${filter.key}`] = filter.option;
+    } else if (filter.key === FILTER_KEYS.SOURCE) {
       params[`filter_${filter.key}`] = filter.option;
     }
   }
@@ -291,6 +306,23 @@ export function deserializeFilters(
     filters.push({
       key: FILTER_KEYS.META_ANALYSIS,
       option: "exclude",
+    });
+  }
+
+  const sourceParam = searchParams.get(`filter_${FILTER_KEYS.SOURCE}`);
+  const validSourceOptions: SourceOption[] = ["all", "dryad", "pmc"];
+  if (
+    sourceParam !== null &&
+    validSourceOptions.includes(sourceParam as SourceOption)
+  ) {
+    filters.push({
+      key: FILTER_KEYS.SOURCE,
+      option: sourceParam as SourceOption,
+    });
+  } else {
+    filters.push({
+      key: FILTER_KEYS.SOURCE,
+      option: "all",
     });
   }
 

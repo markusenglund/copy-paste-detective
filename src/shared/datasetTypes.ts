@@ -24,7 +24,8 @@ export interface SheetReview {
 
 export interface DatasetInfo {
   id: number;
-  extId: number;
+  source: "dryad" | "pmc";
+  extId: number | string;
   doi: string;
   title: string;
   abstract: string | null;

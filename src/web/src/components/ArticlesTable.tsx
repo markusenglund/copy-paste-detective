@@ -123,7 +123,7 @@ export function ArticlesTable({
           <tr>
             <th
               className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              style={{ width: "60px" }}
+              style={{ width: "110px" }}
             >
               ID
             </th>

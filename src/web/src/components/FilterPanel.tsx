@@ -5,6 +5,7 @@ import {
   MetaAnalysisOption,
   PdfAvailabilityOption,
   ReviewStatusOption,
+  SourceOption,
 } from "../../../shared/filterTypes";
 import { fetchAvailableFields, fetchTags, TagInfo } from "../api/client";
 
@@ -161,6 +162,10 @@ export function FilterPanel({
     (f) => f.key === FILTER_KEYS.META_ANALYSIS,
   );
 
+  const sourceFilter = filterParams.filters.find(
+    (f) => f.key === FILTER_KEYS.SOURCE,
+  );
+
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
   const pdfAvailabilityOption = pdfAvailabilityFilter?.option ?? "all";
   const minImpactScore = minImpactScoreFilter?.minScore ?? null;
@@ -174,6 +179,8 @@ export function FilterPanel({
     metaAnalysisFilter && "option" in metaAnalysisFilter
       ? metaAnalysisFilter.option
       : "exclude";
+  const sourceOption: SourceOption =
+    sourceFilter?.key === FILTER_KEYS.SOURCE ? sourceFilter.option : "all";
 
   const activeFilterCount =
     (isHighProbabilityEnabled ? 1 : 0) +
@@ -183,7 +190,8 @@ export function FilterPanel({
     (selectedField !== null ? 1 : 0) +
     (reviewStatusOption !== "all" ? 1 : 0) +
     (selectedTagIds.length > 0 ? 1 : 0) +
-    (metaAnalysisOption !== "all" ? 1 : 0);
+    (metaAnalysisOption !== "all" ? 1 : 0) +
+    (sourceOption !== "all" ? 1 : 0);
 
   const handleHighProbabilityChange = (enabled: boolean): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
@@ -250,6 +258,13 @@ export function FilterPanel({
   const handleMetaAnalysisChange = (option: MetaAnalysisOption): void => {
     const updatedFilters = filterParams.filters.map((filter) =>
       filter.key === FILTER_KEYS.META_ANALYSIS ? { ...filter, option } : filter,
+    );
+    onFilterChange({ filters: updatedFilters });
+  };
+
+  const handleSourceChange = (option: SourceOption): void => {
+    const updatedFilters = filterParams.filters.map((filter) =>
+      filter.key === FILTER_KEYS.SOURCE ? { ...filter, option } : filter,
     );
     onFilterChange({ filters: updatedFilters });
   };
@@ -378,6 +393,48 @@ export function FilterPanel({
                   className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
                 />
                 <span>Not available</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="w-px self-stretch bg-gray-200" />
+
+          {/* Source - stacked radio buttons */}
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-gray-700 font-medium">Source</span>
+            <div className="flex flex-col gap-0.5">
+              <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="source"
+                  value="all"
+                  checked={sourceOption === "all"}
+                  onChange={() => handleSourceChange("all")}
+                  className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                />
+                <span>All</span>
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="source"
+                  value="dryad"
+                  checked={sourceOption === "dryad"}
+                  onChange={() => handleSourceChange("dryad")}
+                  className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                />
+                <span>Dryad</span>
+              </label>
+              <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="source"
+                  value="pmc"
+                  checked={sourceOption === "pmc"}
+                  onChange={() => handleSourceChange("pmc")}
+                  className="w-3.5 h-3.5 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                />
+                <span>PubMed</span>
               </label>
             </div>
           </div>

@@ -95,7 +95,9 @@ export async function getDatasetDetails(
   const datasetInfo = await db
     .select({
       datasetId: datasets.id,
+      source: datasets.source,
       extId: dryadDatasetDetails.extIdNumeric,
+      pmcExtId: datasets.extId,
       datasetDoi: datasets.doi,
       datasetTitle: datasets.title,
       abstract: datasets.abstract,
@@ -234,7 +236,8 @@ export async function getDatasetDetails(
   return {
     dataset: {
       id: info.datasetId,
-      extId: info.extId ?? 0,
+      source: info.source,
+      extId: info.extId ?? info.pmcExtId ?? "",
       doi: info.datasetDoi ?? "",
       title: info.datasetTitle,
       abstract: info.abstract,

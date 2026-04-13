@@ -3,7 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
 import { datasets } from "../datasets/unifiedSchema";
-import { dryadDatasetDetails } from "../datasets/dryadDetailsSchema";
+
 import type { DatasetRow } from "../datasets/unifiedDatasetsRepository";
 import { articles } from "../articles/schema";
 import type { Article } from "../articles/schema";
