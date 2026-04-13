@@ -1,3 +1,4 @@
+import pRetry from "p-retry";
 import { europePmcFetch } from "./pmcFetch";
 import { SearchResponse, SearchResponseSchema } from "./schemas";
 import { logger } from "../utils/logger";
@@ -20,19 +21,31 @@ export async function searchArticles(
   const url = `${EUROPE_PMC_SEARCH_URL}?${params.toString()}`;
   logger.info(`Fetching Europe PMC page ${url}`);
 
-  const response = await europePmcFetch(url);
+  return pRetry(
+    async () => {
+      const response = await europePmcFetch(url);
 
-  if (!response.ok) {
-    throw new Error(
-      `Europe PMC API error: ${response.status} ${response.statusText}`,
-    );
-  }
+      if (!response.ok) {
+        throw new Error(
+          `Europe PMC API error: ${response.status} ${response.statusText}`,
+        );
+      }
 
-  const json = await response.json();
-  const result = SearchResponseSchema.safeParse(json);
-  if (!result.success) {
-    logger.info(`Europe PMC API response validation failed, URL: ${url}`);
-    throw new Error(`Europe PMC API error: ${result.error.message}`);
-  }
-  return result.data;
+      const json = await response.json();
+      const result = SearchResponseSchema.safeParse(json);
+      if (!result.success) {
+        logger.info(`Europe PMC API response validation failed, URL: ${url}`);
+        throw new Error(`Europe PMC API error: ${result.error.message}`);
+      }
+      return result.data;
+    },
+    {
+      retries: 3,
+      onFailedAttempt: (error) => {
+        logger.warn(
+          `searchArticles attempt ${error.attemptNumber} failed, ${error.retriesLeft} retries left. URL ${url}`,
+        );
+      },
+    },
+  );
 }
