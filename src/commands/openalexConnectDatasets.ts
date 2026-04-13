@@ -178,6 +178,11 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
   const authorRecordByOrcid = new Map(
     params.insertedAuthors.map((author) => [author.orcid, author]),
   );
+  const authorRecordByExtId = new Map(
+    params.insertedAuthors
+      .filter((author) => author.extOpenalexId)
+      .map((author) => [author.extOpenalexId!, author]),
+  );
   const institutionRecordByRorId = new Map(
     params.insertedInstitutions.map((institution) => [
       institution.rorId,
@@ -196,28 +201,32 @@ function extractJunctionTablesDataFromOpenalexArticles(params: {
   for (const { openalexArticle } of params.articlesWithDatasets) {
     const articleRecord = articleRecordByOpenalexId.get(openalexArticle.id)!;
 
-    // Extract articleAuthors (deduplicate authors by ORCID per article)
-    const seenAuthorOrcids = new Set<string>();
+    const seenAuthorRecordIds = new Set<number>();
     for (const {
       author,
       institutions,
       author_position,
     } of openalexArticle.authorships) {
-      if (author.orcid && !seenAuthorOrcids.has(author.orcid)) {
-        const authorRecord = authorRecordByOrcid.get(author.orcid)!;
-        const [firstInstitution] = institutions;
-        const institutionId = firstInstitution?.ror
-          ? institutionRecordByRorId.get(firstInstitution.ror)?.id
-          : undefined;
+      if (author.id || author.orcid) {
+        const authorRecord =
+          (author.id ? authorRecordByExtId.get(author.id) : undefined) ||
+          (author.orcid ? authorRecordByOrcid.get(author.orcid) : undefined);
 
-        const articleAuthor: ArticleAuthorInsert = {
-          articleId: articleRecord.id,
-          authorId: authorRecord.id,
-          authorPosition: author_position,
-          institutionId,
-        };
-        articleAuthors.push(articleAuthor);
-        seenAuthorOrcids.add(author.orcid);
+        if (authorRecord && !seenAuthorRecordIds.has(authorRecord.id)) {
+          const [firstInstitution] = institutions;
+          const institutionId = firstInstitution?.ror
+            ? institutionRecordByRorId.get(firstInstitution.ror)?.id
+            : undefined;
+
+          const articleAuthor: ArticleAuthorInsert = {
+            articleId: articleRecord.id,
+            authorId: authorRecord.id,
+            authorPosition: author_position,
+            institutionId,
+          };
+          articleAuthors.push(articleAuthor);
+          seenAuthorRecordIds.add(authorRecord.id);
+        }
       }
     }
 
