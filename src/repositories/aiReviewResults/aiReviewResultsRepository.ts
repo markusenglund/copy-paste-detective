@@ -1,4 +1,5 @@
-import { and, desc, eq, gt, sql, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, sql, inArray, or, isNotNull } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
 import { datasets } from "../datasets/unifiedSchema";
@@ -10,6 +11,7 @@ import { pdfFiles } from "../pdfFiles/schema";
 import type { PdfFile } from "../pdfFiles/schema";
 import { datasetFiles } from "../datasetFiles/schema";
 import type { DatasetFileRow } from "../datasets/unifiedDatasetsRepository";
+import { logger } from "../../utils/logger";
 
 // Hardcoded date threshold that reviews must been created after to be considered not obsolete.
 export const AI_REVIEW_MIN_DATE = new Date("2026-01-27T00:00:00Z");
@@ -130,7 +132,9 @@ export async function getHighSuspicionReviewsWithArticles(
   ];
 
   if (extId !== undefined) {
-    whereConditions.push(eq(dryadDatasetDetails.extIdNumeric, extId));
+    whereConditions.push(
+      sql`${datasets.extId} = ${extId.toString()}`
+    );
   }
 
   const results = await db
@@ -143,10 +147,6 @@ export async function getHighSuspicionReviewsWithArticles(
     })
     .from(aiReviewResults)
     .innerJoin(datasets, eq(aiReviewResults.datasetId, datasets.id))
-    .innerJoin(
-      dryadDatasetDetails,
-      eq(dryadDatasetDetails.datasetId, datasets.id),
-    )
     .innerJoin(articles, eq(datasets.articleId, articles.id))
     .innerJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
     .innerJoin(datasetFiles, eq(aiReviewResults.datasetFileId, datasetFiles.id))
@@ -187,15 +187,11 @@ export async function getDatasetsForPdfReview(
   let datasetIds: number[];
 
   if (extId !== undefined) {
-    // When extId specified, just get that specific dataset via dryadDatasetDetails
+    // When extId specified, just get that specific dataset using the unified extId
     const dataset = await db
       .select({ id: datasets.id })
       .from(datasets)
-      .innerJoin(
-        dryadDatasetDetails,
-        eq(dryadDatasetDetails.datasetId, datasets.id),
-      )
-      .where(eq(dryadDatasetDetails.extIdNumeric, extId))
+      .where(sql`${datasets.extId} = ${extId.toString()}`)
       .limit(1);
 
     datasetIds = dataset.map((d) => d.id);
@@ -215,18 +211,36 @@ export async function getDatasetsForPdfReview(
         AND pdfr.id IS NULL
     )`;
 
+    const hasReadyPdf = sql<boolean>`(
+      (${datasets.source} = 'dryad' AND EXISTS (
+        SELECT 1 FROM articles
+        WHERE articles.id = ${datasets.articleId}
+        AND articles.pdf_download_status IN ('completed', 'manually_added')
+      )) OR (
+        ${datasets.source} = 'pmc' AND EXISTS (
+          SELECT 1 FROM dataset_files df
+          WHERE df.dataset_id = ${datasets.id}
+          AND df.file_type = 'pdf'
+        )
+      )
+    )`;
+
     const matchedDatasets = await db
       .select({ id: datasets.id })
       .from(datasets)
-      .where(hasLatestReviewWithoutPdfReview)
+      .where(and(hasLatestReviewWithoutPdfReview, hasReadyPdf))
       .limit(limit);
 
     datasetIds = matchedDatasets.map((d) => d.id);
   }
 
+  logger.debug(`Get datasets step 1: Found ${datasetIds.length} datasets with high-suspicion reviews`);
+
   if (datasetIds.length === 0) {
     return [];
   }
+
+  const pmcPdfFiles = alias(datasetFiles, "pmc_pdf_files");
 
   // Step 2: Get the latest review for each sheet using is_latest_review flag
   const reviews = await db
@@ -234,13 +248,21 @@ export async function getDatasetsForPdfReview(
       aiReview: aiReviewResults,
       article: articles,
       pdfFile: pdfFiles,
+      pmcPdfFile: pmcPdfFiles,
       dataset: datasets,
       datasetFile: datasetFiles,
     })
     .from(aiReviewResults)
     .innerJoin(datasets, eq(aiReviewResults.datasetId, datasets.id))
     .innerJoin(articles, eq(datasets.articleId, articles.id))
-    .innerJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
+    .leftJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
+    .leftJoin(
+      pmcPdfFiles,
+      and(
+        eq(datasets.id, pmcPdfFiles.datasetId),
+        eq(pmcPdfFiles.fileType, "pdf")
+      )
+    )
     .innerJoin(datasetFiles, eq(aiReviewResults.datasetFileId, datasetFiles.id))
     .where(
       and(
@@ -248,11 +270,22 @@ export async function getDatasetsForPdfReview(
         eq(aiReviewResults.isLatestReview, true),
         gt(aiReviewResults.truePositiveProbability, suspicionThreshold),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-        inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
+        or(
+          and(
+            eq(datasets.source, "dryad"),
+            isNotNull(pdfFiles.id),
+            inArray(articles.pdfDownloadStatus, ["completed", "manually_added"])
+          ),
+          and(
+            eq(datasets.source, "pmc"),
+            isNotNull(pmcPdfFiles.id)
+          )
+        )
       ),
     )
     .orderBy(desc(aiReviewResults.truePositiveProbability));
 
+  logger.debug(`Get datasets step 2: Found ${reviews.length} reviews`)
   // Step 3: Group reviews by dataset
   const reviewsByDatasetId = new Map<
     number,
@@ -263,7 +296,7 @@ export async function getDatasetsForPdfReview(
   >();
   const datasetInfoById = new Map<
     number,
-    { dataset: DatasetRow; article: Article; pdfFile: PdfFile }
+    { dataset: DatasetRow; article: Article; pdfFile: PdfFile | null; pmcPdfFile: DatasetFileRow | null }
   >();
 
   for (const row of reviews) {
@@ -272,6 +305,7 @@ export async function getDatasetsForPdfReview(
       dataset: row.dataset,
       article: row.article,
       pdfFile: row.pdfFile,
+      pmcPdfFile: row.pmcPdfFile,
     });
 
     const existing = reviewsByDatasetId.get(dsId) ?? [];
@@ -287,17 +321,37 @@ export async function getDatasetsForPdfReview(
   for (const dsId of datasetIds) {
     const info = datasetInfoById.get(dsId);
     const datasetReviews = reviewsByDatasetId.get(dsId);
-
     // Only include datasets that have reviews (after all the joins)
     if (info && datasetReviews && datasetReviews.length > 0) {
+      const isPmc = info.dataset.source === "pmc";
+      
+      let constructedPdfFile: PdfFile;
+      if (isPmc && info.pmcPdfFile) {
+         constructedPdfFile = {
+            id: info.pmcPdfFile.id,
+            articleId: info.article.id,
+            filename: info.pmcPdfFile.filename,
+            size: info.pmcPdfFile.size,
+            url: null,
+            createdTimestamp: new Date(),
+            updatedTimestamp: new Date(),
+         };
+      } else if (!isPmc && info.pdfFile) {
+         constructedPdfFile = info.pdfFile;
+      } else {
+         continue; // Something went wrong with the joined data, skip
+      }
+
       result.push({
         dataset: info.dataset,
         article: info.article,
-        pdfFile: info.pdfFile,
+        pdfFile: constructedPdfFile,
         reviews: datasetReviews,
       });
     }
   }
+
+  logger.debug(`Get datasets: Found ${result.length} datasets with reviews`)
 
   return result;
 }

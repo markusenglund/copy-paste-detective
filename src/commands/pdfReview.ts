@@ -64,6 +64,8 @@ program
 
           // Load PDF file once per dataset
           const pdfData = await loadPdfFile({
+            source: dataset.source,
+            extId: dataset.extId,
             articleId: article.id,
             filename: pdfFile.filename,
           });
