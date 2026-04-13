@@ -390,19 +390,12 @@ export async function getPmcXmlDerivedContent(
 ): Promise<PmcXmlDerivedContent> {
   const url = s3UrlToHttps(xmlS3Url);
 
-  let response: Response;
-  try {
-    response = await s3FetchWithRetry(url);
-  } catch (error) {
-    logger.warn(`Failed to fetch XML for derived content ${url} - ${error}`);
-    return { captions: new Map(), fullText: null };
-  }
+  const response = await s3FetchWithRetry(url);
 
   if (!response.ok) {
-    logger.warn(
+    throw new Error(
       `XML fetch returned ${response.status} ${response.statusText} ${url}`,
     );
-    return { captions: new Map(), fullText: null };
   }
 
   const xml = await response.text();

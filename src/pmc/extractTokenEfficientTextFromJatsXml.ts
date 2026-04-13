@@ -41,6 +41,9 @@ export function extractTokenEfficientTextFromJatsXml(
   remove(markdownTree, "citeGroup");
   remove(markdownTree, "cite");
   remove(markdownTree, "bibliography");
+  // Remove cross-references (e.g. "Figure 1") — they add noise and can crash
+  // myst-to-md when the referenced node has no source label.
+  remove(markdownTree, "crossReference");
 
   // `myst-to-md` returns a VFile; markdown is in `result` (typings are loose).
   const output = unified()
