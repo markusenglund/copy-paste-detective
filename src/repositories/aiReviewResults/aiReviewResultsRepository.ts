@@ -132,9 +132,7 @@ export async function getHighSuspicionReviewsWithArticles(
   ];
 
   if (extId !== undefined) {
-    whereConditions.push(
-      sql`${datasets.extId} = ${extId.toString()}`
-    );
+    whereConditions.push(sql`${datasets.extId} = ${extId.toString()}`);
   }
 
   const results = await db
@@ -234,7 +232,9 @@ export async function getDatasetsForPdfReview(
     datasetIds = matchedDatasets.map((d) => d.id);
   }
 
-  logger.debug(`Get datasets step 1: Found ${datasetIds.length} datasets with high-suspicion reviews`);
+  logger.debug(
+    `Get datasets step 1: Found ${datasetIds.length} datasets with high-suspicion reviews`,
+  );
 
   if (datasetIds.length === 0) {
     return [];
@@ -260,8 +260,8 @@ export async function getDatasetsForPdfReview(
       pmcPdfFiles,
       and(
         eq(datasets.id, pmcPdfFiles.datasetId),
-        eq(pmcPdfFiles.fileType, "pdf")
-      )
+        eq(pmcPdfFiles.fileType, "pdf"),
+      ),
     )
     .innerJoin(datasetFiles, eq(aiReviewResults.datasetFileId, datasetFiles.id))
     .where(
@@ -274,18 +274,18 @@ export async function getDatasetsForPdfReview(
           and(
             eq(datasets.source, "dryad"),
             isNotNull(pdfFiles.id),
-            inArray(articles.pdfDownloadStatus, ["completed", "manually_added"])
+            inArray(articles.pdfDownloadStatus, [
+              "completed",
+              "manually_added",
+            ]),
           ),
-          and(
-            eq(datasets.source, "pmc"),
-            isNotNull(pmcPdfFiles.id)
-          )
-        )
+          and(eq(datasets.source, "pmc"), isNotNull(pmcPdfFiles.id)),
+        ),
       ),
     )
     .orderBy(desc(aiReviewResults.truePositiveProbability));
 
-  logger.debug(`Get datasets step 2: Found ${reviews.length} reviews`)
+  logger.debug(`Get datasets step 2: Found ${reviews.length} reviews`);
   // Step 3: Group reviews by dataset
   const reviewsByDatasetId = new Map<
     number,
@@ -296,7 +296,12 @@ export async function getDatasetsForPdfReview(
   >();
   const datasetInfoById = new Map<
     number,
-    { dataset: DatasetRow; article: Article; pdfFile: PdfFile | null; pmcPdfFile: DatasetFileRow | null }
+    {
+      dataset: DatasetRow;
+      article: Article;
+      pdfFile: PdfFile | null;
+      pmcPdfFile: DatasetFileRow | null;
+    }
   >();
 
   for (const row of reviews) {
@@ -324,22 +329,22 @@ export async function getDatasetsForPdfReview(
     // Only include datasets that have reviews (after all the joins)
     if (info && datasetReviews && datasetReviews.length > 0) {
       const isPmc = info.dataset.source === "pmc";
-      
+
       let constructedPdfFile: PdfFile;
       if (isPmc && info.pmcPdfFile) {
-         constructedPdfFile = {
-            id: info.pmcPdfFile.id,
-            articleId: info.article.id,
-            filename: info.pmcPdfFile.filename,
-            size: info.pmcPdfFile.size,
-            url: null,
-            createdTimestamp: new Date(),
-            updatedTimestamp: new Date(),
-         };
+        constructedPdfFile = {
+          id: info.pmcPdfFile.id,
+          articleId: info.article.id,
+          filename: info.pmcPdfFile.filename,
+          size: info.pmcPdfFile.size,
+          url: null,
+          createdTimestamp: new Date(),
+          updatedTimestamp: new Date(),
+        };
       } else if (!isPmc && info.pdfFile) {
-         constructedPdfFile = info.pdfFile;
+        constructedPdfFile = info.pdfFile;
       } else {
-         continue; // Something went wrong with the joined data, skip
+        continue; // Something went wrong with the joined data, skip
       }
 
       result.push({
@@ -351,7 +356,7 @@ export async function getDatasetsForPdfReview(
     }
   }
 
-  logger.debug(`Get datasets: Found ${result.length} datasets with reviews`)
+  logger.debug(`Get datasets: Found ${result.length} datasets with reviews`);
 
   return result;
 }

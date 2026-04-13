@@ -29,12 +29,16 @@ Conclusion: ...
       articleTitle: "Test Article",
       excelFileName: "data.xlsx",
       sheetName: "Sheet1",
-      originalAiReview: "It looks suspicious."
+      originalAiReview: "It looks suspicious.",
     });
 
     // The full text code block and preamble should be replaced
-    expect(result.originalUserPrompt).not.toContain("The following is the full text of the paper.");
-    expect(result.originalUserPrompt).toContain("[Full text of the paper was provided here during the previous step to establish context]");
+    expect(result.originalUserPrompt).not.toContain(
+      "The following is the full text of the paper.",
+    );
+    expect(result.originalUserPrompt).toContain(
+      "[Full text of the paper was provided here during the previous step to establish context]",
+    );
     // But other code blocks like the caption should be intact
     expect(result.originalUserPrompt).toContain("Figure 1. Data");
     expect(result.originalUserPrompt).toContain("Here is some intro text.");
@@ -59,11 +63,15 @@ inside it.
       articleTitle: "Test",
       excelFileName: "test.xlsx",
       sheetName: "Sheet1",
-      originalAiReview: "test review"
+      originalAiReview: "test review",
     });
 
-    expect(result.originalUserPrompt).not.toContain("The following is the full text of the paper.");
-    expect(result.originalUserPrompt).toContain("[Full text of the paper was provided here during the previous step to establish context]");
+    expect(result.originalUserPrompt).not.toContain(
+      "The following is the full text of the paper.",
+    );
+    expect(result.originalUserPrompt).toContain(
+      "[Full text of the paper was provided here during the previous step to establish context]",
+    );
     expect(result.originalUserPrompt).toContain("# End");
   });
 
@@ -78,7 +86,7 @@ some code
       articleTitle: "Test",
       excelFileName: "test.xlsx",
       sheetName: "Sheet1",
-      originalAiReview: "test review"
+      originalAiReview: "test review",
     });
 
     expect(result.originalUserPrompt).toBe(originalPrompt);

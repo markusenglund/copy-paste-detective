@@ -231,10 +231,16 @@ export function DatasetDetails(): React.ReactElement {
           )}
           <div>
             <span className="font-semibold">Source:</span>{" "}
-            {data.dataset.source === "dryad" ? "Dryad" : data.dataset.source === "pmc" ? "PubMed" : "-"}
+            {data.dataset.source === "dryad"
+              ? "Dryad"
+              : data.dataset.source === "pmc"
+                ? "PubMed"
+                : "-"}
           </div>
           <div>
-            <span className="font-semibold">{data.dataset.source === "pmc" ? "PMC" : "Dryad"} external ID:</span>{" "}
+            <span className="font-semibold">
+              {data.dataset.source === "pmc" ? "PMC" : "Dryad"} external ID:
+            </span>{" "}
             {data.dataset.extId}
           </div>
         </div>

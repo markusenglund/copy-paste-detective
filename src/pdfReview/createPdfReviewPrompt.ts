@@ -31,7 +31,7 @@ Examples of impact scores:
 - 5: Widespread issues that affect all primary conclusions.
 `;
 
-  // Strip the full text of the paper out of the prompt history to save tokens, 
+  // Strip the full text of the paper out of the prompt history to save tokens,
   // since the PDF itself is being submitted in this step.
   const fullTextPattern =
     /The following is the full text of the paper\. Use it to understand what the data represents and whether the flagged duplications make sense in context\.\n\n`{3,}[\s\S]*?`{3,}/g;
