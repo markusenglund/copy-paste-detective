@@ -290,12 +290,18 @@ function extractArticleMetadataFromOpenAlexArticles(
   funders: FunderInsert[];
 } {
   const authorByOrcid = new Map<string, AuthorInsert>();
+  const seenExtOpenalexIds = new Set<string>();
   const institutionByRorId = new Map<string, InstitutionInsert>();
   const funderByRorId = new Map<string, FunderInsert>();
 
   for (const { openalexArticle } of articlesWithDatasets) {
     for (const { author, institutions } of openalexArticle.authorships) {
-      if (author.orcid && !authorByOrcid.has(author.orcid)) {
+      if (
+        author.orcid &&
+        !authorByOrcid.has(author.orcid) &&
+        (!author.id || !seenExtOpenalexIds.has(author.id))
+      ) {
+        if (author.id) seenExtOpenalexIds.add(author.id);
         authorByOrcid.set(author.orcid, {
           extOpenalexId: author.id,
           displayName: author.display_name,
