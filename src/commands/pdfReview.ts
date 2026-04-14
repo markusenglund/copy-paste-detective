@@ -121,7 +121,9 @@ program
           // Mark dataset as pdf_reviewed_by_ai after processing all its reviews
           await updateDatasetAnalysisStatus(dataset.id, "pdf_reviewed_by_ai");
           datasetsProcessed++;
-          logger.info(`Dataset ${dataset.extId} marked as pdf_reviewed_by_ai`);
+          logger.info(
+            `Dataset ext_id=${dataset.extId} marked as pdf_reviewed_by_ai`,
+          );
         },
         { concurrency: 5 },
       );
