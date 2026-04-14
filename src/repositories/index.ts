@@ -37,7 +37,6 @@ export {
 export { authors } from "./authors/schema";
 export { funders } from "./funders/schema";
 export { institutions } from "./institutions/schema";
-export { pdfFiles } from "./pdfFiles/schema";
 export { verdictEnum, humanReviews } from "./humanReview/schema";
 export { users } from "./users/schema";
 export { pmcIndexingState } from "./pmcIndexingState/schema";

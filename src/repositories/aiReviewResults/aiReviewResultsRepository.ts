@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, sql, inArray, or, isNotNull } from "drizzle-orm";
+import { and, desc, eq, gt, sql, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { aiReviewResults } from "./schema";
@@ -7,8 +7,6 @@ import { datasets } from "../datasets/unifiedSchema";
 import type { DatasetRow } from "../datasets/unifiedDatasetsRepository";
 import { articles } from "../articles/schema";
 import type { Article } from "../articles/schema";
-import { pdfFiles } from "../pdfFiles/schema";
-import type { PdfFile } from "../pdfFiles/schema";
 import { datasetFiles } from "../datasetFiles/schema";
 import type { DatasetFileRow } from "../datasets/unifiedDatasetsRepository";
 import { logger } from "../../utils/logger";
@@ -108,7 +106,7 @@ export async function getLatestReviewsPerSheet(): Promise<
 
 /**
  * Get high-suspicion AI reviews with all associated data (articles, PDFs, datasets, files).
- * Filters for truePositiveProbability > threshold and pdfDownloadStatus = 'completed'.
+ * Filters for truePositiveProbability > threshold.
  * Optionally filters by dataset extId.
  * Orders by truePositiveProbability DESC.
  */
@@ -120,7 +118,6 @@ export async function getHighSuspicionReviewsWithArticles(
   Array<{
     aiReview: AiReviewResultRow;
     article: Article;
-    pdfFile: PdfFile;
     dataset: DatasetRow;
     datasetFile: DatasetFileRow;
   }>
@@ -139,14 +136,12 @@ export async function getHighSuspicionReviewsWithArticles(
     .select({
       aiReview: aiReviewResults,
       article: articles,
-      pdfFile: pdfFiles,
       dataset: datasets,
       datasetFile: datasetFiles,
     })
     .from(aiReviewResults)
     .innerJoin(datasets, eq(aiReviewResults.datasetId, datasets.id))
     .innerJoin(articles, eq(datasets.articleId, articles.id))
-    .innerJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
     .innerJoin(datasetFiles, eq(aiReviewResults.datasetFileId, datasetFiles.id))
     .where(and(...whereConditions))
     .orderBy(desc(aiReviewResults.truePositiveProbability))
@@ -158,7 +153,7 @@ export async function getHighSuspicionReviewsWithArticles(
 export type DatasetWithReviews = {
   dataset: DatasetRow;
   article: Article;
-  pdfFile: PdfFile;
+  pdfFile: DatasetFileRow;
   reviews: Array<{
     aiReview: AiReviewResultRow;
     datasetFile: DatasetFileRow;
@@ -209,18 +204,11 @@ export async function getDatasetsForPdfReview(
         AND pdfr.id IS NULL
     )`;
 
-    const hasReadyPdf = sql<boolean>`(
-      (${datasets.source} = 'dryad' AND EXISTS (
-        SELECT 1 FROM articles
-        WHERE articles.id = ${datasets.articleId}
-        AND articles.pdf_download_status IN ('completed', 'manually_added')
-      )) OR (
-        ${datasets.source} = 'pmc' AND EXISTS (
-          SELECT 1 FROM dataset_files df
-          WHERE df.dataset_id = ${datasets.id}
-          AND df.file_type = 'pdf'
-        )
-      )
+    const hasReadyPdf = sql<boolean>`EXISTS (
+      SELECT 1 FROM dataset_files df
+      WHERE df.dataset_id = ${datasets.id}
+        AND df.file_type = 'pdf'
+        AND df.download_status IN ('completed', 'manually_added')
     )`;
 
     const matchedDatasets = await db
@@ -240,52 +228,45 @@ export async function getDatasetsForPdfReview(
     return [];
   }
 
-  const pmcPdfFiles = alias(datasetFiles, "pmc_pdf_files");
+  const pdfDatasetFiles = alias(datasetFiles, "pdf_dataset_files");
 
   // Step 2: Get the latest review for each sheet using is_latest_review flag
+  const excelDatasetFiles = alias(datasetFiles, "excel_dataset_files");
   const reviews = await db
     .select({
       aiReview: aiReviewResults,
       article: articles,
-      pdfFile: pdfFiles,
-      pmcPdfFile: pmcPdfFiles,
+      pdfFile: pdfDatasetFiles,
       dataset: datasets,
-      datasetFile: datasetFiles,
+      datasetFile: excelDatasetFiles,
     })
     .from(aiReviewResults)
     .innerJoin(datasets, eq(aiReviewResults.datasetId, datasets.id))
     .innerJoin(articles, eq(datasets.articleId, articles.id))
-    .leftJoin(pdfFiles, eq(articles.id, pdfFiles.articleId))
     .leftJoin(
-      pmcPdfFiles,
+      pdfDatasetFiles,
       and(
-        eq(datasets.id, pmcPdfFiles.datasetId),
-        eq(pmcPdfFiles.fileType, "pdf"),
+        eq(datasets.id, pdfDatasetFiles.datasetId),
+        eq(pdfDatasetFiles.fileType, "pdf"),
+        eq(pdfDatasetFiles.isMainArticle, true),
       ),
     )
-    .innerJoin(datasetFiles, eq(aiReviewResults.datasetFileId, datasetFiles.id))
+    .innerJoin(
+      excelDatasetFiles,
+      eq(aiReviewResults.datasetFileId, excelDatasetFiles.id),
+    )
     .where(
       and(
         inArray(aiReviewResults.datasetId, datasetIds),
         eq(aiReviewResults.isLatestReview, true),
         gt(aiReviewResults.truePositiveProbability, suspicionThreshold),
         gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
-        or(
-          and(
-            eq(datasets.source, "dryad"),
-            isNotNull(pdfFiles.id),
-            inArray(articles.pdfDownloadStatus, [
-              "completed",
-              "manually_added",
-            ]),
-          ),
-          and(eq(datasets.source, "pmc"), isNotNull(pmcPdfFiles.id)),
-        ),
       ),
     )
     .orderBy(desc(aiReviewResults.truePositiveProbability));
 
   logger.debug(`Get datasets step 2: Found ${reviews.length} reviews`);
+
   // Step 3: Group reviews by dataset
   const reviewsByDatasetId = new Map<
     number,
@@ -299,8 +280,7 @@ export async function getDatasetsForPdfReview(
     {
       dataset: DatasetRow;
       article: Article;
-      pdfFile: PdfFile | null;
-      pmcPdfFile: DatasetFileRow | null;
+      pdfFile: DatasetFileRow | null;
     }
   >();
 
@@ -310,7 +290,6 @@ export async function getDatasetsForPdfReview(
       dataset: row.dataset,
       article: row.article,
       pdfFile: row.pdfFile,
-      pmcPdfFile: row.pmcPdfFile,
     });
 
     const existing = reviewsByDatasetId.get(dsId) ?? [];
@@ -326,31 +305,12 @@ export async function getDatasetsForPdfReview(
   for (const dsId of datasetIds) {
     const info = datasetInfoById.get(dsId);
     const datasetReviews = reviewsByDatasetId.get(dsId);
-    // Only include datasets that have reviews (after all the joins)
-    if (info && datasetReviews && datasetReviews.length > 0) {
-      const isPmc = info.dataset.source === "pmc";
-
-      let constructedPdfFile: PdfFile;
-      if (isPmc && info.pmcPdfFile) {
-        constructedPdfFile = {
-          id: info.pmcPdfFile.id,
-          articleId: info.article.id,
-          filename: info.pmcPdfFile.filename,
-          size: info.pmcPdfFile.size,
-          url: null,
-          createdTimestamp: new Date(),
-          updatedTimestamp: new Date(),
-        };
-      } else if (!isPmc && info.pdfFile) {
-        constructedPdfFile = info.pdfFile;
-      } else {
-        continue; // Something went wrong with the joined data, skip
-      }
-
+    // Only include datasets that have reviews and a PDF file (after all the joins)
+    if (info && info.pdfFile && datasetReviews && datasetReviews.length > 0) {
       result.push({
         dataset: info.dataset,
         article: info.article,
-        pdfFile: constructedPdfFile,
+        pdfFile: info.pdfFile,
         reviews: datasetReviews,
       });
     }

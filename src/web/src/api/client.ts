@@ -68,13 +68,13 @@ export async function fetchArticles(
 }
 
 export async function uploadPdf(
-  articleId: number,
+  datasetId: number,
   file: File,
-): Promise<{ success: boolean; filePath: string; articleId: number }> {
+): Promise<{ success: boolean; filePath: string; datasetId: number }> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await apiFetch(`${BASE_URL}/articles/${articleId}/pdf`, {
+  const response = await apiFetch(`${BASE_URL}/datasets/${datasetId}/pdf`, {
     method: "POST",
     body: formData,
   });

@@ -2,7 +2,6 @@ import { db } from "../../db";
 import { datasets } from "../../repositories/datasets/unifiedSchema";
 import { datasetFiles } from "../../repositories/datasetFiles/schema";
 import { articles } from "../../repositories/articles/schema";
-import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import { aiReviewResults } from "../../repositories/aiReviewResults/schema";
 import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema";
 import { humanReviews } from "../../repositories/humanReview/schema";
@@ -192,12 +191,15 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     const withArticleNoPdfResult = await db
       .select({ count: sql<number>`count(distinct ${datasets.id})::int` })
       .from(datasets)
-      .innerJoin(articles, eq(datasets.articleId, articles.id))
-      .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
       .where(
         and(
           inArray(datasets.id, suspiciousDatasetIds),
-          sql`${pdfFiles.id} IS NULL`,
+          sql`NOT EXISTS (
+            SELECT 1 FROM dataset_files df
+            WHERE df.dataset_id = ${datasets.id}
+            AND df.file_type = 'pdf'
+            AND df.is_main_article = true
+          )`,
         ),
       );
 
@@ -207,11 +209,15 @@ export async function getStatistics(): Promise<StatisticsResponse> {
     const withPdfNoReviewResult = await db
       .select({ count: sql<number>`count(distinct ${datasets.id})::int` })
       .from(datasets)
-      .innerJoin(articles, eq(datasets.articleId, articles.id))
-      .innerJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
       .where(
         and(
           inArray(datasets.id, suspiciousDatasetIds),
+          sql`EXISTS (
+            SELECT 1 FROM dataset_files df
+            WHERE df.dataset_id = ${datasets.id}
+            AND df.file_type = 'pdf'
+            AND df.is_main_article = true
+          )`,
           // At least one latest review for this dataset has no PDF review
           sql`EXISTS (
             SELECT 1
@@ -240,7 +246,6 @@ export async function getStatistics(): Promise<StatisticsResponse> {
         maxImpact: sql<number>`MAX(${aiPdfReviewResults.impactScore})::int`,
       })
       .from(datasets)
-      .innerJoin(articles, eq(datasets.articleId, articles.id))
       .innerJoin(aiReviewResults, eq(aiReviewResults.datasetId, datasets.id))
       .innerJoin(
         aiPdfReviewResults,
@@ -249,7 +254,12 @@ export async function getStatistics(): Promise<StatisticsResponse> {
       .where(
         and(
           inArray(datasets.id, suspiciousDatasetIds),
-          inArray(articles.pdfDownloadStatus, ["completed", "manually_added"]),
+          sql`EXISTS (
+            SELECT 1 FROM dataset_files df
+            WHERE df.dataset_id = ${datasets.id}
+            AND df.file_type = 'pdf'
+            AND df.is_main_article = true
+          )`,
           eq(aiReviewResults.isLatestReview, true),
           gt(aiReviewResults.createdAt, AI_REVIEW_MIN_DATE),
           gt(aiReviewResults.truePositiveProbability, SUSPICION_THRESHOLD),

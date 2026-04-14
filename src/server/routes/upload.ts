@@ -1,21 +1,28 @@
 import { FastifyInstance } from "fastify";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { updateArticlePdfDownloadStatus } from "../../repositories/articles/articlesRepository";
-import { upsertPdfFile } from "../../repositories/pdfFiles/pdfFilesRepository";
+import {
+  getDatasetById,
+  insertPdfDatasetFile,
+} from "../../repositories/datasets/unifiedDatasetsRepository";
 import { storagePaths } from "../../utils/paths/storagePaths";
 
 export async function uploadRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{
-    Params: { id: string };
+    Params: { datasetId: string };
   }>(
-    "/articles/:id/pdf",
+    "/datasets/:datasetId/pdf",
     { config: { requiredRole: "editor" } },
     async (request, reply) => {
-      const articleId = parseInt(request.params.id, 10);
+      const datasetId = parseInt(request.params.datasetId, 10);
 
-      if (isNaN(articleId)) {
-        return reply.status(400).send({ error: "Invalid article ID" });
+      if (isNaN(datasetId)) {
+        return reply.status(400).send({ error: "Invalid dataset ID" });
+      }
+
+      const dataset = await getDatasetById(datasetId);
+      if (!dataset) {
+        return reply.status(404).send({ error: "Dataset not found" });
       }
 
       const data = await request.file();
@@ -29,26 +36,28 @@ export async function uploadRoutes(fastify: FastifyInstance): Promise<void> {
         return reply.status(400).send({ error: "Only PDF files are allowed" });
       }
 
-      const downloadDir = storagePaths.pdfArticle(articleId);
+      const downloadDir =
+        dataset.source === "pmc"
+          ? storagePaths.pmcArticle(dataset.extId)
+          : storagePaths.dryadDataset(dataset.extId);
       await mkdir(downloadDir, { recursive: true });
 
       const filePath = join(downloadDir, filename);
       const buffer = await data.toBuffer();
       await writeFile(filePath, buffer);
 
-      await updateArticlePdfDownloadStatus(articleId, "manually_added");
-
-      await upsertPdfFile({
-        articleId,
+      await insertPdfDatasetFile({
+        datasetId,
+        source: dataset.source,
         filename,
         size: buffer.length,
-        url: null,
+        isMainArticle: true,
       });
 
       return reply.send({
         success: true,
         filePath,
-        articleId,
+        datasetId,
       });
     },
   );

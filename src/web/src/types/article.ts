@@ -5,7 +5,6 @@ export interface ArticleForUpload {
   fullPdfUrl: string | null;
   publicationDate: string | null;
   numCitations: number;
-  pdfDownloadStatus: string | null;
   journalTitle: string | null;
   journalSjrScore: number | null;
   truePositiveProbability: number | null;

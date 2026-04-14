@@ -20,7 +20,6 @@ export function convertOpenalexArticle(
       openalexArticle.citation_normalized_percentile?.value,
     citedByPercentileYearMin: openalexArticle.cited_by_percentile_year?.min,
     fullPdfUrl,
-    pdfDownloadStatus: "not_started",
     field: openalexArticle.primary_topic?.field.display_name,
     subfield: openalexArticle.primary_topic?.subfield.display_name,
     topic: openalexArticle.primary_topic?.display_name,

@@ -14,7 +14,6 @@ import { journals } from "../journals/schema";
 import { authors } from "../authors/schema";
 import { funders } from "../funders/schema";
 import { institutions } from "../institutions/schema";
-import { downloadStatusEnum } from "../../db/shared/enums";
 
 export const articles = pgTable(
   "articles",
@@ -32,7 +31,6 @@ export const articles = pgTable(
       mode: "number",
     }),
     fullPdfUrl: text("full_pdf_url"),
-    pdfDownloadStatus: downloadStatusEnum("pdf_download_status"),
     field: text("field"),
     subfield: text("subfield"),
     topic: text("topic"),

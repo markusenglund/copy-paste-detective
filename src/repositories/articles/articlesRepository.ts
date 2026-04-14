@@ -22,7 +22,6 @@ import {
   inArray,
   SQL,
 } from "drizzle-orm";
-import { DownloadStatus } from "../../db/shared/enums";
 import {
   AI_REVIEW_MIN_DATE,
   PDF_REVIEW_MIN_DATE,
@@ -30,7 +29,8 @@ import {
 import { datasets } from "../datasets/unifiedSchema";
 import { dryadDatasetDetails } from "../datasets/dryadDetailsSchema";
 import { datasetTags, tags } from "../datasets/tagsSchema";
-import { pdfFiles } from "../pdfFiles/schema";
+import { datasetFiles } from "../datasetFiles/schema";
+import { alias } from "drizzle-orm/pg-core";
 import { humanReviews } from "../humanReview/schema";
 import { journals } from "../journals/schema";
 import { aiReviewResults } from "../aiReviewResults/schema";
@@ -121,10 +121,18 @@ export async function bulkInsertArticleFunders(
   );
 }
 
-export async function getArticlesForPdfDownload(
+export interface DryadDatasetForPdfDownload {
+  datasetId: number;
+  datasetExtId: string;
+  articleId: number;
+  articleTitle: string;
+  extOpenalexId: string;
+}
+
+export async function getDryadDatasetsForPdfDownload(
   limit: number,
   extId?: number,
-): Promise<Article[]> {
+): Promise<DryadDatasetForPdfDownload[]> {
   const hasSuspiciousReview = sql<boolean>`EXISTS (
     SELECT 1 FROM ai_review_results
     WHERE ai_review_results.dataset_id = ${datasets.id}
@@ -133,30 +141,20 @@ export async function getArticlesForPdfDownload(
     AND ai_review_results.created_at > ${AI_REVIEW_MIN_DATE}
   )`;
 
-  // When extId is provided, filter by it and ignore download status
+  const selectFields = {
+    datasetId: datasets.id,
+    datasetExtId: datasets.extId,
+    articleId: articles.id,
+    articleTitle: articles.title,
+    extOpenalexId: articles.extOpenalexId,
+  };
+
+  // When extId is provided, filter by it and ignore whether PDF exists
   if (extId !== undefined) {
     return db
-      .select({
-        id: articles.id,
-        doi: articles.doi,
-        extOpenalexId: articles.extOpenalexId,
-        title: articles.title,
-        publicationDate: articles.publicationDate,
-        numCitations: articles.numCitations,
-        citationNormalizedPercentile: articles.citationNormalizedPercentile,
-        citedByPercentileYearMin: articles.citedByPercentileYearMin,
-        fullPdfUrl: articles.fullPdfUrl,
-        pdfDownloadStatus: articles.pdfDownloadStatus,
-        field: articles.field,
-        subfield: articles.subfield,
-        topic: articles.topic,
-
-        journalId: articles.journalId,
-        createdTimestamp: articles.createdTimestamp,
-        updatedTimestamp: articles.updatedTimestamp,
-      })
-      .from(articles)
-      .innerJoin(datasets, eq(datasets.articleId, articles.id))
+      .select(selectFields)
+      .from(datasets)
+      .innerJoin(articles, eq(articles.id, datasets.articleId))
       .innerJoin(
         dryadDatasetDetails,
         eq(dryadDatasetDetails.datasetId, datasets.id),
@@ -170,49 +168,24 @@ export async function getArticlesForPdfDownload(
       );
   }
 
+  const hasPdf = sql<boolean>`EXISTS (
+    SELECT 1 FROM dataset_files df
+    WHERE df.dataset_id = ${datasets.id}
+    AND df.file_type = 'pdf'
+  )`;
+
   return db
-    .select({
-      id: articles.id,
-      doi: articles.doi,
-      extOpenalexId: articles.extOpenalexId,
-      title: articles.title,
-      publicationDate: articles.publicationDate,
-      numCitations: articles.numCitations,
-      citationNormalizedPercentile: articles.citationNormalizedPercentile,
-      citedByPercentileYearMin: articles.citedByPercentileYearMin,
-      fullPdfUrl: articles.fullPdfUrl,
-      pdfDownloadStatus: articles.pdfDownloadStatus,
-      field: articles.field,
-      subfield: articles.subfield,
-      topic: articles.topic,
-      journalId: articles.journalId,
-      createdTimestamp: articles.createdTimestamp,
-      updatedTimestamp: articles.updatedTimestamp,
-    })
-    .from(articles)
-    .innerJoin(datasets, eq(datasets.articleId, articles.id))
-    .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
+    .select(selectFields)
+    .from(datasets)
+    .innerJoin(articles, eq(articles.id, datasets.articleId))
     .where(
       and(
-        isNull(pdfFiles.id),
         eq(datasets.source, "dryad"),
+        sql`NOT ${hasPdf}`,
         hasSuspiciousReview,
       ),
     )
     .limit(limit);
-}
-
-export async function updateArticlePdfDownloadStatus(
-  articleId: number,
-  status: DownloadStatus,
-): Promise<void> {
-  await db
-    .update(articles)
-    .set({
-      pdfDownloadStatus: status,
-      updatedTimestamp: new Date(),
-    })
-    .where(eq(articles.id, articleId));
 }
 
 export interface DashboardArticle {
@@ -222,7 +195,6 @@ export interface DashboardArticle {
   fullPdfUrl: string | null;
   publicationDate: string | null;
   numCitations: number;
-  pdfDownloadStatus: string | null;
   journalTitle: string | null;
   journalSjrScore: number | null;
   truePositiveProbability: number | null;
@@ -273,6 +245,8 @@ export async function getDashboardArticles(
     .groupBy(aiReviewResults.datasetId)
     .as("max_scores");
 
+  const articlePdfFiles = alias(datasetFiles, "article_pdf_files");
+
   const citationScoreExpr =
     sql<number>`(COALESCE(${journals.sjrScore}, 0.0) + ${articles.numCitations}) * LOG(10.0 + COALESCE(${journals.sjrScore}, 0.0)) / (1.0 + COALESCE(CAST(CURRENT_DATE - ${articles.publicationDate} AS numeric) / 365.25, 10.0))`.as(
       "citationScore",
@@ -315,9 +289,9 @@ export async function getDashboardArticles(
       }
     } else if (filter.key === FILTER_KEYS.PDF_AVAILABILITY) {
       if (filter.option === "available") {
-        filterConditions.push(isNotNull(pdfFiles.filename));
+        filterConditions.push(isNotNull(articlePdfFiles.filename));
       } else if (filter.option === "not-available") {
-        filterConditions.push(isNull(pdfFiles.filename));
+        filterConditions.push(isNull(articlePdfFiles.filename));
       }
     } else if (filter.key === FILTER_KEYS.MIN_IMPACT_SCORE) {
       if (filter.minScore !== null) {
@@ -378,7 +352,6 @@ export async function getDashboardArticles(
       fullPdfUrl: articles.fullPdfUrl,
       publicationDate: articles.publicationDate,
       numCitations: articles.numCitations,
-      pdfDownloadStatus: articles.pdfDownloadStatus,
       journalTitle: journals.title,
       journalSjrScore: journals.sjrScore,
       truePositiveProbability: maxScoresSubquery.maxTruePositiveProbability,
@@ -386,8 +359,8 @@ export async function getDashboardArticles(
       citationScore: citationScoreExpr,
       subfield: articles.subfield,
       countryCode: institutions.countryCode,
-      pdfFilename: pdfFiles.filename,
-      pdfFileSize: pdfFiles.size,
+      pdfFilename: articlePdfFiles.filename,
+      pdfFileSize: articlePdfFiles.size,
       datasetId: datasets.id,
       extId: datasets.extId,
       humanReviewVerdict: humanReviews.verdict,
@@ -412,8 +385,15 @@ export async function getDashboardArticles(
       ),
     )
     .leftJoin(institutions, eq(articleAuthors.institutionId, institutions.id))
-    .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
     .innerJoin(datasets, eq(datasets.articleId, articles.id))
+    .leftJoin(
+      articlePdfFiles,
+      and(
+        eq(articlePdfFiles.datasetId, datasets.id),
+        eq(articlePdfFiles.fileType, "pdf"),
+        eq(articlePdfFiles.isMainArticle, true),
+      ),
+    )
     .leftJoin(
       humanReviews,
       and(

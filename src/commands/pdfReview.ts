@@ -66,7 +66,6 @@ program
           const pdfData = await loadPdfFile({
             source: dataset.source,
             extId: dataset.extId,
-            articleId: article.id,
             filename: pdfFile.filename,
           });
 

@@ -1,9 +1,6 @@
 import { Command } from "@commander-js/extra-typings";
-import {
-  getArticlesForPdfDownload,
-  updateArticlePdfDownloadStatus,
-} from "../repositories/articles/articlesRepository";
-import { upsertPdfFile } from "../repositories/pdfFiles/pdfFilesRepository";
+import { getDryadDatasetsForPdfDownload } from "../repositories/articles/articlesRepository";
+import { insertPdfDatasetFile } from "../repositories/datasets/unifiedDatasetsRepository";
 import { buildOpenalexContentUrl, downloadPdf } from "../utils/downloadPdf";
 import { parseIntArgument } from "../utils/command";
 import { logger } from "../utils/logger";
@@ -30,49 +27,46 @@ program
   )
   .action(async (options) => {
     try {
-      logger.info("Fetching articles with PDFs to download...");
-      const articlesToDownload = await getArticlesForPdfDownload(
+      logger.info("Fetching dryad datasets with PDFs to download...");
+      const datasetsToDownload = await getDryadDatasetsForPdfDownload(
         options.limit,
         options.extId,
       );
 
       logger.info(
-        `Found ${articlesToDownload.length} articles with PDFs to download`,
+        `Found ${datasetsToDownload.length} datasets with PDFs to download`,
       );
 
       let successCount = 0;
       let failedCount = 0;
 
-      for (let i = 0; i < articlesToDownload.length; i++) {
-        const article = articlesToDownload[i];
+      for (let i = 0; i < datasetsToDownload.length; i++) {
+        const dataset = datasetsToDownload[i];
         logger.info(
-          `[${i + 1}/${articlesToDownload.length}] Processing article ${article.id}: "${article.title}"`,
+          `[${i + 1}/${datasetsToDownload.length}] Processing dataset ${dataset.datasetId} extId=${dataset.datasetExtId}: "${dataset.articleTitle}"`,
         );
 
         try {
-          await updateArticlePdfDownloadStatus(article.id, "in_progress");
-
           const { filePath, filename, size } = await downloadPdf({
-            articleId: article.id,
-            openalexId: article.extOpenalexId,
+            datasetExtId: dataset.datasetExtId,
+            openalexId: dataset.extOpenalexId,
           });
 
-          await updateArticlePdfDownloadStatus(article.id, "completed");
-
-          await upsertPdfFile({
-            articleId: article.id,
+          await insertPdfDatasetFile({
+            datasetId: dataset.datasetId,
+            source: "dryad",
             filename,
             size,
-            url: buildOpenalexContentUrl(article.extOpenalexId),
+            isMainArticle: true,
+            sourceUrl: buildOpenalexContentUrl(dataset.extOpenalexId),
           });
 
           logger.info(`Successfully downloaded PDF to ${filePath}`);
           successCount++;
         } catch (err) {
           logger.error(
-            `Failed to download PDF for article ${article.id}: ${err instanceof Error ? err.message : String(err)}`,
+            `Failed to download PDF for dataset ${dataset.datasetId} extId=${dataset.datasetExtId}: ${err instanceof Error ? err.message : String(err)}`,
           );
-          await updateArticlePdfDownloadStatus(article.id, "failed");
           failedCount++;
         }
       }

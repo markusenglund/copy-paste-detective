@@ -3,12 +3,12 @@ import { useDropzone } from "react-dropzone";
 import { uploadPdf } from "../api/client";
 
 interface PdfDropzoneProps {
-  articleId: number;
+  datasetId: number;
   onUploadSuccess: () => void;
 }
 
 export function PdfDropzone({
-  articleId,
+  datasetId,
   onUploadSuccess,
 }: PdfDropzoneProps): React.ReactElement {
   const [uploading, setUploading] = useState(false);
@@ -23,7 +23,7 @@ export function PdfDropzone({
       setError(null);
 
       try {
-        await uploadPdf(articleId, file);
+        await uploadPdf(datasetId, file);
         onUploadSuccess();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed");
@@ -31,7 +31,7 @@ export function PdfDropzone({
         setUploading(false);
       }
     },
-    [articleId, onUploadSuccess],
+    [datasetId, onUploadSuccess],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

@@ -43,7 +43,7 @@ program
       // A. Copy PDF file
       if (details.article.id && details.article.pdfFilename) {
         const pdfSource = join(
-          storagePaths.pdfArticle(details.article.id),
+          storagePaths.dryadDataset(extId),
           details.article.pdfFilename,
         );
         if (existsSync(pdfSource)) {

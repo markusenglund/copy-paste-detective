@@ -131,7 +131,7 @@ export function DatasetDetails(): React.ReactElement {
         )}
         {data.article.pdfFilename && (
           <a
-            href={`/api/articles/${data.article.id}/pdf/${data.article.pdfFilename}`}
+            href={`/api/datasets/${data.dataset.id}/pdf/${data.article.pdfFilename}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-blue-600 hover:underline"

@@ -281,6 +281,13 @@
       "when": 1775571783610,
       "tag": "0040_sharp_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1776162888712,
+      "tag": "0042_cooing_power_pack",
+      "breakpoints": true
     }
   ]
 }

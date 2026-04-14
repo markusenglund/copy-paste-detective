@@ -3,6 +3,7 @@ import {
   getDashboardArticles,
   getAvailableFields,
 } from "../../repositories/articles/articlesRepository";
+import { getDatasetById } from "../../repositories/datasets/unifiedDatasetsRepository";
 import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import { storagePaths } from "../../utils/paths/storagePaths";
@@ -195,14 +196,29 @@ export async function articlesRoutes(fastify: FastifyInstance): Promise<void> {
   );
 
   fastify.get<{
-    Params: { articleId: string; filename: string };
+    Params: { datasetId: string; filename: string };
   }>(
-    "/articles/:articleId/pdf/:filename",
+    "/datasets/:datasetId/pdf/:filename",
     { config: { requiredRole: "viewer" } },
     async (request, reply) => {
-      const { articleId, filename } = request.params;
+      const { datasetId, filename } = request.params;
 
-      const pdfPath = join(storagePaths.pdfArticle(articleId), filename);
+      const datasetIdNum = parseInt(datasetId, 10);
+      if (isNaN(datasetIdNum)) {
+        return reply.status(400).send({ error: "Invalid dataset ID" });
+      }
+
+      const dataset = await getDatasetById(datasetIdNum);
+      if (!dataset) {
+        return reply.status(404).send({ error: "Dataset not found" });
+      }
+
+      const dir =
+        dataset.source === "pmc"
+          ? storagePaths.pmcArticle(dataset.extId)
+          : storagePaths.dryadDataset(dataset.extId);
+
+      const pdfPath = join(dir, filename);
 
       // Check if file exists
       if (!existsSync(pdfPath)) {

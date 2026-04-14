@@ -415,7 +415,7 @@ export function ArticlesTable({
                 {article.pdfFilename ? (
                   <div className="flex flex-col min-w-0">
                     <a
-                      href={`/api/articles/${article.id}/pdf/${article.pdfFilename}`}
+                      href={`/api/datasets/${article.datasetId}/pdf/${article.pdfFilename}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 hover:underline truncate block"
@@ -430,10 +430,12 @@ export function ArticlesTable({
                     )}
                   </div>
                 ) : (
-                  <PdfDropzone
-                    articleId={article.id}
-                    onUploadSuccess={onUploadSuccess}
-                  />
+                  article.datasetId !== null && (
+                    <PdfDropzone
+                      datasetId={article.datasetId}
+                      onUploadSuccess={onUploadSuccess}
+                    />
+                  )
                 )}
               </td>
             </tr>

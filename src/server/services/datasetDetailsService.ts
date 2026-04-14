@@ -13,8 +13,8 @@ import { aiPdfReviewResults } from "../../repositories/aiPdfReviewResults/schema
 import { authors } from "../../repositories/authors/schema";
 import { institutions } from "../../repositories/institutions/schema";
 import { datasetFiles } from "../../repositories/datasetFiles/schema";
-import { pdfFiles } from "../../repositories/pdfFiles/schema";
 import { eq, sql, and, gt } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { getReviewsForDataset } from "../../repositories/humanReview/humanReviewRepository";
 import { getTagsForDataset } from "../../repositories/datasets/tagsRepository";
 import { AI_REVIEW_MIN_DATE } from "../../repositories/aiReviewResults/aiReviewResultsRepository";
@@ -92,6 +92,8 @@ export async function getDatasetDetails(
     );
 
   // Get dataset and article information
+  const articlePdfFiles = alias(datasetFiles, "article_pdf_files");
+
   const datasetInfo = await db
     .select({
       datasetId: datasets.id,
@@ -112,8 +114,8 @@ export async function getDatasetDetails(
       publicationDate: articles.publicationDate,
       journalName: journals.title,
       journalSjrScore: journals.sjrScore,
-      pdfFilename: pdfFiles.filename,
-      pdfFileSize: pdfFiles.size,
+      pdfFilename: articlePdfFiles.filename,
+      pdfFileSize: articlePdfFiles.size,
     })
     .from(datasets)
     .leftJoin(
@@ -122,7 +124,14 @@ export async function getDatasetDetails(
     )
     .leftJoin(articles, eq(datasets.articleId, articles.id))
     .leftJoin(journals, eq(articles.journalId, journals.id))
-    .leftJoin(pdfFiles, eq(pdfFiles.articleId, articles.id))
+    .leftJoin(
+      articlePdfFiles,
+      and(
+        eq(articlePdfFiles.datasetId, datasets.id),
+        eq(articlePdfFiles.fileType, "pdf"),
+        eq(articlePdfFiles.isMainArticle, true),
+      ),
+    )
     .where(eq(datasets.id, datasetId))
     .limit(1);
 

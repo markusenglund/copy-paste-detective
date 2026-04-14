@@ -6,7 +6,7 @@ import { logger } from "./logger";
 import { storagePaths } from "./paths/storagePaths";
 
 type Params = {
-  articleId: number;
+  datasetExtId: string;
   openalexId: string;
 };
 
@@ -44,7 +44,7 @@ function extractFilenameFromUrl(url: string): string | null {
 function extractFilenameFromResponse(
   response: Response,
   url: string,
-  articleId: number,
+  datasetExtId: string,
 ): string {
   const contentDisposition = response.headers.get("content-disposition");
   if (contentDisposition) {
@@ -59,7 +59,7 @@ function extractFilenameFromResponse(
   const urlFilename = extractFilenameFromUrl(url);
   if (urlFilename) return urlFilename;
 
-  return `article_${articleId}.pdf`;
+  return `article_${datasetExtId}.pdf`;
 }
 
 export function buildOpenalexContentUrl(openalexId: string): string {
@@ -68,27 +68,29 @@ export function buildOpenalexContentUrl(openalexId: string): string {
 }
 
 export async function downloadPdf({
-  articleId,
+  datasetExtId,
   openalexId,
 }: Params): Promise<{ filePath: string; filename: string; size: number }> {
-  const downloadDir = storagePaths.pdfArticle(articleId);
+  const downloadDir = storagePaths.dryadDataset(datasetExtId);
 
   await mkdir(downloadDir, { recursive: true });
 
   const pdfUrl = buildOpenalexContentUrl(openalexId);
 
-  logger.info(`Downloading PDF for article ${articleId} from OpenAlex`);
+  logger.info(
+    `Downloading PDF for dryad dataset ${datasetExtId} from OpenAlex`,
+  );
 
   const response = await fetch(pdfUrl, { redirect: "follow" });
 
   if (!response.ok) {
     throw new Error(
-      `Failed to download PDF for article ${articleId}: ${response.status} ${response.statusText}`,
+      `Failed to download PDF for dryad dataset ${datasetExtId}: ${response.status} ${response.statusText}`,
     );
   }
 
   if (!response.body) {
-    throw new Error(`No response body for article ${articleId} PDF`);
+    throw new Error(`No response body for dryad dataset ${datasetExtId} PDF`);
   }
 
   // Validate Content-Type header
@@ -100,7 +102,7 @@ export async function downloadPdf({
     !contentType.includes("binary/octet-stream")
   ) {
     throw new Error(
-      `Invalid Content-Type for article ${articleId} PDF '${pdfUrl}' - expected "application/pdf", got "${contentType}"`,
+      `Invalid Content-Type for dryad dataset ${datasetExtId} PDF '${pdfUrl}' - expected "application/pdf", got "${contentType}"`,
     );
   }
 
@@ -113,7 +115,7 @@ export async function downloadPdf({
     }
   }
 
-  const filename = extractFilenameFromResponse(response, pdfUrl, articleId);
+  const filename = extractFilenameFromResponse(response, pdfUrl, datasetExtId);
   const filePath = join(downloadDir, filename);
 
   const writeStream = createWriteStream(filePath);
@@ -131,7 +133,7 @@ export async function downloadPdf({
       if (isFirstChunk) {
         if (!validatePdfMagicBytes(value)) {
           throw new Error(
-            `Downloaded file for article ${articleId} is not a valid PDF: missing PDF signature`,
+            `Downloaded file for dryad dataset ${datasetExtId} is not a valid PDF: missing PDF signature`,
           );
         }
         isFirstChunk = false;

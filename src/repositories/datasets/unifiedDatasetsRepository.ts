@@ -446,6 +446,8 @@ export async function insertPdfDatasetFile(data: {
   source: DatasetSource;
   filename: string;
   size: number;
+  isMainArticle?: boolean;
+  sourceUrl?: string;
 }): Promise<number> {
   const [newFile] = await db
     .insert(datasetFiles)
@@ -456,6 +458,8 @@ export async function insertPdfDatasetFile(data: {
       fileType: "pdf",
       size: data.size,
       downloadStatus: "completed",
+      isMainArticle: data.isMainArticle ?? null,
+      sourceUrl: data.sourceUrl ?? null,
     })
     .returning();
   return newFile.id;
@@ -470,6 +474,17 @@ export async function getPmcDatasetFileS3Url(
     .where(eq(pmcDatasetFileDetails.datasetFileId, fileId))
     .limit(1);
   return detail?.s3Url;
+}
+
+export async function getDatasetById(
+  datasetId: number,
+): Promise<DatasetRow | undefined> {
+  const [result] = await db
+    .select()
+    .from(datasets)
+    .where(eq(datasets.id, datasetId))
+    .limit(1);
+  return result;
 }
 
 export async function getAllExtPmcIds(): Promise<Set<string>> {
