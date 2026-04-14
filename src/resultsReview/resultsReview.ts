@@ -92,6 +92,29 @@ export async function reviewSheetResults(
     return null;
   }
 
+  // Require enough paper context for the AI to make a meaningful judgment
+  if (
+    excelFileData.source === "pmc" &&
+    !excelFileData.fullText &&
+    !excelFileData.abstract
+  ) {
+    logger.warn(
+      `Skipping AI review for '${excelFileData.articleName}' — PMC dataset has no fullText or abstract`,
+    );
+    return null;
+  }
+
+  if (
+    excelFileData.source === "dryad" &&
+    !excelFileData.abstract &&
+    !excelFileData.dataDescription
+  ) {
+    logger.warn(
+      `Skipping AI review for '${excelFileData.articleName}' — Dryad dataset has no abstract or data description`,
+    );
+    return null;
+  }
+
   const prompt = createPrompt(excelFileData, {
     sheet,
     categorizedColumns,
@@ -174,7 +197,7 @@ const createPrompt = (
 };
 
 function createIntroduction(): string {
-  return `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the flagged duplication is a false positive (i.e. it makes sense in the context of the paper) or if it's likely the result of a data-handling mistake or even deliberate fraud. You'll receive the abstract of the paper, a description of the data and the parts of the data that was flagged.
+  return `The raw data belonging to a scientific paper has been flagged by an automated system for containing duplicated data. Your job is to evaluate whether the flagged duplication is a false positive (i.e. it makes sense in the context of the paper) or if it's likely the result of a data-handling mistake or even deliberate fraud.
 `;
 }
 

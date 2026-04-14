@@ -91,6 +91,12 @@ async function getAiColumnProfiles(
     .slice(sheet.firstDataRowIndex, sheet.firstDataRowIndex + 2)
     .map((row) => row.map((cell) => String(cell.value || "")));
 
+  if (!excelFileData.dataDescription) {
+    logger.warn(
+      `No data description available for AI column screening of '${excelFileData.articleName}', proceeding without it`,
+    );
+  }
+
   const screenColumnsResult = await screenColumnsWithCache({
     paperName: excelFileData.articleName,
     excelFileName: excelFileData.excelFileName,
