@@ -11,7 +11,6 @@ import { join } from "node:path";
 import { existsSync, createReadStream } from "node:fs";
 import { db } from "../../db";
 import { datasets } from "../../repositories/datasets/unifiedSchema";
-import { dryadDatasetDetails } from "../../repositories/datasets/dryadDetailsSchema";
 import { datasetFiles } from "../../repositories/datasetFiles/schema";
 import { eq, and } from "drizzle-orm";
 import { storagePaths } from "../../utils/paths/storagePaths";
@@ -134,17 +133,14 @@ export async function datasetDetailsRoutes(
       }
 
       try {
-        // Query database to get extId and verify file belongs to this dataset
+        // Query database to get source/extId and verify file belongs to this dataset
         const result = await db
           .select({
-            extId: dryadDatasetDetails.extIdNumeric,
+            source: datasets.source,
+            extId: datasets.extId,
             fileExists: datasetFiles.id,
           })
           .from(datasets)
-          .innerJoin(
-            dryadDatasetDetails,
-            eq(dryadDatasetDetails.datasetId, datasets.id),
-          )
           .innerJoin(
             datasetFiles,
             and(
@@ -159,9 +155,12 @@ export async function datasetDetailsRoutes(
           return reply.status(404).send({ error: "File not found" });
         }
 
-        const { extId } = result[0];
-
-        const filePath = join(storagePaths.dryadDataset(extId), filename);
+        const { source, extId } = result[0];
+        const datasetDir =
+          source === "pmc"
+            ? storagePaths.pmcArticle(extId)
+            : storagePaths.dryadDataset(extId);
+        const filePath = join(datasetDir, filename);
 
         // Check if file exists on disk
         if (!existsSync(filePath)) {
@@ -210,17 +209,14 @@ export async function datasetDetailsRoutes(
       }
 
       try {
-        // Query database to get extId and verify file belongs to this dataset
+        // Query database to get source/extId and verify file belongs to this dataset
         const result = await db
           .select({
-            extId: dryadDatasetDetails.extIdNumeric,
+            source: datasets.source,
+            extId: datasets.extId,
             fileExists: datasetFiles.id,
           })
           .from(datasets)
-          .innerJoin(
-            dryadDatasetDetails,
-            eq(dryadDatasetDetails.datasetId, datasets.id),
-          )
           .innerJoin(
             datasetFiles,
             and(

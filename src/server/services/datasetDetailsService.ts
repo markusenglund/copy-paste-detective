@@ -192,13 +192,14 @@ export async function getDatasetDetails(
 
   // Check which files have highlighted versions
   const highlightedFileIds = new Set<number>();
-  if (info.extId != null) {
+  const resolvedExtId = info.extId ?? info.pmcExtId;
+  if (resolvedExtId != null) {
     for (const file of excelFiles) {
       const highlightedFilename = file.fileName.endsWith(".xls")
         ? file.fileName.replace(".xls", ".xlsx")
         : file.fileName;
       const highlightedPath = join(
-        storagePaths.highlightedDataset(info.extId),
+        storagePaths.highlightedDataset(resolvedExtId),
         highlightedFilename,
       );
       if (existsSync(highlightedPath)) {
