@@ -298,6 +298,7 @@ export async function upsertPmcDataFile(data: {
           fileType: data.fileType,
           size: data.size,
           downloadStatus: "not_started",
+          isMainArticle: false,
         })
         .returning();
 
@@ -446,7 +447,6 @@ export async function insertPdfDatasetFile(data: {
   source: DatasetSource;
   filename: string;
   size: number;
-  isMainArticle?: boolean;
   sourceUrl?: string;
 }): Promise<number> {
   const [newFile] = await db
@@ -458,7 +458,7 @@ export async function insertPdfDatasetFile(data: {
       fileType: "pdf",
       size: data.size,
       downloadStatus: "completed",
-      isMainArticle: data.isMainArticle ?? null,
+      isMainArticle: true,
       sourceUrl: data.sourceUrl ?? null,
     })
     .returning();
@@ -669,6 +669,7 @@ export async function upsertDryadDataFile(data: {
           fileType: data.fileType,
           size: data.size,
           downloadStatus: "not_started",
+          isMainArticle: false,
         })
         .returning();
 

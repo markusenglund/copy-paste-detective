@@ -57,7 +57,6 @@ program
             source: "dryad",
             filename,
             size,
-            isMainArticle: true,
             sourceUrl: buildOpenalexContentUrl(dataset.extOpenalexId),
           });
 

@@ -10,7 +10,9 @@ export async function bulkUpsertAuthors(
 ): Promise<Author[]> {
   if (data.length === 0) return [];
 
-  const inputExtIds = data.map((a) => a.extOpenalexId).filter(Boolean) as string[];
+  const inputExtIds = data
+    .map((a) => a.extOpenalexId)
+    .filter(Boolean) as string[];
   const existingRows =
     inputExtIds.length > 0
       ? await db
@@ -18,7 +20,9 @@ export async function bulkUpsertAuthors(
           .from(authors)
           .where(inArray(authors.extOpenalexId, inputExtIds))
       : [];
-  const existingByExtId = new Map(existingRows.map((r) => [r.extOpenalexId, r]));
+  const existingByExtId = new Map(
+    existingRows.map((r) => [r.extOpenalexId, r]),
+  );
 
   // We use a two-pass upsert strategy to handle duplicate constraints on both `orcid` and `extOpenalexId`.
   //

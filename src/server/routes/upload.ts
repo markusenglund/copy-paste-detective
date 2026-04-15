@@ -51,7 +51,6 @@ export async function uploadRoutes(fastify: FastifyInstance): Promise<void> {
         source: dataset.source,
         filename,
         size: buffer.length,
-        isMainArticle: true,
       });
 
       return reply.send({

@@ -24,7 +24,7 @@ export const datasetFiles = pgTable(
     downloadStatus: downloadStatusEnum("download_status")
       .notNull()
       .default("not_started"),
-    isMainArticle: boolean("is_main_article"),
+    isMainArticle: boolean("is_main_article").notNull(),
     sourceUrl: text("source_url"),
   },
   (table) => [index("idx_dataset_files_dataset_id").on(table.datasetId)],
