@@ -21,7 +21,7 @@ function compareRows(
     const cell2 = row2[colIndex];
     const areCellsAnalyzable = cell1?.isAnalyzable && cell2?.isAnalyzable;
     if (areCellsAnalyzable) {
-      if (cell1.value === cell2.value) {
+      if (cell1.value === cell2.value && cell1.value !== 0) {
         sharedValues.push(cell1.value as number);
         sharedColumns.push(colIndex);
       }

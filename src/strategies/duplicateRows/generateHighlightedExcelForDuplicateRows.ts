@@ -35,9 +35,11 @@ export async function generateHighlightedExcelForDuplicateRows(
     excelFileData.extId,
   );
 
-  // Limit to top 200 pairs to safeguard performance
-  const maxPairs = 200;
-  const pairsToHighlight = duplicateRows.slice(0, maxPairs);
+  // Limit to top 50 pairs per sheet so no single sheet dominates
+  const maxPairsPerSheet = 50;
+  const pairsToHighlight = Object.values(
+    Object.groupBy(duplicateRows, (row) => row.sheet.name),
+  ).flatMap((sheetRows) => (sheetRows ?? []).slice(0, maxPairsPerSheet));
 
   logger.debug(
     `Highlighting ${pairsToHighlight.length} duplicate row pairs (limited from ${duplicateRows.length})`,
