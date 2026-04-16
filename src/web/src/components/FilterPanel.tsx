@@ -5,6 +5,7 @@ import {
   MetaAnalysisOption,
   PdfAvailabilityOption,
   ReviewStatusOption,
+  SourceFilter,
   SourceOption,
 } from "../../../shared/filterTypes";
 import { fetchAvailableFields, fetchTags, TagInfo } from "../api/client";
@@ -163,7 +164,7 @@ export function FilterPanel({
   );
 
   const sourceFilter = filterParams.filters.find(
-    (f) => f.key === FILTER_KEYS.SOURCE,
+    (f): f is SourceFilter => f.key === FILTER_KEYS.SOURCE,
   );
 
   const isHighProbabilityEnabled = highProbabilityFilter?.enabled ?? true;
@@ -179,8 +180,7 @@ export function FilterPanel({
     metaAnalysisFilter && "option" in metaAnalysisFilter
       ? metaAnalysisFilter.option
       : "exclude";
-  const sourceOption: SourceOption =
-    sourceFilter?.key === FILTER_KEYS.SOURCE ? sourceFilter.option : "all";
+  const sourceOption: SourceOption = sourceFilter?.option ?? "all";
 
   const activeFilterCount =
     (isHighProbabilityEnabled ? 1 : 0) +
