@@ -1,12 +1,38 @@
 import { Command } from "@commander-js/extra-typings";
+import xlsx from "xlsx";
 import { closeDb } from "../db";
 import { getDryadDatasetByExtId } from "../repositories/datasets/unifiedDatasetsRepository";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { parseIntArgument } from "../utils/command";
 import { logger } from "../utils/logger";
+import { identifyFormulaRelationshipsWithCache } from "../ai/useCases/identifyFormulaRelationships";
 
 const SAMPLE_ROW_COUNT = 5;
+const FORMULA_COLUMN_THRESHOLD = 0.5;
+
+type SheetColumnInfo = {
+  letter: string;
+  name: string;
+  isFormula: boolean;
+};
+
+function toColumnDisplayName(name: string): string {
+  return name.trim() === "" ? "(empty header)" : name;
+}
+
+function formatExpressionWithColumnNames(
+  expression: string,
+  columnsByLetter: Map<string, SheetColumnInfo>,
+): string {
+  return expression.replace(/\b[A-Z]{1,3}\b/g, (token) => {
+    const column = columnsByLetter.get(token.toUpperCase());
+    if (!column) {
+      return token;
+    }
+    return toColumnDisplayName(column.name);
+  });
+}
 
 const program = new Command();
 
@@ -40,7 +66,9 @@ program
       for (let i = 0; i < filesToProcess.length; i++) {
         const fileEntry = filesToProcess[i];
         if (fileEntry.downloadStatus !== "completed") {
-          logger.info(`Skipping '${fileEntry.filename}' — not downloaded.`);
+          logger.info(
+            `Skipping additional file '${fileEntry.filename}' because it is not downloaded (status: ${fileEntry.downloadStatus}).`,
+          );
           continue;
         }
 
@@ -48,12 +76,8 @@ program
 
         for (const sheet of excelFileData.sheets) {
           console.log(
-            `\n=== File: ${fileEntry.filename} | Sheet: ${sheet.name} ===`,
+            `File: '${fileEntry.filename}'\nSheet: ${sheet.name} `,
           );
-          console.log(
-            `Columns (${sheet.columnNames.length}): ${sheet.columnNames.join(" | ")}`,
-          );
-          console.log();
 
           const availableRows = sheet.numRows - sheet.firstDataRowIndex;
           if (availableRows <= 0) {
@@ -61,12 +85,102 @@ program
             continue;
           }
 
+          const columns: SheetColumnInfo[] = sheet.columnNames.map(
+            (columnName, colIndex) => {
+              let nonEmptyCount = 0;
+              let formulaCount = 0;
+              for (
+                let rowIndex = sheet.firstDataRowIndex;
+                rowIndex < sheet.numRows;
+                rowIndex++
+              ) {
+                const cell = sheet.enhancedMatrix[rowIndex]?.[colIndex];
+                const value = cell?.value;
+                const isNonEmpty =
+                  value !== null &&
+                  value !== undefined &&
+                  !(typeof value === "string" && value.trim() === "");
+                if (!isNonEmpty) {
+                  continue;
+                }
+                nonEmptyCount++;
+                if (cell.originalCell?.f !== undefined) {
+                  formulaCount++;
+                }
+              }
+
+              const ratio =
+                nonEmptyCount === 0 ? 0 : formulaCount / nonEmptyCount;
+              return {
+                letter: xlsx.utils.encode_col(colIndex),
+                name: columnName,
+                isFormula: ratio > FORMULA_COLUMN_THRESHOLD,
+              };
+            },
+          );
+
+          const printableColumns = columns.map((col) => {
+            const name = toColumnDisplayName(col.name);
+            return col.isFormula
+              ? `${col.letter} [FORMULA] (${name})`
+              : `${col.letter} (${name})`;
+          });
+          console.log(
+            `Columns (${columns.length}): ${printableColumns.join(" | ")}`,
+          );
+          console.log();
+
           const rowCount = Math.min(SAMPLE_ROW_COUNT, availableRows);
           const sampleRows = sheet.getSampleData(rowCount);
 
-          sampleRows.forEach((row, idx) => {
-            console.log(`Row ${idx + 1}: ${row.join(" | ")}`);
-          });
+
+          const relationshipResult =
+            await identifyFormulaRelationshipsWithCache({
+              excelFileName: fileEntry.filename,
+              sheetName: sheet.name,
+              columns,
+              sampleRows,
+              datasetId: dataset.id,
+              datasetFileId: fileEntry.id,
+            });
+
+          if (relationshipResult.relationships.length === 0) {
+            console.log("No formula relationships identified.");
+            continue;
+          }
+
+          const columnsByLetter = new Map(
+            columns.map((col) => [col.letter.toUpperCase(), col]),
+          );
+
+          console.log("Identified formula relationships:");
+          for (const relationship of relationshipResult.relationships) {
+            const resultColumn = columnsByLetter.get(
+              relationship.resultColumn.toUpperCase(),
+            );
+            if (!resultColumn) {
+              console.log(
+                `- ${relationship.resultColumn} (unknown column) = ${relationship.expression}`,
+              );
+              continue;
+            }
+
+            if (resultColumn.isFormula) {
+              console.log(
+                `- Skipping ${resultColumn.letter} because it is a [FORMULA] column`,
+              );
+              continue;
+            }
+
+            const resultName = toColumnDisplayName(resultColumn.name);
+            const expressionWithNames = formatExpressionWithColumnNames(
+              relationship.expression,
+              columnsByLetter,
+            );
+            console.log(
+              `- ${resultColumn.letter} (${resultName}) = ${relationship.expression} [${resultName} = ${expressionWithNames}]`,
+            );
+          }
         }
       }
     } finally {
