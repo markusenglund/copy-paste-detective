@@ -2,24 +2,31 @@ import { describe, it, expect } from "@jest/globals";
 import xlsx from "xlsx";
 import { Sheet } from "../../entities/Sheet";
 import { checkRelationship, type SheetColumnInfo } from "../checkRelationship";
-import type {
-  EvaluateResult,
-  PythonRunner,
-  RowIntervals,
-  RowResult,
-} from "../pythonRunner";
+import type { PythonRunner, BatchItem, BatchResult } from "../pythonRunner";
 
-type MockEvaluator = (
-  expression: string,
-  rows: RowIntervals[],
-) => EvaluateResult;
-
-function mockPython(evaluator: MockEvaluator): PythonRunner {
+function mockPython(
+  evaluator: (items: BatchItem[]) => BatchResult[],
+): PythonRunner {
   return {
-    evaluate: async (expression: string, rows: RowIntervals[]) =>
-      evaluator(expression, rows),
+    evaluateBatch: async (items: BatchItem[]) => evaluator(items),
     shutdown: async () => {},
   } as unknown as PythonRunner;
+}
+
+// Evaluates A / (B * B) at each point scope
+function bmiEvaluator(items: BatchItem[]): BatchResult[] {
+  return items.map(({ scopes }) => ({
+    values: scopes.map((scope) => {
+      const a = scope.A ?? 0;
+      const b = scope.B ?? 0;
+      if (b === 0)
+        return {
+          ok: false as const,
+          error: "ZeroDivisionError: division by zero",
+        };
+      return { ok: true as const, value: a / (b * b) };
+    }),
+  }));
 }
 
 function createSheet(data: (string | number | null)[][]): Sheet {
@@ -34,28 +41,6 @@ function columnsFor(sheet: Sheet): SheetColumnInfo[] {
     isFormula: false,
   }));
 }
-
-// Evaluates A / (B * B) over each row's 4 interval corners.
-const bmiEvaluator: MockEvaluator = (_expression, rows) => {
-  const results: RowResult[] = rows.map((row) => {
-    const a = row.A;
-    const b = row.B;
-    if (!a || !b) {
-      return { ok: false, error: "missing operand" };
-    }
-    const corners: number[] = [];
-    for (const av of [a[0], a[1]]) {
-      for (const bv of [b[0], b[1]]) {
-        if (bv === 0) {
-          return { ok: false, error: "ZeroDivisionError" };
-        }
-        corners.push(av / (bv * bv));
-      }
-    }
-    return { ok: true, min: Math.min(...corners), max: Math.max(...corners) };
-  });
-  return { usedOperands: ["A", "B"], results };
-};
 
 describe("checkRelationship", () => {
   it("reports all rows as passing when the relationship holds exactly", async () => {
@@ -88,7 +73,7 @@ describe("checkRelationship", () => {
       ["A", "B", "C"],
       [64, 1.6, 25], // pass
       [81, 1.8, 25], // pass
-      [100, 2, 50], // fail: expected 25, got 50
+      [100, 2, 50], // fail: expected ~25, got 50
     ]);
     const columns = columnsFor(sheet);
     const python = mockPython(bmiEvaluator);
@@ -152,23 +137,28 @@ describe("checkRelationship", () => {
     expect(result.failedRows).toBe(0);
   });
 
-  it("counts rows where the Python evaluation errored as failures", async () => {
+  it("counts rows where Python evaluation errors as failures", async () => {
     const sheet = createSheet([
       ["A", "B", "C"],
-      [64, 1.6, 25],
-      [81, 1.8, 25],
-      [100, 2, 25],
+      [64, 1.6, 25], // pass
+      [81, 1.8, 25], // will be forced to error
+      [100, 2, 25], // pass
     ]);
     const columns = columnsFor(sheet);
-    const python = mockPython((expression, rows) => {
-      const base = bmiEvaluator(expression, rows);
-      return {
-        usedOperands: base.usedOperands,
-        results: base.results.map((r, i) =>
-          i === 1 ? { ok: false, error: "ZeroDivisionError: by zero" } : r,
-        ),
-      };
-    });
+
+    // Row 1 corners have A in [80.5, 81.5] — fail those scopes
+    const python = mockPython((items) =>
+      items.map(({ scopes }) => ({
+        values: scopes.map((scope) => {
+          const a = scope.A ?? 0;
+          if (a > 80 && a < 82) {
+            return { ok: false as const, error: "ZeroDivisionError: by zero" };
+          }
+          const b = scope.B ?? 1;
+          return { ok: true as const, value: a / (b * b) };
+        }),
+      })),
+    );
 
     const result = await checkRelationship(
       sheet,

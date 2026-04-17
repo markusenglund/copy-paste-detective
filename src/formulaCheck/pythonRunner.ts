@@ -3,37 +3,24 @@ import readline from "node:readline";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { logger } from "../utils/logger";
-import type { Interval } from "./intervalCheck";
 
-export type RowIntervals = Record<string, Interval>;
-
-export type RowResult =
-  | { ok: true; min: number; max: number }
+export type PointScope = Record<string, number>;
+export type PointValue =
+  | { ok: true; value: number }
   | { ok: false; error: string };
+export type BatchItem = { expression: string; scopes: PointScope[] };
+export type BatchResult = { values: PointValue[] };
 
-export type EvaluateResult = {
-  usedOperands: string[];
-  results: RowResult[];
-};
-
-const rowResultSchema: z.ZodType<RowResult> = z.union([
-  z.object({
-    ok: z.literal(true),
-    min: z.number(),
-    max: z.number(),
-  }),
-  z.object({
-    ok: z.literal(false),
-    error: z.string(),
-  }),
+const pointValueSchema: z.ZodType<PointValue> = z.union([
+  z.object({ ok: z.literal(true), value: z.number() }),
+  z.object({ ok: z.literal(false), error: z.string() }),
 ]);
 
 const responseSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("ok"),
     id: z.string(),
-    usedOperands: z.array(z.string()),
-    results: z.array(rowResultSchema),
+    results: z.array(z.object({ values: z.array(pointValueSchema) })),
   }),
   z.object({
     kind: z.literal("error"),
@@ -47,82 +34,48 @@ import sys
 import json
 import math
 import ast
-import itertools
-import random
 import traceback
 
-MAX_FULL_CORNERS = 6
-
-def collect_names(tree):
-    names = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Name):
-            names.add(node.id)
-    return names
-
-def evaluate_request(expression, rows):
+def evaluate_item(expression, scopes):
     try:
         tree = ast.parse(expression, mode="eval")
     except Exception as e:
         return {"kind": "error", "error": "parse error: {}: {}".format(type(e).__name__, e)}
-
-    names = collect_names(tree)
-    used_operands = sorted(n for n in names if n != "math")
 
     try:
         compiled = compile(tree, "<formula>", "eval")
     except Exception as e:
         return {"kind": "error", "error": "compile error: {}: {}".format(type(e).__name__, e)}
 
-    results = []
-    for row_idx, row in enumerate(rows):
-        missing = [op for op in used_operands if op not in row]
-        if missing:
-            results.append({"ok": False, "error": "missing operands: " + ",".join(missing)})
+    values = []
+    for scope in scopes:
+        s = dict(scope)
+        s["math"] = math
+        try:
+            v = eval(compiled, {"__builtins__": {}}, s)
+        except Exception as e:
+            values.append({"ok": False, "error": "{}: {}".format(type(e).__name__, e)})
             continue
+        if not isinstance(v, (int, float)) or isinstance(v, bool):
+            values.append({"ok": False, "error": "non-numeric result: {}".format(type(v).__name__)})
+            continue
+        fv = float(v)
+        if not math.isfinite(fv):
+            values.append({"ok": False, "error": "non-finite result: {}".format(fv)})
+            continue
+        values.append({"ok": True, "value": fv})
 
-        if len(used_operands) == 0:
-            corners = [{}]
-        elif len(used_operands) <= MAX_FULL_CORNERS:
-            intervals = [row[op] for op in used_operands]
-            corners = [dict(zip(used_operands, combo)) for combo in itertools.product(*intervals)]
-        else:
-            sys.stderr.write(
-                "row {} has {} operands; sampling instead of full corner enumeration\\n".format(
-                    row_idx, len(used_operands)
-                )
-            )
-            rng = random.Random(row_idx)
-            corners = []
-            for _ in range(64):
-                corners.append({op: rng.choice(row[op]) for op in used_operands})
-            corners.append({op: (row[op][0] + row[op][1]) / 2 for op in used_operands})
+    return {"kind": "ok", "values": values}
 
-        values = []
-        error = None
-        for corner in corners:
-            scope = dict(corner)
-            scope["math"] = math
-            try:
-                v = eval(compiled, {"__builtins__": {}}, scope)
-            except Exception as e:
-                error = "{}: {}".format(type(e).__name__, e)
-                break
-            if not isinstance(v, (int, float)) or isinstance(v, bool):
-                error = "non-numeric result: {}".format(type(v).__name__)
-                break
-            fv = float(v)
-            if not math.isfinite(fv):
-                error = "non-finite result: {}".format(fv)
-                break
-            values.append(fv)
 
-        if error is not None:
-            results.append({"ok": False, "error": error})
-        else:
-            results.append({"ok": True, "min": min(values), "max": max(values)})
-
-    return {"kind": "ok", "usedOperands": used_operands, "results": results}
+def handle_request(req):
+    results = []
+    for item in req["items"]:
+        result = evaluate_item(item["expression"], item["scopes"])
+        if result["kind"] == "error":
+            return result
+        results.append({"values": result["values"]})
+    return {"kind": "ok", "results": results}
 
 
 def main():
@@ -142,7 +95,7 @@ def main():
             continue
 
         try:
-            response = evaluate_request(req["expression"], req["rows"])
+            response = handle_request(req)
         except Exception as e:
             traceback.print_exc(file=sys.stderr)
             response = {"kind": "error", "error": "{}: {}".format(type(e).__name__, e)}
@@ -156,7 +109,7 @@ main()
 `;
 
 type PendingRequest = {
-  resolve: (value: EvaluateResult) => void;
+  resolve: (value: BatchResult[]) => void;
   reject: (error: Error) => void;
 };
 
@@ -243,16 +196,10 @@ export class PythonRunner {
       return;
     }
 
-    pending.resolve({
-      usedOperands: response.usedOperands,
-      results: response.results,
-    });
+    pending.resolve(response.results);
   }
 
-  async evaluate(
-    expression: string,
-    rows: RowIntervals[],
-  ): Promise<EvaluateResult> {
+  async evaluateBatch(items: BatchItem[]): Promise<BatchResult[]> {
     if (this.exited) {
       throw new Error("python3 worker has exited");
     }
@@ -261,9 +208,9 @@ export class PythonRunner {
     }
 
     const id = randomUUID();
-    const payload = JSON.stringify({ id, expression, rows });
+    const payload = JSON.stringify({ id, items });
 
-    return new Promise<EvaluateResult>((resolve, reject) => {
+    return new Promise<BatchResult[]>((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
       this.process.stdin.write(payload + "\n", (err) => {
         if (err) {
