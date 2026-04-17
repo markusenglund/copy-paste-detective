@@ -11,6 +11,8 @@ import {
 } from "../../repositories/aiFormulaRelationshipResults/schema";
 import { getProvider, getUseCaseConfig } from "../aiConfig";
 import { logger } from "../../utils/logger";
+import { maxPromptDataDescriptionChars } from "../../config/config";
+import { wrapInCodeBlock } from "../../utils/markdown";
 
 const relationshipSchema = z.object({
   resultColumn: z.string(),
@@ -34,10 +36,54 @@ export type IdentifyFormulaRelationshipsParams = {
   sampleRows: string[][];
   datasetId?: number;
   datasetFileId?: number;
+  articleName?: string;
+  abstract?: string;
+  dataDescription?: string;
+  fileCaption?: string;
+  fullText?: string;
+  source?: "dryad" | "pmc" | "standalone";
 };
 
 function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
+}
+
+function createContextSection(
+  params: IdentifyFormulaRelationshipsParams,
+): string {
+  const shouldIncludeAbstract =
+    !!params.abstract && !(params.source === "pmc" && !!params.fullText);
+
+  if (params.dataDescription) {
+    const truncated =
+      params.dataDescription.length > maxPromptDataDescriptionChars
+        ? `${params.dataDescription.slice(0, maxPromptDataDescriptionChars)}... (content truncated due to exceeding character limit)`
+        : params.dataDescription;
+    return (
+      (shouldIncludeAbstract ? `\n# Abstract\n\n${params.abstract}\n` : "") +
+      `\n# Description of the data\n\nThe following description of the dataset was provided by the authors.\n\n${wrapInCodeBlock(truncated)}\n`
+    );
+  }
+
+  if (params.source === "pmc") {
+    const parts: string[] = [];
+    if (shouldIncludeAbstract) {
+      parts.push(`# Abstract\n\n${params.abstract}`);
+    }
+    if (params.fileCaption) {
+      parts.push(
+        `# File caption\n\nThe following caption was provided for this data file:\n\n${wrapInCodeBlock(params.fileCaption)}`,
+      );
+    }
+    if (params.fullText) {
+      parts.push(
+        `# Full text of the paper\n\nUse it to understand what the data represents.\n\n${wrapInCodeBlock(params.fullText)}`,
+      );
+    }
+    return parts.length > 0 ? "\n" + parts.join("\n\n") + "\n" : "";
+  }
+
+  return shouldIncludeAbstract ? `\n# Abstract\n\n${params.abstract}\n` : "";
 }
 
 export function generatePrompt(
@@ -50,35 +96,40 @@ export function generatePrompt(
   });
 
   const sampleRows = params.sampleRows.slice(0, 5);
+  const columnHeaders = params.columns.map((col) => {
+    const name = col.name.trim() === "" ? col.letter : col.name;
+    return col.isFormula ? `${name} [FORMULA]` : name;
+  });
   const tableRows = [
-    params.columns.map((col) => col.letter),
+    columnHeaders,
     ...sampleRows.map((row) => row.map((cell) => escapeCell(cell))),
   ];
   const sampleTable = markdownTable(tableRows);
 
-  return `You are analyzing an Excel sheet to identify mathematical relationships between columns.
+  return `You are analyzing an Excel sheet from a scientific paper to identify mathematical relationships between columns — cases where one column is computed row-by-row from other columns.
 
-Find implicit formulas where one result column can be computed row-by-row from other columns.
+# Basic info
 
-Important rules:
-- Only include relationships where resultColumn is a non-formula column.
-- Never return a [FORMULA] column as resultColumn.
-- Operand columns in expression may be formula columns.
-- expression must be a valid Python expression over Excel column letters as variables (for example: A + B, A / (B * B), math.log(A), A ** C, math.factorial(A)).
-- Use ** for exponentiation, not ^.
-- The math module is available; reference its functions as math.<name>. Do not include imports.
-- Focus on row-level arithmetic relationships, not correlations.
-- For any group of columns that share a mathematical relationship, report at most one formula. Choose the resultColumn that is most likely computed from the others (e.g. a sum, product, or ratio of independent measurements) — not an operand that was measured directly.
-- Return valid JSON only in the required schema.
+- Title: '${params.articleName ?? ""}'
+- Excel filename: '${params.excelFileName}'
+- Sheet name: '${params.sheetName}'
+${createContextSection(params)}
+# Columns
 
-File: ${params.excelFileName}
-Sheet: ${params.sheetName}
-
-Columns:
 ${columnDescriptions.join("\n")}
 
-Sample rows (5 rows max):
+# Sample data
+
 ${sampleTable}
+
+# Your task
+
+Find implicit formulas where one column's values are computed row-by-row from other columns.
+
+Rules:
+- Columns marked [FORMULA] may appear as inputs in an expression but never as the result.
+- Write expressions as valid Python using column letters as variables (e.g. \`A + B\`, \`A / (B * B)\`, \`math.log(A)\`). The math module is available.
+- For any group of columns that share a mathematical relationship, report at most one formula — choose the resultColumn that is most likely derived from the others, not one of the independent measurements.
 
 Output schema:
 {

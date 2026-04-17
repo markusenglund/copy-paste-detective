@@ -1,10 +1,16 @@
 import { Command } from "@commander-js/extra-typings";
 import xlsx from "xlsx";
 import { closeDb } from "../db";
-import { getDryadDatasetByExtId } from "../repositories/datasets/unifiedDatasetsRepository";
+import {
+  getDryadDatasetByExtId,
+  getPmcDatasetByExtId,
+  type DatasetWithFiles,
+  type DryadDatasetWithFiles,
+} from "../repositories/datasets/unifiedDatasetsRepository";
 import { maxExcelFilesPerDataset } from "../config/config";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
-import { parseIntArgument } from "../utils/command";
+import { loadExcelFileFromPmcDataset } from "../utils/loadExcelFileFromPmcDataset";
+import { ExcelFileData } from "../types/ExcelFileData";
 import { logger } from "../utils/logger";
 import { identifyFormulaRelationshipsWithCache } from "../ai/useCases/identifyFormulaRelationships";
 import { PythonRunner } from "../formulaCheck/pythonRunner";
@@ -38,13 +44,28 @@ const program = new Command();
 program
   .name("check-formula-relationship")
   .description(
-    "Inspect sample rows from a Dryad dataset to identify formula relationships between columns.",
+    "Inspect sample rows from a Dryad or PMC dataset to identify formula relationships between columns.",
   )
-  .argument("<datasetExtId>", "Dryad dataset external ID", parseIntArgument)
+  .argument(
+    "<datasetExtId>",
+    "Dataset external ID (numeric for Dryad, e.g. PMC7305608 for PMC)",
+  )
   .action(async (datasetExtId) => {
     const python = await PythonRunner.start();
     try {
-      const dataset = await getDryadDatasetByExtId(datasetExtId);
+      const isPmc = datasetExtId.startsWith("PMC");
+
+      let dryadDataset: DryadDatasetWithFiles | undefined;
+      let pmcDataset: DatasetWithFiles | undefined;
+
+      if (isPmc) {
+        pmcDataset = await getPmcDatasetByExtId(datasetExtId);
+      } else {
+        dryadDataset = await getDryadDatasetByExtId(parseInt(datasetExtId, 10));
+      }
+
+      const dataset = pmcDataset ?? dryadDataset;
+
       if (!dataset) {
         logger.error(
           `Dataset with extId ${datasetExtId} not found in the database.`,
@@ -72,7 +93,9 @@ program
           continue;
         }
 
-        const excelFileData = loadExcelFileFromDryadIndex(dataset, i);
+        const excelFileData: ExcelFileData = pmcDataset
+          ? loadExcelFileFromPmcDataset(pmcDataset, i)
+          : loadExcelFileFromDryadIndex(dryadDataset!, i);
 
         for (const sheet of excelFileData.sheets) {
           logger.info(
@@ -144,6 +167,18 @@ program
               sampleRows,
               datasetId: dataset.id,
               datasetFileId: fileEntry.id,
+              articleName: excelFileData.articleName,
+              abstract: excelFileData.abstract,
+              dataDescription: excelFileData.dataDescription,
+              fileCaption:
+                excelFileData.source === "pmc"
+                  ? excelFileData.fileCaption
+                  : undefined,
+              fullText:
+                excelFileData.source === "pmc"
+                  ? excelFileData.fullText
+                  : undefined,
+              source: excelFileData.source,
             });
           const aiRequestDurationSeconds = (
             (Date.now() - aiRequestStart) /
