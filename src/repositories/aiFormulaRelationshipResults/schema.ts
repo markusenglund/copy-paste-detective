@@ -25,6 +25,7 @@ export const aiFormulaRelationshipResults = pgTable(
     relationships: jsonb("relationships")
       .notNull()
       .$type<FormulaRelationship[]>(),
+    explanation: text("explanation"),
     hash: text("hash").notNull(),
     datasetId: integer("dataset_id").references(() => datasets.id, {
       onDelete: "cascade",

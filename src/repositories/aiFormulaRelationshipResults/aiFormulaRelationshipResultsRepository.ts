@@ -23,6 +23,7 @@ export async function insertResult(data: {
   sheetName: string;
   prompt: string;
   model: string;
+  explanation: string;
   relationships: FormulaRelationship[];
   hash: string;
 }): Promise<AiFormulaRelationshipResultRow> {

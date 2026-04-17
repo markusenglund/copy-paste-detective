@@ -153,6 +153,10 @@ program
             `AI response received for sheet '${sheet.name}' in ${aiRequestDurationSeconds}s.`,
           );
 
+          if (relationshipResult.explanation) {
+            logger.info(`AI explanation: ${relationshipResult.explanation}`);
+          }
+
           if (relationshipResult.relationships.length === 0) {
             logger.info("No formula relationships identified.");
             continue;

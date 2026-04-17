@@ -19,6 +19,7 @@ const relationshipSchema = z.object({
 });
 
 const responseSchema = z.object({
+  explanation: z.string(),
   relationships: z.array(relationshipSchema),
 });
 
@@ -67,6 +68,7 @@ Important rules:
 - Use ** for exponentiation, not ^.
 - The math module is available; reference its functions as math.<name>. Do not include imports.
 - Focus on row-level arithmetic relationships, not correlations.
+- For any group of columns that share a mathematical relationship, report at most one formula. Choose the resultColumn that is most likely computed from the others (e.g. a sum, product, or ratio of independent measurements) — not an operand that was measured directly.
 - Return valid JSON only in the required schema.
 
 File: ${params.excelFileName}
@@ -80,6 +82,7 @@ ${sampleTable}
 
 Output schema:
 {
+  "explanation": "Brief reasoning about what relationships were found or why none were identified",
   "relationships": [
     {
       "resultColumn": "C",
@@ -120,6 +123,7 @@ function mapCachedResult(
   cached: AiFormulaRelationshipResultRow,
 ): IdentifyFormulaRelationshipsResponse {
   return {
+    explanation: cached.explanation ?? "",
     relationships: cached.relationships,
   };
 }
@@ -170,7 +174,10 @@ export async function identifyFormulaRelationshipsWithCache(
     rawResult.relationships,
     params.columns,
   );
-  const result: IdentifyFormulaRelationshipsResponse = { relationships };
+  const result: IdentifyFormulaRelationshipsResponse = {
+    explanation: rawResult.explanation,
+    relationships,
+  };
 
   if (canCache) {
     await insertFormulaRelationshipsResult({
@@ -179,6 +186,7 @@ export async function identifyFormulaRelationshipsWithCache(
       sheetName: params.sheetName,
       prompt,
       model: config.model,
+      explanation: result.explanation,
       relationships: result.relationships,
       hash,
     });

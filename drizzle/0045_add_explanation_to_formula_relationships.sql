@@ -1,0 +1,1 @@
+ALTER TABLE "ai_formula_relationship_results" ADD COLUMN "explanation" text;
