@@ -7,15 +7,14 @@ import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadInde
 import { parseIntArgument } from "../utils/command";
 import { logger } from "../utils/logger";
 import { identifyFormulaRelationshipsWithCache } from "../ai/useCases/identifyFormulaRelationships";
+import { PythonRunner } from "../formulaCheck/pythonRunner";
+import {
+  checkRelationship,
+  type SheetColumnInfo,
+} from "../formulaCheck/checkRelationship";
 
 const SAMPLE_ROW_COUNT = 5;
 const FORMULA_COLUMN_THRESHOLD = 0.5;
-
-type SheetColumnInfo = {
-  letter: string;
-  name: string;
-  isFormula: boolean;
-};
 
 function toColumnDisplayName(name: string): string {
   return name.trim() === "" ? "(empty header)" : name;
@@ -43,6 +42,7 @@ program
   )
   .argument("<datasetExtId>", "Dryad dataset external ID", parseIntArgument)
   .action(async (datasetExtId) => {
+    const python = await PythonRunner.start();
     try {
       const dataset = await getDryadDatasetByExtId(datasetExtId);
       if (!dataset) {
@@ -75,13 +75,13 @@ program
         const excelFileData = loadExcelFileFromDryadIndex(dataset, i);
 
         for (const sheet of excelFileData.sheets) {
-          console.log(
-            `File: '${fileEntry.filename}'\nSheet: ${sheet.name} `,
+          logger.info(
+            `\n=== File: ${fileEntry.filename} | Sheet: ${sheet.name} ===`,
           );
 
           const availableRows = sheet.numRows - sheet.firstDataRowIndex;
           if (availableRows <= 0) {
-            console.log("(no data rows)");
+            logger.info("(no data rows)");
             continue;
           }
 
@@ -125,15 +125,17 @@ program
               ? `${col.letter} [FORMULA] (${name})`
               : `${col.letter} (${name})`;
           });
-          console.log(
+          logger.info(
             `Columns (${columns.length}): ${printableColumns.join(" | ")}`,
           );
-          console.log();
 
           const rowCount = Math.min(SAMPLE_ROW_COUNT, availableRows);
           const sampleRows = sheet.getSampleData(rowCount);
 
-
+          logger.info(
+            `Waiting for AI formula relationship response for sheet '${sheet.name}'...`,
+          );
+          const aiRequestStart = Date.now();
           const relationshipResult =
             await identifyFormulaRelationshipsWithCache({
               excelFileName: fileEntry.filename,
@@ -143,9 +145,16 @@ program
               datasetId: dataset.id,
               datasetFileId: fileEntry.id,
             });
+          const aiRequestDurationSeconds = (
+            (Date.now() - aiRequestStart) /
+            1000
+          ).toFixed(1);
+          logger.info(
+            `AI response received for sheet '${sheet.name}' in ${aiRequestDurationSeconds}s.`,
+          );
 
           if (relationshipResult.relationships.length === 0) {
-            console.log("No formula relationships identified.");
+            logger.info("No formula relationships identified.");
             continue;
           }
 
@@ -153,20 +162,20 @@ program
             columns.map((col) => [col.letter.toUpperCase(), col]),
           );
 
-          console.log("Identified formula relationships:");
+          logger.info("Identified formula relationships:");
           for (const relationship of relationshipResult.relationships) {
             const resultColumn = columnsByLetter.get(
               relationship.resultColumn.toUpperCase(),
             );
             if (!resultColumn) {
-              console.log(
+              logger.info(
                 `- ${relationship.resultColumn} (unknown column) = ${relationship.expression}`,
               );
               continue;
             }
 
             if (resultColumn.isFormula) {
-              console.log(
+              logger.info(
                 `- Skipping ${resultColumn.letter} because it is a [FORMULA] column`,
               );
               continue;
@@ -177,13 +186,38 @@ program
               relationship.expression,
               columnsByLetter,
             );
-            console.log(
+            logger.info(
               `- ${resultColumn.letter} (${resultName}) = ${relationship.expression} [${resultName} = ${expressionWithNames}]`,
             );
+
+            const checkResult = await checkRelationship(
+              sheet,
+              columns,
+              relationship,
+              python,
+            );
+            logger.info(
+              `  Checking: ${resultColumn.letter} (${resultName}) = ${relationship.expression}`,
+            );
+            logger.info(
+              `    rows: ${checkResult.totalRows} total | ${checkResult.passedRows} passed | ${checkResult.failedRows} failed | ${checkResult.skippedRows} skipped`,
+            );
+            if (checkResult.topFailures.length > 0) {
+              logger.info("    top failures:");
+              for (const failure of checkResult.topFailures) {
+                const expectedPart = Number.isFinite(failure.expectedMin)
+                  ? `expected=[${failure.expectedMin}, ${failure.expectedMax}]`
+                  : `expected=(eval error: ${failure.errorMessage ?? "unknown"})`;
+                logger.info(
+                  `      - row ${failure.rowIndex + 1}: observed=${failure.observed} (interval [${failure.observedMin}, ${failure.observedMax}]), ${expectedPart}, absError=${failure.absError}`,
+                );
+              }
+            }
           }
         }
       }
     } finally {
+      await python.shutdown();
       await closeDb();
     }
   });

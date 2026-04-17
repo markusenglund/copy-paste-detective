@@ -41,8 +41,8 @@ const defaults: Record<UseCaseName, UseCaseConfig> = {
   },
   identifyFormulaRelationships: {
     provider: "gemini",
-    model: "gemini-2.5-flash",
-    temperature: 0,
+    model: "gemini-3.1-pro-preview",
+    temperature: 1,
   },
 };
 

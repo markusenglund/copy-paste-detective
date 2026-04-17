@@ -63,7 +63,9 @@ Important rules:
 - Only include relationships where resultColumn is a non-formula column.
 - Never return a [FORMULA] column as resultColumn.
 - Operand columns in expression may be formula columns.
-- Use only Excel column letters in expression (for example: A + B, A / (B * B)).
+- expression must be a valid Python expression over Excel column letters as variables (for example: A + B, A / (B * B), math.log(A), A ** C, math.factorial(A)).
+- Use ** for exponentiation, not ^.
+- The math module is available; reference its functions as math.<name>. Do not include imports.
 - Focus on row-level arithmetic relationships, not correlations.
 - Return valid JSON only in the required schema.
 
