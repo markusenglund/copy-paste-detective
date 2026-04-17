@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { createHash } from "crypto";
-import { markdownTable } from "markdown-table";
 import {
   findByHash as findFormulaRelationshipsByHash,
   insertResult as insertFormulaRelationshipsResult,
@@ -43,10 +42,6 @@ export type IdentifyFormulaRelationshipsParams = {
   fullText?: string;
   source?: "dryad" | "pmc" | "standalone";
 };
-
-function escapeCell(value: string): string {
-  return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
-}
 
 function createContextSection(
   params: IdentifyFormulaRelationshipsParams,
@@ -95,18 +90,7 @@ export function generatePrompt(
     return `- ${label} (${name})`;
   });
 
-  const sampleRows = params.sampleRows.slice(0, 5);
-  const columnHeaders = params.columns.map((col) => {
-    const name = col.name.trim() === "" ? col.letter : col.name;
-    return col.isFormula ? `${name} [FORMULA]` : name;
-  });
-  const tableRows = [
-    columnHeaders,
-    ...sampleRows.map((row) => row.map((cell) => escapeCell(cell))),
-  ];
-  const sampleTable = markdownTable(tableRows);
-
-  return `You are analyzing an Excel sheet from a scientific paper to identify mathematical relationships between columns — cases where one column is computed row-by-row from other columns.
+  return `You are analyzing an Excel sheet from a scientific paper to identify mathematical relationships between columns — cases where one column is likely computed row-by-row from other columns.
 
 # Basic info
 
@@ -118,13 +102,9 @@ ${createContextSection(params)}
 
 ${columnDescriptions.join("\n")}
 
-# Sample data
-
-${sampleTable}
-
 # Your task
 
-Find implicit formulas where one column's values are computed row-by-row from other columns.
+Based on the column names and scientific context, identify columns that are likely derived from other columns via a formula. Do not attempt to verify against data values — that will be done separately. Report relationships even if you are uncertain whether they hold exactly in every row.
 
 Rules:
 - Columns marked [FORMULA] may appear as inputs in an expression but never as the result.
