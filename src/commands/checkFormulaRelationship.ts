@@ -7,7 +7,10 @@ import {
   type DatasetWithFiles,
   type DryadDatasetWithFiles,
 } from "../repositories/datasets/unifiedDatasetsRepository";
-import { maxExcelFilesPerDataset } from "../config/config";
+import {
+  maxExcelFilesPerDatasetForFormulaCheck,
+  maxSheetsPerExcelFileForFormulaCheck,
+} from "../config/config";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { loadExcelFileFromPmcDataset } from "../utils/loadExcelFileFromPmcDataset";
 import { ExcelFileData } from "../types/ExcelFileData";
@@ -82,7 +85,10 @@ program
       const excelFiles = dataset.dataFiles.filter(
         (f) => f.fileType === "excel",
       );
-      const filesToProcess = excelFiles.slice(0, maxExcelFilesPerDataset);
+      const filesToProcess = excelFiles.slice(
+        0,
+        maxExcelFilesPerDatasetForFormulaCheck,
+      );
 
       for (let i = 0; i < filesToProcess.length; i++) {
         const fileEntry = filesToProcess[i];
@@ -94,8 +100,16 @@ program
         }
 
         const excelFileData: ExcelFileData = pmcDataset
-          ? loadExcelFileFromPmcDataset(pmcDataset, i)
-          : loadExcelFileFromDryadIndex(dryadDataset!, i);
+          ? loadExcelFileFromPmcDataset(
+              pmcDataset,
+              i,
+              maxSheetsPerExcelFileForFormulaCheck,
+            )
+          : loadExcelFileFromDryadIndex(
+              dryadDataset!,
+              i,
+              maxSheetsPerExcelFileForFormulaCheck,
+            );
 
         for (const sheet of excelFileData.sheets) {
           logger.info(
@@ -142,14 +156,15 @@ program
             },
           );
 
-          const printableColumns = columns.map((col) => {
-            const name = toColumnDisplayName(col.name);
-            return col.isFormula
-              ? `${col.letter} [FORMULA] (${name})`
-              : `${col.letter} (${name})`;
-          });
+          const printableColumns = columns
+            .filter((col) => col.name.trim() !== "")
+            .map((col) =>
+              col.isFormula
+                ? `${col.letter} [FORMULA] (${col.name})`
+                : `${col.letter} (${col.name})`,
+            );
           logger.info(
-            `Columns (${columns.length}): ${printableColumns.join(" | ")}`,
+            `Columns (${printableColumns.length}): ${printableColumns.join(" | ")}`,
           );
 
           const rowCount = Math.min(SAMPLE_ROW_COUNT, availableRows);

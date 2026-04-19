@@ -84,11 +84,12 @@ function createContextSection(
 export function generatePrompt(
   params: IdentifyFormulaRelationshipsParams,
 ): string {
-  const columnDescriptions = params.columns.map((col) => {
-    const label = col.isFormula ? `${col.letter} [FORMULA]` : col.letter;
-    const name = col.name.trim() === "" ? "(empty header)" : col.name;
-    return `- ${label} (${name})`;
-  });
+  const columnDescriptions = params.columns
+    .filter((col) => col.name.trim() !== "")
+    .map((col) => {
+      const label = col.isFormula ? `${col.letter} [FORMULA]` : col.letter;
+      return `- ${label} (${col.name})`;
+    });
 
   return `You are analyzing an Excel sheet from a scientific paper to identify mathematical relationships between columns — cases where one column is likely computed row-by-row from other columns.
 

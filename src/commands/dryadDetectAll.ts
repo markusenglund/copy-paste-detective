@@ -20,7 +20,7 @@ import {
   getJournalsByIssnMap,
   formatIssn,
 } from "../repositories/journals/journalsRepository";
-import { maxExcelFilesPerDataset } from "../config/config";
+import { maxExcelFilesPerDatasetForCopyPasteCheck } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
@@ -192,7 +192,8 @@ program
 
         for (
           let j = 0;
-          j < Math.min(excelFiles.length, maxExcelFilesPerDataset);
+          j <
+          Math.min(excelFiles.length, maxExcelFilesPerDatasetForCopyPasteCheck);
           j++
         ) {
           const excelFile = excelFiles[j];

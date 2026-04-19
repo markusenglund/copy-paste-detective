@@ -6,7 +6,7 @@ import { DryadExcelFileData } from "../types/ExcelFileData";
 import { DryadDatasetWithFiles } from "../repositories/datasets/unifiedDatasetsRepository";
 import {
   maxNumRowsToAnalyze,
-  maxSheetsPerExcelFile,
+  maxSheetsPerExcelFileForCopyPasteCheck,
   minNumDataRows,
 } from "../config/config";
 import { logger } from "./logger";
@@ -16,6 +16,7 @@ import { storagePaths } from "./paths/storagePaths";
 export function loadExcelFileFromDryadIndex(
   dataset: DryadDatasetWithFiles,
   fileIndex: number = 0,
+  maxSheets: number = maxSheetsPerExcelFileForCopyPasteCheck,
 ): DryadExcelFileData {
   const excelFiles = dataset.dataFiles.filter((f) => f.fileType === "excel");
   // Validate file index range
@@ -35,7 +36,7 @@ export function loadExcelFileFromDryadIndex(
   });
 
   const sheets: Sheet[] = [];
-  workbook.SheetNames.slice(0, maxSheetsPerExcelFile).forEach((sheetName) => {
+  workbook.SheetNames.slice(0, maxSheets).forEach((sheetName) => {
     const workbookSheet = workbook.Sheets[sheetName];
     try {
       const sheet = new Sheet(workbookSheet, sheetName, selectedFile.filename);

@@ -6,7 +6,7 @@ import {
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { StrategyName } from "../types/strategies";
 import { parseIntArgument, parseStrategies } from "../utils/command";
-import { maxExcelFilesPerDataset } from "../config/config";
+import { maxExcelFilesPerDatasetForCopyPasteCheck } from "../config/config";
 import { analyzeDataset } from "../detection/analyzeDataset";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { logger } from "../utils/logger";
@@ -56,7 +56,11 @@ program
       const downloadedExcelFiles: ExcelFileData[] = [];
       for (
         let i = 0;
-        i < Math.min(filesToAnalyze.length, maxExcelFilesPerDataset);
+        i <
+        Math.min(
+          filesToAnalyze.length,
+          maxExcelFilesPerDatasetForCopyPasteCheck,
+        );
         i++
       ) {
         const excelFile = filesToAnalyze[i];

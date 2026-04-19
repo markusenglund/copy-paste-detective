@@ -5,7 +5,10 @@ import xlsx from "xlsx";
 import { Sheet } from "../entities/Sheet";
 import { logger } from "../utils/logger";
 import { parseIntArgument } from "../utils/command";
-import { maxNumRowsToAnalyze, maxSheetsPerExcelFile } from "../config/config";
+import {
+  maxNumRowsToAnalyze,
+  maxSheetsPerExcelFileForCopyPasteCheck,
+} from "../config/config";
 import { storagePaths } from "../utils/paths/storagePaths";
 
 const program = new Command();
@@ -75,7 +78,7 @@ program
             // Process each sheet
             const sheetNames = workbook.SheetNames.slice(
               0,
-              maxSheetsPerExcelFile,
+              maxSheetsPerExcelFileForCopyPasteCheck,
             );
 
             for (const sheetName of sheetNames) {

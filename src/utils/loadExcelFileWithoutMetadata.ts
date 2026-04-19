@@ -4,7 +4,7 @@ import { Sheet } from "../entities/Sheet";
 import { StandaloneExcelFileData } from "../types/ExcelFileData";
 import {
   maxNumRowsToAnalyze,
-  maxSheetsPerExcelFile,
+  maxSheetsPerExcelFileForCopyPasteCheck,
   minNumDataRows,
 } from "../config/config";
 import { logger } from "./logger";
@@ -24,21 +24,25 @@ export function loadExcelFileWithoutMetadata(
   const fileName = path.basename(filePath);
   const sheets: Sheet[] = [];
 
-  workbook.SheetNames.slice(0, maxSheetsPerExcelFile).forEach((sheetName) => {
-    const workbookSheet = workbook.Sheets[sheetName];
-    try {
-      const sheet = new Sheet(workbookSheet, sheetName, fileName);
-      if (sheet.numRows < minNumDataRows) {
+  workbook.SheetNames.slice(0, maxSheetsPerExcelFileForCopyPasteCheck).forEach(
+    (sheetName) => {
+      const workbookSheet = workbook.Sheets[sheetName];
+      try {
+        const sheet = new Sheet(workbookSheet, sheetName, fileName);
+        if (sheet.numRows < minNumDataRows) {
+          logger.info(
+            `Skipping sheet '${sheetName}' because it has less than ${minNumDataRows} data rows`,
+          );
+          return;
+        }
+        sheets.push(sheet);
+      } catch (err) {
         logger.info(
-          `Skipping sheet '${sheetName}' because it has less than ${minNumDataRows} data rows`,
+          `Skipping sheet '${sheetName}' due to error: ${err.message}`,
         );
-        return;
       }
-      sheets.push(sheet);
-    } catch (err) {
-      logger.info(`Skipping sheet '${sheetName}' due to error: ${err.message}`);
-    }
-  });
+    },
+  );
 
   // Use filename without extension as articleName
   const articleName = path.basename(filePath, path.extname(filePath));
