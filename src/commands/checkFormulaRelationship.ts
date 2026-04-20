@@ -1,5 +1,4 @@
 import { Command } from "@commander-js/extra-typings";
-import xlsx from "xlsx";
 import { closeDb } from "../db";
 import {
   getDryadDatasetByExtId,
@@ -21,9 +20,9 @@ import {
   checkRelationship,
   type SheetColumnInfo,
 } from "../formulaCheck/checkRelationship";
+import { buildSheetColumnInfo } from "../formulaCheck/buildSheetColumnInfo";
 
 const SAMPLE_ROW_COUNT = 5;
-const FORMULA_COLUMN_THRESHOLD = 0.5;
 
 function toColumnDisplayName(name: string): string {
   return name.trim() === "" ? "(empty header)" : name;
@@ -122,39 +121,7 @@ program
             continue;
           }
 
-          const columns: SheetColumnInfo[] = sheet.columnNames.map(
-            (columnName, colIndex) => {
-              let nonEmptyCount = 0;
-              let formulaCount = 0;
-              for (
-                let rowIndex = sheet.firstDataRowIndex;
-                rowIndex < sheet.numRows;
-                rowIndex++
-              ) {
-                const cell = sheet.enhancedMatrix[rowIndex]?.[colIndex];
-                const value = cell?.value;
-                const isNonEmpty =
-                  value !== null &&
-                  value !== undefined &&
-                  !(typeof value === "string" && value.trim() === "");
-                if (!isNonEmpty) {
-                  continue;
-                }
-                nonEmptyCount++;
-                if (cell.originalCell?.f !== undefined) {
-                  formulaCount++;
-                }
-              }
-
-              const ratio =
-                nonEmptyCount === 0 ? 0 : formulaCount / nonEmptyCount;
-              return {
-                letter: xlsx.utils.encode_col(colIndex),
-                name: columnName,
-                isFormula: ratio > FORMULA_COLUMN_THRESHOLD,
-              };
-            },
-          );
+          const columns: SheetColumnInfo[] = buildSheetColumnInfo(sheet);
 
           const printableColumns = columns
             .filter((col) => col.name.trim() !== "")

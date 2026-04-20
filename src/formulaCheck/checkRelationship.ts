@@ -34,6 +34,7 @@ export type CheckResult = {
   passedRows: number;
   failedRows: number;
   skippedRows: number;
+  allFailingRowIndices: number[];
   topFailures: FailureDetail[];
 };
 
@@ -177,6 +178,10 @@ export async function checkRelationship(
     }
   }
 
+  const allFailingRowIndices = failures
+    .map((f) => f.rowIndex)
+    .sort((a, b) => a - b);
+
   failures.sort((a, b) => b.absError - a.absError);
 
   return {
@@ -187,6 +192,7 @@ export async function checkRelationship(
     passedRows: passed,
     failedRows: failed,
     skippedRows: skipped,
+    allFailingRowIndices,
     topFailures: failures.slice(0, MAX_TOP_FAILURES),
   };
 }
