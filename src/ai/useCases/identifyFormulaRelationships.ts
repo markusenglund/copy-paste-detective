@@ -4,10 +4,7 @@ import {
   findByHash as findFormulaRelationshipsByHash,
   insertResult as insertFormulaRelationshipsResult,
 } from "../../repositories/aiFormulaRelationshipResults/aiFormulaRelationshipResultsRepository";
-import {
-  type FormulaRelationship,
-  type AiFormulaRelationshipResultRow,
-} from "../../repositories/aiFormulaRelationshipResults/schema";
+import { type AiFormulaRelationshipResultRow } from "../../repositories/aiFormulaRelationshipResults/schema";
 import { getProvider, getUseCaseConfig } from "../aiConfig";
 import { logger } from "../../utils/logger";
 import { maxPromptDataDescriptionChars } from "../../config/config";
@@ -105,7 +102,7 @@ ${columnDescriptions.join("\n")}
 
 # Your task
 
-Based on the column names and scientific context, identify columns that are likely derived from other columns via a formula. Do not attempt to verify against data values — that will be done separately. Report relationships even if you are uncertain whether they hold exactly in every row.
+Based on the column names and scientific context, identify columns that are likely to have been derived from other columns with a mathematical formula. Do not attempt to verify against data values — that will be done separately. Report relationships even if you are uncertain whether they hold exactly in every row.
 
 Rules:
 - Columns marked [FORMULA] may appear as inputs in an expression but never as the result.
@@ -123,32 +120,6 @@ Output schema:
     }
   ]
 }`;
-}
-
-function normalizeRelationship(
-  relationship: FormulaRelationship,
-): FormulaRelationship {
-  return {
-    resultColumn: relationship.resultColumn.trim().toUpperCase(),
-    expression: relationship.expression.trim(),
-    description: relationship.description.trim(),
-  };
-}
-
-function sanitizeRelationships(
-  relationships: FormulaRelationship[],
-  columns: IdentifyFormulaRelationshipsParams["columns"],
-): FormulaRelationship[] {
-  const formulaByLetter = new Map(
-    columns.map((col) => [col.letter.toUpperCase(), col.isFormula]),
-  );
-
-  return relationships
-    .map((relationship) => normalizeRelationship(relationship))
-    .filter((relationship) => {
-      const isFormula = formulaByLetter.get(relationship.resultColumn);
-      return isFormula === false;
-    });
 }
 
 function mapCachedResult(
@@ -202,13 +173,9 @@ export async function identifyFormulaRelationshipsWithCache(
       responseSchema,
     });
 
-  const relationships = sanitizeRelationships(
-    rawResult.relationships,
-    params.columns,
-  );
   const result: IdentifyFormulaRelationshipsResponse = {
     explanation: rawResult.explanation,
-    relationships,
+    relationships: rawResult.relationships,
   };
 
   if (canCache) {

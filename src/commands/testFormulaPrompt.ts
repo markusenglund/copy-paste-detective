@@ -7,17 +7,22 @@ import {
 } from "../repositories/datasets/unifiedDatasetsRepository";
 import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadIndex";
 import { maxSheetsPerExcelFileForFormulaCheck } from "../config/config";
-import { identifyFormulaRelationshipsWithCache } from "../ai/useCases/identifyFormulaRelationships";
+import {
+  identifyFormulaRelationshipsWithCache,
+  type IdentifyFormulaRelationshipsParams,
+} from "../ai/useCases/identifyFormulaRelationships";
 import { PythonRunner } from "../formulaCheck/pythonRunner";
 import {
   checkRelationship,
   type SheetColumnInfo,
 } from "../formulaCheck/checkRelationship";
 import { buildSheetColumnInfo } from "../formulaCheck/buildSheetColumnInfo";
+import { runRelationshipLoop } from "../formulaCheck/runRelationshipLoop";
 import type { FormulaRelationship } from "../repositories/aiFormulaRelationshipResults/schema";
 import { logger } from "../utils/logger";
 
 const SAMPLE_ROW_COUNT = 5;
+const MAX_FORMULA_RETRIES = 3;
 
 interface AcceptableForm {
   resultColumn: string;
@@ -239,7 +244,7 @@ async function processTestCase(
       Math.min(SAMPLE_ROW_COUNT, sheet.numRows - sheet.firstDataRowIndex),
     );
 
-    const relationshipResult = await identifyFormulaRelationshipsWithCache({
+    const originalParams: IdentifyFormulaRelationshipsParams = {
       excelFileName: excelFileData.excelFileName,
       sheetName: sheet.name,
       columns,
@@ -250,13 +255,27 @@ async function processTestCase(
       abstract: excelFileData.abstract,
       dataDescription: excelFileData.dataDescription,
       source: excelFileData.source,
+    };
+
+    const initialAiResponse =
+      await identifyFormulaRelationshipsWithCache(originalParams);
+
+    const loopResult = await runRelationshipLoop({
+      initialAiResponse,
+      originalParams,
+      sheet,
+      columns,
+      python,
+      datasetId: dataset.id,
+      datasetFileId: excelFiles[fileIndex].id,
+      maxRetries: MAX_FORMULA_RETRIES,
     });
 
     const outcomes: ExpectedRelationshipOutcome[] = [];
     for (const expected of testCase.expectedRelationships) {
       const outcome = await evaluateExpectedRelationship(
         expected,
-        relationshipResult.relationships,
+        loopResult.finalRelationships,
         sheet,
         columns,
         python,
@@ -266,7 +285,7 @@ async function processTestCase(
 
     const unexpectedExtras = findUnexpectedExtras(
       testCase.expectedRelationships,
-      relationshipResult.relationships,
+      loopResult.finalRelationships,
     );
 
     const passed =
@@ -275,8 +294,8 @@ async function processTestCase(
 
     return {
       testCase,
-      aiRelationships: relationshipResult.relationships,
-      aiExplanation: relationshipResult.explanation,
+      aiRelationships: loopResult.finalRelationships,
+      aiExplanation: loopResult.finalAiResponse.explanation,
       outcomes,
       unexpectedExtras,
       passed,

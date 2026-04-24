@@ -146,12 +146,11 @@ describe("checkRelationship", () => {
     ]);
     const columns = columnsFor(sheet);
 
-    // Row 1 corners have A in [80.5, 81.5] — fail those scopes
     const python = mockPython((items) =>
       items.map(({ scopes }) => ({
         values: scopes.map((scope) => {
           const a = scope.A ?? 0;
-          if (a > 80 && a < 82) {
+          if (a === 81) {
             return { ok: false as const, error: "ZeroDivisionError: by zero" };
           }
           const b = scope.B ?? 1;

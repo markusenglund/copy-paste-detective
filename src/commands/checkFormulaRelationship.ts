@@ -14,15 +14,20 @@ import { loadExcelFileFromDryadIndex } from "../utils/loadExcelFileFromDryadInde
 import { loadExcelFileFromPmcDataset } from "../utils/loadExcelFileFromPmcDataset";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { logger } from "../utils/logger";
-import { identifyFormulaRelationshipsWithCache } from "../ai/useCases/identifyFormulaRelationships";
-import { PythonRunner } from "../formulaCheck/pythonRunner";
 import {
-  checkRelationship,
-  type SheetColumnInfo,
-} from "../formulaCheck/checkRelationship";
+  identifyFormulaRelationshipsWithCache,
+  type IdentifyFormulaRelationshipsParams,
+} from "../ai/useCases/identifyFormulaRelationships";
+import { PythonRunner } from "../formulaCheck/pythonRunner";
+import { type SheetColumnInfo } from "../formulaCheck/checkRelationship";
 import { buildSheetColumnInfo } from "../formulaCheck/buildSheetColumnInfo";
+import {
+  runRelationshipLoop,
+  type RelationshipLoopCallbacks,
+} from "../formulaCheck/runRelationshipLoop";
 
 const SAMPLE_ROW_COUNT = 5;
+const MAX_FORMULA_RETRIES = 3;
 
 function toColumnDisplayName(name: string): string {
   return name.trim() === "" ? "(empty header)" : name;
@@ -137,31 +142,33 @@ program
           const rowCount = Math.min(SAMPLE_ROW_COUNT, availableRows);
           const sampleRows = sheet.getSampleData(rowCount);
 
+          const originalParams: IdentifyFormulaRelationshipsParams = {
+            excelFileName: fileEntry.filename,
+            sheetName: sheet.name,
+            columns,
+            sampleRows,
+            datasetId: dataset.id,
+            datasetFileId: fileEntry.id,
+            articleName: excelFileData.articleName,
+            abstract: excelFileData.abstract,
+            dataDescription: excelFileData.dataDescription,
+            fileCaption:
+              excelFileData.source === "pmc"
+                ? excelFileData.fileCaption
+                : undefined,
+            fullText:
+              excelFileData.source === "pmc"
+                ? excelFileData.fullText
+                : undefined,
+            source: excelFileData.source,
+          };
+
           logger.info(
             `Waiting for AI formula relationship response for sheet '${sheet.name}'...`,
           );
           const aiRequestStart = Date.now();
-          const relationshipResult =
-            await identifyFormulaRelationshipsWithCache({
-              excelFileName: fileEntry.filename,
-              sheetName: sheet.name,
-              columns,
-              sampleRows,
-              datasetId: dataset.id,
-              datasetFileId: fileEntry.id,
-              articleName: excelFileData.articleName,
-              abstract: excelFileData.abstract,
-              dataDescription: excelFileData.dataDescription,
-              fileCaption:
-                excelFileData.source === "pmc"
-                  ? excelFileData.fileCaption
-                  : undefined,
-              fullText:
-                excelFileData.source === "pmc"
-                  ? excelFileData.fullText
-                  : undefined,
-              source: excelFileData.source,
-            });
+          const initialAiResponse =
+            await identifyFormulaRelationshipsWithCache(originalParams);
           const aiRequestDurationSeconds = (
             (Date.now() - aiRequestStart) /
             1000
@@ -170,11 +177,11 @@ program
             `AI response received for sheet '${sheet.name}' in ${aiRequestDurationSeconds}s.`,
           );
 
-          if (relationshipResult.explanation) {
-            logger.info(`AI explanation: ${relationshipResult.explanation}`);
+          if (initialAiResponse.explanation) {
+            logger.info(`AI explanation: ${initialAiResponse.explanation}`);
           }
 
-          if (relationshipResult.relationships.length === 0) {
+          if (initialAiResponse.relationships.length === 0) {
             logger.info("No formula relationships identified.");
             continue;
           }
@@ -183,58 +190,85 @@ program
             columns.map((col) => [col.letter.toUpperCase(), col]),
           );
 
-          logger.info("Identified formula relationships:");
-          for (const relationship of relationshipResult.relationships) {
-            const resultColumn = columnsByLetter.get(
-              relationship.resultColumn.toUpperCase(),
-            );
-            if (!resultColumn) {
-              logger.info(
-                `- ${relationship.resultColumn} (unknown column) = ${relationship.expression}`,
-              );
-              continue;
-            }
-
-            if (resultColumn.isFormula) {
-              logger.info(
-                `- Skipping ${resultColumn.letter} because it is a [FORMULA] column`,
-              );
-              continue;
-            }
-
-            const resultName = toColumnDisplayName(resultColumn.name);
-            const expressionWithNames = formatExpressionWithColumnNames(
-              relationship.expression,
-              columnsByLetter,
-            );
-            logger.info(
-              `- ${resultColumn.letter} (${resultName}) = ${relationship.expression} [${resultName} = ${expressionWithNames}]`,
-            );
-
-            const checkResult = await checkRelationship(
-              sheet,
-              columns,
-              relationship,
-              python,
-            );
-            logger.info(
-              `  Checking: ${resultColumn.letter} (${resultName}) = ${relationship.expression}`,
-            );
-            logger.info(
-              `    rows: ${checkResult.totalRows} total | ${checkResult.passedRows} passed | ${checkResult.failedRows} failed | ${checkResult.skippedRows} skipped`,
-            );
-            if (checkResult.topFailures.length > 0) {
-              logger.info("    top failures:");
-              for (const failure of checkResult.topFailures) {
-                const expectedPart = Number.isFinite(failure.expectedMin)
-                  ? `expected=[${failure.expectedMin}, ${failure.expectedMax}]`
-                  : `expected=(eval error: ${failure.errorMessage ?? "unknown"})`;
-                logger.info(
-                  `      - row ${failure.rowIndex + 1}: observed=${failure.observed} (interval [${failure.observedMin}, ${failure.observedMax}]), ${expectedPart}, absError=${failure.absError}`,
-                );
+          const callbacks: RelationshipLoopCallbacks = {
+            onAttemptStart: (attempt) => {
+              if (attempt === 0) {
+                logger.info("Identified formula relationships:");
+              } else {
+                logger.info(`Retry ${attempt} — checking revised formulas:`);
               }
-            }
-          }
+            },
+            beforeCheck: (rel) => {
+              const resultColumn = columnsByLetter.get(
+                rel.resultColumn.toUpperCase(),
+              );
+              const resultName = resultColumn
+                ? toColumnDisplayName(resultColumn.name)
+                : "(unknown column)";
+              const letter = resultColumn?.letter ?? rel.resultColumn;
+              const expressionWithNames = formatExpressionWithColumnNames(
+                rel.expression,
+                columnsByLetter,
+              );
+              logger.info(
+                `- ${letter} (${resultName}) = ${rel.expression} [${resultName} = ${expressionWithNames}]`,
+              );
+            },
+            afterCheck: (_rel, result) => {
+              logger.info(
+                `  rows: ${result.totalRows} total | ${result.passedRows} passed | ${result.failedRows} failed | ${result.skippedRows} skipped`,
+              );
+              if (result.topFailures.length > 0) {
+                logger.info("  top failures:");
+                for (const failure of result.topFailures) {
+                  const expectedPart =
+                    failure.expected === null
+                      ? `expected=(eval error: ${failure.errorMessage ?? "unknown"})`
+                      : `expected=${failure.expected}`;
+                  logger.info(
+                    `    - row ${failure.rowIndex + 1}: observed=${failure.observed}, ${expectedPart}, absError=${failure.absError}`,
+                  );
+                }
+              }
+              if (result.passedRows > 0 && result.failedRows === 0) {
+                logger.info(`  All rows pass — formula confirmed.`);
+              } else if (result.passedRows === 0 && result.failedRows > 0) {
+                logger.info(`  All rows failed.`);
+              } else {
+                logger.info(`  Mixed results — some rows pass, some fail.`);
+              }
+            },
+            onAllConfirmed: () => {
+              logger.info("All formula relationships confirmed.");
+            },
+            onMaxRetriesReached: (count) => {
+              logger.info(
+                `${count} formula(s) could not be confirmed after ${MAX_FORMULA_RETRIES} retries.`,
+              );
+            },
+            onRevisitStart: (count) => {
+              logger.info(
+                `${count} formula(s) unconfirmed — asking AI to revise...`,
+              );
+            },
+            onRevisitDone: (response, durationMs) => {
+              logger.info(
+                `AI revisit received in ${(durationMs / 1000).toFixed(1)}s. Explanation: ${response.explanation}`,
+              );
+            },
+          };
+
+          await runRelationshipLoop({
+            initialAiResponse,
+            originalParams,
+            sheet,
+            columns,
+            python,
+            datasetId: dataset.id,
+            datasetFileId: fileEntry.id,
+            maxRetries: MAX_FORMULA_RETRIES,
+            callbacks,
+          });
         }
       }
     } finally {

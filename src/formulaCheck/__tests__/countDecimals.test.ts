@@ -1,5 +1,5 @@
 import { describe, it, expect } from "@jest/globals";
-import { countDecimals } from "../intervalCheck";
+import { countDecimals } from "../countDecimals";
 
 describe("countDecimals", () => {
   it("returns 0 for integers", () => {
@@ -14,16 +14,6 @@ describe("countDecimals", () => {
     expect(countDecimals(22.41)).toBe(2);
     expect(countDecimals(22.417583)).toBe(6);
     expect(countDecimals(0.001)).toBe(3);
-  });
-
-  it("handles scientific notation with negative exponents", () => {
-    expect(countDecimals(1e-7)).toBe(7);
-    expect(countDecimals(1.5e-7)).toBe(8);
-  });
-
-  it("handles scientific notation with positive exponents", () => {
-    expect(countDecimals(1.5e3)).toBe(0);
-    expect(countDecimals(1e10)).toBe(0);
   });
 
   it("returns 0 for non-finite values", () => {

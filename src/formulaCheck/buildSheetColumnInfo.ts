@@ -15,11 +15,7 @@ export function buildSheetColumnInfo(sheet: Sheet): SheetColumnInfo[] {
     ) {
       const cell = sheet.enhancedMatrix[rowIndex]?.[colIndex];
       const value = cell?.value;
-      const isNonEmpty =
-        value !== null &&
-        value !== undefined &&
-        !(typeof value === "string" && value.trim() === "");
-      if (!isNonEmpty) {
+      if (value == null || (typeof value === "string" && value.trim() === "")) {
         continue;
       }
       nonEmptyCount++;
