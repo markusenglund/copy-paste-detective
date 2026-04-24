@@ -5,7 +5,7 @@ import { PmcExcelFileData } from "../types/ExcelFileData";
 import { DatasetWithFiles } from "../repositories/datasets/unifiedDatasetsRepository";
 import {
   maxNumRowsToAnalyze,
-  maxSheetsPerExcelFile,
+  maxSheetsPerExcelFileForCopyPasteCheck,
   minNumDataRows,
 } from "../config/config";
 import { logger } from "./logger";
@@ -14,6 +14,7 @@ import { storagePaths } from "./paths/storagePaths";
 export function loadExcelFileFromPmcDataset(
   dataset: DatasetWithFiles,
   fileIndex: number = 0,
+  maxSheets: number = maxSheetsPerExcelFileForCopyPasteCheck,
 ): PmcExcelFileData {
   if (fileIndex >= dataset.dataFiles.length) {
     throw new Error(
@@ -31,7 +32,7 @@ export function loadExcelFileFromPmcDataset(
   });
 
   const sheets: Sheet[] = [];
-  workbook.SheetNames.slice(0, maxSheetsPerExcelFile).forEach((sheetName) => {
+  workbook.SheetNames.slice(0, maxSheets).forEach((sheetName) => {
     const workbookSheet = workbook.Sheets[sheetName];
     try {
       const sheet = new Sheet(workbookSheet, sheetName, selectedFile.filename);

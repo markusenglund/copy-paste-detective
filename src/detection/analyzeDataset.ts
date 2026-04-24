@@ -1,6 +1,6 @@
 import {
   maxAiReviewsPerDataset,
-  maxExcelFilesPerDataset,
+  maxExcelFilesPerDatasetForCopyPasteCheck,
 } from "../config/config";
 import {
   reviewSheetResults,
@@ -214,7 +214,7 @@ export async function analyzeDataset(
 ): Promise<AnalyzeDatasetResult> {
   const selectedExcelFilesByFilename = Object.fromEntries(
     excelFiles
-      .slice(0, maxExcelFilesPerDataset)
+      .slice(0, maxExcelFilesPerDatasetForCopyPasteCheck)
       .map((file) => [file.excelFileName, file]),
   );
 

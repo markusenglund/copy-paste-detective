@@ -19,7 +19,7 @@ import {
   formatIssn,
   getJournalsByIssnMap,
 } from "../repositories/journals/journalsRepository";
-import { maxExcelFilesPerDataset } from "../config/config";
+import { maxExcelFilesPerDatasetForCopyPasteCheck } from "../config/config";
 import { ExcelFileData } from "../types/ExcelFileData";
 import { logger } from "../utils/logger";
 import { closeDb } from "../db";
@@ -151,7 +151,11 @@ program
         const excelFilesData: ExcelFileData[] = [];
         for (
           let j = 0;
-          j < Math.min(dataset.dataFiles.length, maxExcelFilesPerDataset);
+          j <
+          Math.min(
+            dataset.dataFiles.length,
+            maxExcelFilesPerDatasetForCopyPasteCheck,
+          );
           j++
         ) {
           const dataFile = dataset.dataFiles[j];

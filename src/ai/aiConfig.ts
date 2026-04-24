@@ -9,7 +9,8 @@ export type UseCaseName =
   | "screenColumns"
   | "reviewResults"
   | "reviewPdf"
-  | "classifyMetaAnalysis";
+  | "classifyMetaAnalysis"
+  | "identifyFormulaRelationships";
 
 type UseCaseConfig = {
   provider: ProviderName;
@@ -38,6 +39,11 @@ const defaults: Record<UseCaseName, UseCaseConfig> = {
     model: "gemini-2.5-flash-lite",
     temperature: 0,
   },
+  identifyFormulaRelationships: {
+    provider: "gemini",
+    model: "gemini-3.1-pro-preview",
+    temperature: 1,
+  },
 };
 
 const envKeyMap: Record<UseCaseName, { provider: string; model: string }> = {
@@ -56,6 +62,10 @@ const envKeyMap: Record<UseCaseName, { provider: string; model: string }> = {
   classifyMetaAnalysis: {
     provider: "AI_CLASSIFY_META_ANALYSIS_PROVIDER",
     model: "AI_CLASSIFY_META_ANALYSIS_MODEL",
+  },
+  identifyFormulaRelationships: {
+    provider: "AI_IDENTIFY_FORMULA_RELATIONSHIPS_PROVIDER",
+    model: "AI_IDENTIFY_FORMULA_RELATIONSHIPS_MODEL",
   },
 };
 
